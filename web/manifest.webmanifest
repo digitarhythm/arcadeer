@@ -1,0 +1,19 @@
+{
+  "name": "Arcadeer",
+  "short_name": "Arcadeer",
+  "description": "ローカル環境で動作するWebゲーム作成IDE",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1e1e2e",
+  "theme_color": "#1e1e2e",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

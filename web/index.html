@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arcadeer IDE</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+  <meta name="theme-color" content="#1e1e2e" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // 既存の style.css レイアウトを崩さないため preflight(リセット) は無効化する
+    tailwind.config = { corePlugins: { preflight: false } };
+  </script>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header id="ide-header" class="ide-header"></header>
+  <aside id="ide-sidebar" class="ide-sidebar">
+    <button id="btn-new-project" type="button" class="sidebar-btn">
+      新規プロジェクト作成
+    </button>
+    <button id="btn-open-project" type="button" class="sidebar-btn">
+      プロジェクトを開く
+    </button>
+  </aside>
+  <main id="ide-main" class="ide-main"></main>
+  <footer id="ide-footer" class="ide-footer">
+    <span class="footer-fps" id="footer-fps">FPS: --</span>
+    <span class="footer-console" id="footer-console"></span>
+    <span class="footer-project" id="footer-project" title="プロジェクト名"></span>
+    <button id="btn-settings" type="button" class="footer-settings" title="設定">⚙</button>
+  </footer>
+
+  <dialog id="dialog-new-project" class="dialog-new-project">
+    <form method="dialog" class="dialog-form">
+      <h2>新規プロジェクト作成</h2>
+      <label for="input-project-name">プロジェクト名</label>
+      <input id="input-project-name" type="text" autocomplete="off" placeholder="例: my-game" />
+      <div class="dialog-buttons">
+        <button id="dialog-new-project-cancel" type="button" class="dialog-btn">キャンセル</button>
+        <button id="dialog-new-project-ok" type="submit" class="dialog-btn dialog-btn-primary">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module">
+    import "./fade.js";
+    import "./message-dialog.js";
+    import "./handle-store.js";
+    import init from "./pkg/arcadeer.js";
+    await init();
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("./service-worker.js")
+          .catch((err) => console.warn("Service Worker 登録失敗:", err));
+      });
+    }
+  </script>
+</body>
+</html>

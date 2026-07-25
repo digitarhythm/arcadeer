@@ -1,0 +1,6 @@
+/target
+/web/pkg
+/node_modules
+bun.lockb
+.DS_Store
+.claude/settings.local.json

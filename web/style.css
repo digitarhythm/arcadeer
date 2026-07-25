@@ -1,0 +1,315 @@
+:root {
+  --bg: #1e1e2e;
+  --bg-panel: #232336;
+  --bg-elevated: #2b2b40;
+  --fg: #e6e6f0;
+  --fg-dim: #9ea0b3;
+  --accent: #7aa2f7;
+  --accent-hover: #9bbbff;
+  --border: #3a3a52;
+  --danger: #f7768e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 表示／非表示の共通フェード（0.3秒） fade.js と対で使用する */
+.fade-dialog {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.fade-dialog.fade-visible {
+  opacity: 1;
+}
+
+.fade-dialog::backdrop {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.fade-dialog.fade-visible::backdrop {
+  opacity: 1;
+}
+
+.fade-element {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.fade-element.fade-visible {
+  opacity: 1;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans",
+    "Noto Sans CJK JP", "Yu Gothic UI", sans-serif;
+  font-size: 14px;
+}
+
+body {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar main"
+    "footer footer";
+  grid-template-rows: 48px 1fr 32px;
+  grid-template-columns: 220px 1fr;
+}
+
+.ide-header {
+  grid-area: header;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.ide-sidebar {
+  grid-area: sidebar;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.sidebar-btn {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.sidebar-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sidebar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ide-main {
+  grid-area: main;
+  background: var(--bg);
+  padding: 16px;
+  overflow: auto;
+}
+
+.ide-footer {
+  grid-area: footer;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+
+.footer-fps {
+  min-width: 80px;
+}
+
+.footer-console {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footer-project {
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.footer-project:not(:empty)::before {
+  content: "📁 ";
+  font-weight: 400;
+}
+
+.footer-settings {
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.footer-settings:hover {
+  color: var(--fg);
+}
+
+.dialog-new-project {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  color: var(--fg);
+  padding: 0;
+  min-width: 360px;
+}
+
+.dialog-new-project::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.project-select {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.project-select-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.project-select-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.project-select-empty {
+  margin: 0;
+  color: var(--fg-dim);
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  align-content: start;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.project-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 8px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--fg);
+  font-size: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.project-card:hover {
+  border-color: var(--accent);
+  background: var(--bg);
+}
+
+.project-card-icon {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+}
+
+.project-card-icon img {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.project-card-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialog-form h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.dialog-form label {
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+
+.dialog-form input {
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.dialog-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dialog-btn {
+  padding: 8px 16px;
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dialog-btn:hover {
+  background: var(--border);
+}
+
+.dialog-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.dialog-btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
