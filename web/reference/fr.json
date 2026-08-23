@@ -136,6 +136,7 @@
   "ref.event.frame": "Nombre d'images depuis le lancement (la première vaut 0)",
   "ref.event.time": "Secondes écoulées depuis le lancement. Déduit du nombre d'images, donc les pauses et les ralentissements ne le font pas sauter",
   "ref.api.h.pad": "Manette de jeu",
+  "ref.api.h.padconf": "Configuration de la manette",
   "ref.api.d.pad": "L'état de la manette et du clavier est mélangé dans GAMEPAD. C'est un tableau car plusieurs manettes peuvent être branchées. Même sans manette, GAMEPAD[0] existe toujours et le clavier suffit pour jouer.",
   "ref.col.member": "Élément",
   "ref.pad.cursor": "Les quatre directions, dans le sens horaire : haut, droite, bas, gauche. Au clavier, les flèches et ZQSD",
@@ -145,5 +146,7 @@
   "ref.pad.value": "De 0.0 à 1.0. Les boutons analogiques indiquent la profondeur d'appui",
   "ref.pad.note": "Le clavier ne se mélange que dans GAMEPAD[0]. Une commande est considérée enfoncée si l'une des deux sources l'est, et la plus grande valeur l'emporte. La disposition variant selon les modèles, le moteur essaie la disposition standard, puis un réglage par modèle, puis une déduction automatique.",
   "ref.pad.stick": "En activant stickAsCursor avec setGamepadOption, les directions du manche gauche se mélangent aux quatre directions : les deux fonctionnent. deadzone indique l'inclinaison nécessaire pour compter comme enfoncée (0.5 par défaut). Les valeurs de axes restent lisibles.",
-  "ref.pad.use": "Indiquez dans use les commandes utilisées par votre jeu : la configuration ne demandera que celles-là. Seuls les types écrits sont traités ; les autres ne sont pas demandés. Une manette à peu de boutons suffit alors. Ce que le joueur a passé renvoie toujours 0."
+  "ref.pad.use": "Indiquez dans use les commandes utilisées par votre jeu : la configuration ne demandera que celles-là. Seuls les types écrits sont traités ; les autres ne sont pas demandés. Une manette à peu de boutons suffit alors. Ce que le joueur a passé renvoie toujours 0.",
+  "ref.pad.config": "Ouvre un écran où le joueur définit l'affectation de sa propre manette. Il suffit d'appuyer sur ce qui est demandé pour absorber les différences entre modèles. Le réglage est enregistré dans le navigateur par URL de jeu et réutilisé automatiquement.",
+  "ref.pad.config2": "Les commandes inutilisées peuvent être laissées de côté avec « Passer cet élément » (ce qui est passé renvoie toujours 0). Écrire use réduit ce qui est demandé. Pendant le réglage, rien n'atteint le jeu. Échap, un clic à l'extérieur ou « Annuler » l'interrompent. Si aucune manette n'apparaît, appuyez d'abord sur l'un de ses boutons : le navigateur ne la montre qu'après une pression."
 }

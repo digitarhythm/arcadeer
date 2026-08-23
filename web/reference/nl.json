@@ -136,6 +136,7 @@
   "ref.event.frame": "Beelden sinds de start (het eerste is 0)",
   "ref.event.time": "Seconden sinds de start. Wordt uit het aantal beelden afgeleid, zodat pauzes en haperingen geen sprong veroorzaken",
   "ref.api.h.pad": "Spelbesturing",
+  "ref.api.h.padconf": "Controller instellen",
   "ref.api.d.pad": "De stand van gamepad en toetsenbord wordt samengevoegd in GAMEPAD. Het is een array omdat er meerdere gamepads kunnen worden aangesloten. Ook zonder gamepad bestaat GAMEPAD[0] altijd, zodat je met het toetsenbord kunt spelen.",
   "ref.col.member": "Onderdeel",
   "ref.pad.cursor": "De vier richtingen, met de klok mee: omhoog, rechts, omlaag, links. Op het toetsenbord de pijltoetsen en WASD",
@@ -145,5 +146,7 @@
   "ref.pad.value": "0.0 tot 1.0. Analoge knoppen geven aan hoe ver ze ingedrukt zijn",
   "ref.pad.note": "Het toetsenbord mengt alleen in GAMEPAD[0]. Iets geldt als ingedrukt zodra een van beide bronnen ingedrukt is, en de grootste waarde wint. Omdat de indeling per model verschilt, wordt eerst de standaardindeling geprobeerd, dan een instelling per model en ten slotte een automatische bepaling.",
   "ref.pad.stick": "Zet je stickAsCursor aan met setGamepadOption, dan mengen de richtingen van de linkerstick zich onder de vier richtingstoetsen, zodat beide werken. deadzone bepaalt hoe ver hij moet doorslaan om als ingedrukt te tellen (standaard 0.5). De waarden in axes blijven leesbaar.",
-  "ref.pad.use": "Zet in use welke besturing je spel gebruikt; de toetsinstelling vraagt dan alleen daarnaar. Alleen de soorten die je noemt tellen mee; wat je weglaat wordt niet gevraagd. Zo volstaat ook een pad met weinig knoppen. Wat de speler oversloeg, geeft altijd 0."
+  "ref.pad.use": "Zet in use welke besturing je spel gebruikt; de toetsinstelling vraagt dan alleen daarnaar. Alleen de soorten die je noemt tellen mee; wat je weglaat wordt niet gevraagd. Zo volstaat ook een pad met weinig knoppen. Wat de speler oversloeg, geeft altijd 0.",
+  "ref.pad.config": "Opent een scherm waarin de speler de indeling van zijn eigen pad bepaalt. Gewoon indrukken wat gevraagd wordt, en de verschillen tussen modellen zijn opgevangen. De instelling wordt per spel-URL in de browser bewaard en daarna vanzelf gebruikt.",
+  "ref.pad.config2": "Besturing die je niet gebruikt kun je weglaten met „Dit onderdeel overslaan” (overgeslagen besturing geeft altijd 0). Met use wordt de vraaglijst korter. Tijdens het instellen bereikt niets het spel. Esc, een klik ernaast of „Stoppen” breekt af. Wordt er geen pad gevonden, druk dan eerst op een van de knoppen — browsers tonen een pad pas na een druk."
 }

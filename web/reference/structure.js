@@ -305,6 +305,11 @@ GLOBAL.SCORE += 100` },
     cursor: true
     button: [0, 1]
     stick: ["left"]` },
+
+      { type: "heading", k: "ref.api.h.padconf" },
+      { type: "text", k: "ref.pad.config" },
+      { type: "code", code: `openGamePadConfig()` },
+      { type: "text", k: "ref.pad.config2" },
     ],
   },
 

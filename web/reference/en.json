@@ -136,6 +136,7 @@
   "ref.event.frame": "Frames since the game started (the first one is 0)",
   "ref.event.time": "Seconds since the game started. Derived from the frame count, so pauses and slow frames never make it jump",
   "ref.api.h.pad": "Game controller",
+  "ref.api.h.padconf": "Controller setup",
   "ref.api.d.pad": "Gamepad and keyboard states are mixed together into GAMEPAD. It is an array because several gamepads can be connected. Even with no gamepad, GAMEPAD[0] always exists so you can play with the keyboard.",
   "ref.col.member": "Member",
   "ref.pad.cursor": "The four directions, clockwise: up, right, down, left. On the keyboard, the arrow keys and WASD",
@@ -145,5 +146,7 @@
   "ref.pad.value": "0.0 to 1.0. Analogue buttons report how far they are pressed",
   "ref.pad.note": "The keyboard mixes into GAMEPAD[0] only. A control counts as pressed if either source is pressed, and the larger value wins. Because layouts differ between models, the engine tries the standard layout, then a per-model preset, then works it out on the spot.",
   "ref.pad.stick": "Turning on stickAsCursor with setGamepadOption mixes the left stick's directions into the four-direction keys, so either one works. deadzone sets how far it must tilt to count as pressed (0.5 by default). The axes values stay available.",
-  "ref.pad.use": "Write the controls your game uses in use, and the key config asks only for those. Only the kinds you write are covered; kinds you leave out are not asked. Even a pad with few buttons works, as long as the needed items are set. Anything the player chose to skip always reads 0."
+  "ref.pad.use": "Write the controls your game uses in use, and the key config asks only for those. Only the kinds you write are covered; kinds you leave out are not asked. Even a pad with few buttons works, as long as the needed items are set. Anything the player chose to skip always reads 0.",
+  "ref.pad.config": "Opens a screen where the player decides how their own pad is mapped. Just pressing what the screen asks for absorbs the differences between models. The setup is saved in the browser per game URL and is used automatically from then on.",
+  "ref.pad.config2": "Controls you do not use can be left out with “Skip this item” (a skipped control always reads 0). Writing use narrows down what is asked. While setting up, nothing reaches the game. Esc, a click outside, or “Cancel” stops it. If no pad is found, press one of its buttons first — browsers hide a pad until it has been pressed once."
 }

@@ -136,6 +136,7 @@
   "ref.event.frame": "Fotogramas desde o arranque (o primeiro é 0)",
   "ref.event.time": "Segundos desde o arranque. Deduz-se do número de fotogramas, por isso pausas e engasgos não o fazem saltar",
   "ref.api.h.pad": "Comando de jogo",
+  "ref.api.h.padconf": "Configuração do comando",
   "ref.api.d.pad": "O estado do comando e do teclado é misturado em GAMEPAD. É um vetor porque se podem ligar vários comandos. Mesmo sem comando, GAMEPAD[0] existe sempre e joga-se com o teclado.",
   "ref.col.member": "Elemento",
   "ref.pad.cursor": "As quatro direções, no sentido dos ponteiros: cima, direita, baixo, esquerda. No teclado, as setas e WASD",
@@ -145,5 +146,7 @@
   "ref.pad.value": "De 0.0 a 1.0. Os botões analógicos indicam o quanto foram carregados",
   "ref.pad.note": "O teclado mistura-se apenas em GAMEPAD[0]. Conta como premido se qualquer uma das origens o estiver, e vence o valor maior. Como a disposição muda conforme o modelo, tenta-se primeiro a padrão, depois uma predefinição por modelo e por fim uma dedução automática.",
   "ref.pad.stick": "Ao ligar stickAsCursor com setGamepadOption, as direções da alavanca esquerda misturam-se com as quatro direções, pelo que ambas servem. deadzone indica quanto tem de inclinar para contar como premida (0.5 por omissão). Os valores de axes continuam disponíveis.",
-  "ref.pad.use": "Escreve em use os controlos que o teu jogo usa e a configuração só pergunta por esses. Só contam os tipos escritos; os omitidos não são perguntados. Assim até um comando com poucos botões serve. O que o jogador saltou devolve sempre 0."
+  "ref.pad.use": "Escreve em use os controlos que o teu jogo usa e a configuração só pergunta por esses. Só contam os tipos escritos; os omitidos não são perguntados. Assim até um comando com poucos botões serve. O que o jogador saltou devolve sempre 0.",
+  "ref.pad.config": "Abre um ecrã onde o jogador decide a atribuição do seu próprio comando. Basta premir o que é pedido para absorver as diferenças entre modelos. A configuração é guardada no navegador por URL de jogo e usada automaticamente a seguir.",
+  "ref.pad.config2": "Os controlos que não usas podem ficar de fora com «Saltar este item» (o que for saltado devolve sempre 0). Escrever use reduz o que é perguntado. Durante a configuração nada chega ao jogo. Esc, um clique fora ou «Cancelar» interrompem. Se o comando não aparecer, prime primeiro um dos seus botões: o navegador só o mostra depois de uma pressão."
 }

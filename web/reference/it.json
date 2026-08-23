@@ -136,6 +136,7 @@
   "ref.event.frame": "Fotogrammi dall'avvio (il primo vale 0)",
   "ref.event.time": "Secondi trascorsi dall'avvio. Si ricava dal numero di fotogrammi, così pause e rallentamenti non lo fanno saltare",
   "ref.api.h.pad": "Controller di gioco",
+  "ref.api.h.padconf": "Configurazione del controller",
   "ref.api.d.pad": "Lo stato del controller e della tastiera viene unito in GAMEPAD. È un array perché si possono collegare più controller. Anche senza controller GAMEPAD[0] esiste sempre e si gioca con la tastiera.",
   "ref.col.member": "Voce",
   "ref.pad.cursor": "Le quattro direzioni, in senso orario: su, destra, giù, sinistra. Sulla tastiera le frecce e WASD",
@@ -145,5 +146,7 @@
   "ref.pad.value": "Da 0.0 a 1.0. I pulsanti analogici indicano quanto sono premuti",
   "ref.pad.note": "La tastiera si unisce solo a GAMEPAD[0]. Vale come premuto se lo è una delle due fonti e prevale il valore più grande. Poiché la disposizione cambia da modello a modello, si prova prima quella standard, poi una preimpostazione per modello e infine una deduzione automatica.",
   "ref.pad.stick": "Attivando stickAsCursor con setGamepadOption, le direzioni della levetta sinistra si uniscono ai quattro tasti direzionali, così funzionano entrambi. deadzone indica quanto va inclinata per contare come premuta (0.5 di base). I valori di axes restano leggibili.",
-  "ref.pad.use": "Scrivi in use i comandi che il gioco usa: la configurazione chiederà solo quelli. Valgono solo i tipi scritti; quelli omessi non vengono chiesti. Così basta anche un pad con pochi tasti. Ciò che il giocatore ha saltato restituisce sempre 0."
+  "ref.pad.use": "Scrivi in use i comandi che il gioco usa: la configurazione chiederà solo quelli. Valgono solo i tipi scritti; quelli omessi non vengono chiesti. Così basta anche un pad con pochi tasti. Ciò che il giocatore ha saltato restituisce sempre 0.",
+  "ref.pad.config": "Apre una schermata in cui il giocatore decide l'assegnazione del proprio pad. Basta premere ciò che viene chiesto per assorbire le differenze tra i modelli. L'impostazione viene salvata nel browser per URL di gioco e riusata automaticamente.",
+  "ref.pad.config2": "I comandi che non usi si possono escludere con «Salta questa voce» (ciò che è saltato restituisce sempre 0). Scrivere use riduce ciò che viene chiesto. Durante la configurazione nulla arriva al gioco. Esc, un clic fuori o «Annulla» la interrompono. Se il pad non compare, premi prima uno dei suoi tasti: il browser lo mostra solo dopo una pressione."
 }

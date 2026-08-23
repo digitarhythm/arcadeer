@@ -136,6 +136,7 @@
   "ref.event.frame": "Fotogramas desde el inicio de la ejecución (el primero es 0)",
   "ref.event.time": "Segundos desde el inicio. Se deduce del número de fotogramas, así que las pausas y los tirones no lo hacen saltar",
   "ref.api.h.pad": "Mando de juego",
+  "ref.api.h.padconf": "Configuración del mando",
   "ref.api.d.pad": "El estado del mando y del teclado se mezcla en GAMEPAD. Es un vector porque se pueden conectar varios mandos. Aunque no haya ninguno, GAMEPAD[0] siempre existe y se juega con el teclado.",
   "ref.col.member": "Elemento",
   "ref.pad.cursor": "Las cuatro direcciones, en sentido horario: arriba, derecha, abajo, izquierda. En el teclado, las flechas y WASD",
@@ -145,5 +146,7 @@
   "ref.pad.value": "De 0.0 a 1.0. Los botones analógicos indican cuánto se han hundido",
   "ref.pad.note": "El teclado se mezcla solo en GAMEPAD[0]. Se considera pulsado si lo está en cualquiera de los dos, y gana el valor mayor. Como la disposición cambia según el modelo, se prueba la estándar, luego un ajuste por modelo y por último una deducción automática.",
   "ref.pad.stick": "Al activar stickAsCursor con setGamepadOption, las direcciones de la palanca izquierda se mezclan con las cuatro direcciones, así que sirven ambas. deadzone indica cuánto hay que inclinarla para contar como pulsada (0.5 por defecto). Los valores de axes siguen disponibles.",
-  "ref.pad.use": "Escribe en use los controles que usa tu juego y la configuración solo preguntará por ellos. Solo se tratan los tipos que escribas; los que omitas no se preguntan. Así sirve incluso un mando con pocos botones. Lo que el jugador decida saltar devuelve siempre 0."
+  "ref.pad.use": "Escribe en use los controles que usa tu juego y la configuración solo preguntará por ellos. Solo se tratan los tipos que escribas; los que omitas no se preguntan. Así sirve incluso un mando con pocos botones. Lo que el jugador decida saltar devuelve siempre 0.",
+  "ref.pad.config": "Abre una pantalla donde el jugador decide la asignación de su propio mando. Basta con pulsar lo que se pide para absorber las diferencias entre modelos. La configuración se guarda en el navegador por URL de juego y se usa automáticamente después.",
+  "ref.pad.config2": "Los controles que no uses pueden omitirse con «Saltar este elemento» (lo omitido devuelve siempre 0). Escribir use reduce lo que se pregunta. Durante la configuración nada llega al juego. Esc, un clic fuera o «Cancelar» la detienen. Si no aparece el mando, pulsa antes uno de sus botones: el navegador no lo muestra hasta que se pulsa una vez."
 }

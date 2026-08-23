@@ -136,6 +136,7 @@
   "ref.event.frame": "Einzelbilder seit dem Start (das erste ist 0)",
   "ref.event.time": "Sekunden seit dem Start. Aus der Zahl der Einzelbilder berechnet, damit Pausen und Ruckler keinen Sprung verursachen",
   "ref.api.h.pad": "Spielesteuerung",
+  "ref.api.h.padconf": "Controller einrichten",
   "ref.api.d.pad": "Der Zustand von Gamepad und Tastatur wird in GAMEPAD zusammengeführt. Es ist ein Feld, weil sich mehrere Gamepads anschließen lassen. Auch ohne Gamepad gibt es GAMEPAD[0] immer, sodass sich mit der Tastatur spielen lässt.",
   "ref.col.member": "Eintrag",
   "ref.pad.cursor": "Die vier Richtungen im Uhrzeigersinn: oben, rechts, unten, links. Auf der Tastatur die Pfeiltasten und WASD",
@@ -145,5 +146,7 @@
   "ref.pad.value": "0.0 bis 1.0. Analogtasten geben an, wie weit sie gedrückt sind",
   "ref.pad.note": "Die Tastatur mischt sich nur in GAMEPAD[0]. Gedrückt gilt, sobald eine der beiden Quellen gedrückt ist; der größere Wert setzt sich durch. Da die Belegung je nach Modell abweicht, wird erst die Standardbelegung versucht, dann eine Vorgabe je Modell und zuletzt eine automatische Ermittlung.",
   "ref.pad.stick": "Wird stickAsCursor mit setGamepadOption eingeschaltet, mischen sich die Richtungen des linken Sticks unter die vier Richtungstasten, sodass beides funktioniert. deadzone legt fest, wie weit er geneigt sein muss, um als gedrückt zu gelten (Vorgabe 0.5). Die Werte in axes bleiben lesbar.",
-  "ref.pad.use": "Trage unter use die Bedienelemente ein, die dein Spiel nutzt, dann fragt die Tastenbelegung nur danach. Nur die genannten Arten kommen vor; weggelassene werden nicht abgefragt. So lässt sich auch ein Pad mit wenigen Tasten nutzen. Was der Spieler übersprungen hat, liefert immer 0."
+  "ref.pad.use": "Trage unter use die Bedienelemente ein, die dein Spiel nutzt, dann fragt die Tastenbelegung nur danach. Nur die genannten Arten kommen vor; weggelassene werden nicht abgefragt. So lässt sich auch ein Pad mit wenigen Tasten nutzen. Was der Spieler übersprungen hat, liefert immer 0.",
+  "ref.pad.config": "Öffnet einen Bildschirm, auf dem der Spieler die Belegung des eigenen Pads festlegt. Man drückt einfach, was verlangt wird, und die Unterschiede zwischen Modellen sind ausgeglichen. Die Belegung wird pro Spiel-URL im Browser gespeichert und danach automatisch verwendet.",
+  "ref.pad.config2": "Nicht genutzte Bedienelemente lassen sich mit „Diesen Punkt überspringen“ auslassen (ein übersprungenes Element liefert immer 0). Mit use wird die Abfrage eingegrenzt. Während der Einrichtung erreicht nichts das Spiel. Esc, ein Klick daneben oder „Abbrechen“ beendet sie. Wird kein Pad gefunden, drücke zuerst eine seiner Tasten — Browser zeigen ein Pad erst nach einem Tastendruck."
 }
