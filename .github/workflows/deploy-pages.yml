@@ -1,5 +1,9 @@
 # Arcadeer を GitHub Pages へデプロイするワークフロー
 # main への push 時に Rust/WASM をビルドし、web/ ディレクトリを公開する
+#
+# 各アクションは Node.js 24 で動くものを使う。
+# 実行環境の版はワークフローでは選べず、アクション側の action.yml が決めるため、
+# 警告（Node.js 20 は非推奨）を消すにはアクションのバージョンを上げるしかない。
 name: Deploy to GitHub Pages
 
 on:
@@ -24,7 +28,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Rust (wasm32)
         uses: dtolnay/rust-toolchain@stable
@@ -41,15 +45,15 @@ jobs:
         run: wasm-pack build --release --target web --out-dir web/pkg
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           enablement: true
 
       - name: Upload artifact (web/)
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: web
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
