@@ -27,15 +27,16 @@ class arcadeermain
     @GRAVITY = param.GRAVITY ?? 1.0
     @SCALEX = param.SCALEX ?? 1.0
     @SCALEY = param.SCALEY ?? 1.0
-    @MODEL = param.MODEL ?? "primitive"
+    @MODEL = param.MODEL ?? "box"
 
-    @KIND = param.KIND ?? 0 # 0:2D, 1:3D
+    # 種別。省略すると @MODEL から自動で決まる（"NONE" / "PRIM" / "2D" / "3D"）
+    @KIND = param.KIND ?? ""
 
     @PROC = 1
     @WAIT = Date().getMilliseconds()
 
   behavior: (e) ->
-    @YS += @GRAVITY
+    @YS -= @GRAVITY
     @X += @XS
     @Y += @YS
 

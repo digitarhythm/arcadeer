@@ -15,47 +15,173 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <header id="ide-header" class="ide-header"></header>
-  <aside id="ide-sidebar" class="ide-sidebar">
-    <button id="btn-new-project" type="button" class="sidebar-btn">
-      新規プロジェクト作成
+  <header id="ide-header" class="ide-header">
+    <div id="header-logo" class="header-logo" data-i18n-title="header.logoTooltip" role="button" tabindex="0">
+      <img class="header-logo-mark" src="./icons/logo.svg" alt="Arcadeer" data-i18n-alt="header.logoAlt" width="32" height="32" />
+      <span class="header-logo-text">Arca<span class="header-logo-text-accent">deer</span></span>
+    </div>
+    <div class="header-actions">
+      <button id="btn-new-project" type="button" class="header-icon-btn"
+              data-i18n-tooltip="header.newProject" data-i18n-aria="header.newProject">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+          <path d="M14 3v5h5" />
+          <path d="M12 12v5" />
+          <path d="M9.5 14.5h5" />
+        </svg>
+      </button>
+      <button id="btn-open-project" type="button" class="header-icon-btn"
+              data-i18n-tooltip="header.openProject" data-i18n-aria="header.openProject">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V11" />
+          <path d="M3 7v11a1 1 0 0 0 1 1h14.3a1 1 0 0 0 .95-.68l2.2-6.6a1 1 0 0 0-.95-1.32H7.2a1 1 0 0 0-.95.68z" />
+        </svg>
+      </button>
+    </div>
+    <button id="btn-reference" type="button" class="header-icon-btn header-icon-btn-end tooltip-right reference-btn"
+            aria-expanded="false"
+            data-i18n-tooltip="header.reference" data-i18n-aria="header.reference">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H11v18H5.5A1.5 1.5 0 0 1 4 19.5z" />
+        <path d="M20 4.5A1.5 1.5 0 0 0 18.5 3H13v18h5.5a1.5 1.5 0 0 0 1.5-1.5z" />
+        <path d="M6.5 7.5h2.5M6.5 10.5h2.5M15 7.5h2.5M15 10.5h2.5" />
+      </svg>
     </button>
-    <button id="btn-open-project" type="button" class="sidebar-btn">
-      プロジェクトを開く
-    </button>
-  </aside>
-  <main id="ide-main" class="ide-main"></main>
+    <button id="btn-settings" type="button" class="header-icon-btn tooltip-right settings-btn"
+            data-i18n-tooltip="footer.settings" data-i18n-aria="footer.settings">⚙</button>
+  </header>
+  <aside id="ide-sidebar" class="ide-sidebar"></aside>
+  <main id="ide-main" class="ide-main">
+    <div id="ide-content" class="ide-content"></div>
+    <!-- ゲーム実行画面。横長（2:1 より横が広い）かつプロジェクトを開いている時だけ表示する -->
+    <div id="ide-game" class="ide-game">
+      <!-- 最上部のボタンエリア（16:9より横長のときに表示する） -->
+      <div class="ide-game-header">
+        <!-- 実行と停止を兼ねるトグル。アイコンとツールチップは実行状態に応じて切り替える -->
+        <button id="btn-toggle-game" type="button" class="header-icon-btn game-toggle-btn" disabled></button>
+      </div>
+      <div id="ide-game-body" class="ide-game-body">
+        <!-- クリックするとフォーカスが移り、キー操作がゲームへ送られる -->
+        <canvas id="game-canvas" class="game-canvas" tabindex="0"></canvas>
+      </div>
+    </div>
+    <!-- 仕様・リファレンス。辞書アイコンで開閉する -->
+    <section id="ide-reference" class="ide-reference" aria-hidden="true">
+      <div class="reference-header">
+        <span id="reference-title" class="reference-title"></span>
+        <nav id="reference-nav" class="reference-nav"></nav>
+      </div>
+      <div id="reference-body" class="reference-body"></div>
+    </section>
+  </main>
   <footer id="ide-footer" class="ide-footer">
-    <span class="footer-fps" id="footer-fps">FPS: --</span>
-    <span class="footer-console" id="footer-console"></span>
-    <span class="footer-project" id="footer-project" title="プロジェクト名"></span>
-    <button id="btn-settings" type="button" class="footer-settings" title="設定">⚙</button>
+    <div class="footer-bar" id="footer-bar" role="button" tabindex="0" aria-expanded="false">
+      <span class="footer-fps" id="footer-fps">FPS: --</span>
+      <span class="footer-console" id="footer-console"></span>
+      <button id="btn-clear-log" type="button" class="footer-clear-btn"
+              data-i18n-tooltip="footer.clearLog" data-i18n-aria="footer.clearLog">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M4 7h16" />
+          <path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7" />
+          <path d="M6.4 7l.9 12.1A1.5 1.5 0 0 0 8.8 20.5h6.4a1.5 1.5 0 0 0 1.5-1.4L17.6 7" />
+        </svg>
+      </button>
+      <span class="footer-caret" id="footer-caret" aria-hidden="true">▲</span>
+    </div>
+    <ol class="footer-log" id="footer-log"></ol>
   </footer>
 
   <dialog id="dialog-new-project" class="dialog-new-project">
     <form method="dialog" class="dialog-form">
-      <h2>新規プロジェクト作成</h2>
-      <label for="input-project-name">プロジェクト名</label>
-      <input id="input-project-name" type="text" autocomplete="off" placeholder="例: my-game" />
+      <h2 data-i18n="dialog.newProject.title"></h2>
+      <label for="input-project-name" data-i18n="dialog.newProject.nameLabel"></label>
+      <input id="input-project-name" type="text" autocomplete="off" data-i18n-placeholder="dialog.newProject.namePlaceholder" />
       <div class="dialog-buttons">
-        <button id="dialog-new-project-cancel" type="button" class="dialog-btn">キャンセル</button>
-        <button id="dialog-new-project-ok" type="submit" class="dialog-btn dialog-btn-primary">OK</button>
+        <button id="dialog-new-project-cancel" type="button" class="dialog-btn" data-i18n="dialog.newProject.cancel"></button>
+        <button id="dialog-new-project-ok" type="submit" class="dialog-btn dialog-btn-primary" data-i18n="dialog.newProject.ok"></button>
       </div>
     </form>
   </dialog>
 
+  <div id="app-loading" class="app-loading" role="status" aria-live="polite">
+    <div class="app-loading-spinner" aria-hidden="true"></div>
+    <p class="app-loading-text" data-i18n="msg.loading"></p>
+  </div>
+
+  <dialog id="dialog-project-select" class="dialog-project-select">
+    <div class="project-select" id="project-select-body"></div>
+  </dialog>
+
+  <dialog id="dialog-new-object" class="dialog-new-project">
+    <form method="dialog" class="dialog-form">
+      <h2 data-i18n="dialog.newObject.title"></h2>
+      <label for="input-object-name" data-i18n="dialog.newObject.nameLabel"></label>
+      <input id="input-object-name" type="text" autocomplete="off"
+             data-i18n-placeholder="dialog.newObject.namePlaceholder" />
+      <div class="dialog-buttons">
+        <button id="dialog-new-object-cancel" type="button" class="dialog-btn"
+                data-i18n="dialog.newProject.cancel"></button>
+        <button id="dialog-new-object-ok" type="submit" class="dialog-btn dialog-btn-primary"
+                data-i18n="dialog.newProject.ok"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    // ロゴクリック（またはEnter/Spaceキー）でページをリロードする
+    const headerLogo = document.getElementById("header-logo");
+    headerLogo.addEventListener("click", () => location.reload());
+    headerLogo.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        location.reload();
+      }
+    });
+  </script>
+
   <script type="module">
     import "./fade.js";
+    import "./console-log.js";
+    import { initFooterLog } from "./footer-log.js";
+    import { initReference } from "./reference.js";
     import "./message-dialog.js";
     import "./handle-store.js";
+    import { initI18n } from "./i18n.js";
+    import { showSettings } from "./settings-dialog.js";
+    import "./editor.js";
+    import "./asset-picker.js";
+    import "./audio-preview.js";
+    import "./model-preview.js";
+    import "./reorder.js";
+    import "./runtime.js";
+    import "./matrix.js";
+    import "./camera.js";
+    import "./light.js";
+    import "./globals.js";
+    import "./gamepad.js";
+    import "./animation.js";
+    import "./scene.js";
+    import "./renderer.js";
+    import "./coffee.js";
     import init from "./pkg/arcadeer.js";
+
+    // 文言を先に確定させてから WASM を起動する
+    await initI18n();
     await init();
+
+    document.getElementById("btn-settings").addEventListener("click", showSettings);
+    initFooterLog();
+    initReference();
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker
           .register("./service-worker.js")
-          .catch((err) => console.warn("Service Worker 登録失敗:", err));
+          .catch((err) => console.warn("Service Worker registration failed:", err));
       });
     }
   </script>

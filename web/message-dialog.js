@@ -1,3 +1,5 @@
+import { t } from "./i18n.js";
+
 // メッセージダイアログモジュール
 // 種別ごとに見た目を変えてモーダル表示する。Tailwind(Play CDN)でスタイリングする。
 // WASM(Rust)からは window.arcadeerShowMessage(message, kind, title) で呼び出される。
@@ -5,13 +7,14 @@
 import { fadeInDialog, fadeOutDialog } from "./fade.js";
 
 const KINDS = {
-  info: { label: "お知らせ", accent: "text-sky-300", ring: "ring-sky-500/50", icon: "ℹ" },
-  success: { label: "完了", accent: "text-emerald-300", ring: "ring-emerald-500/50", icon: "✓" },
-  warning: { label: "中止", accent: "text-amber-300", ring: "ring-amber-500/50", icon: "!" },
-  error: { label: "エラー", accent: "text-rose-300", ring: "ring-rose-500/50", icon: "✕" },
+  info: { labelKey: "message.info", accent: "text-sky-300", ring: "ring-sky-500/50", icon: "ℹ" },
+  success: { labelKey: "message.success", accent: "text-emerald-300", ring: "ring-emerald-500/50", icon: "✓" },
+  warning: { labelKey: "message.warning", accent: "text-amber-300", ring: "ring-amber-500/50", icon: "!" },
+  error: { labelKey: "message.error", accent: "text-rose-300", ring: "ring-rose-500/50", icon: "✕" },
 };
 
 let dialogEl = null;
+let okBtnEl = null;
 let iconEl = null;
 let titleEl = null;
 let bodyEl = null;
@@ -46,6 +49,7 @@ function build() {
   bodyEl = dialog.querySelector('[data-role="body"]');
   const okBtn = dialog.querySelector('[data-role="ok"]');
   okBtn.addEventListener("click", () => fadeOutDialog(dialog));
+  okBtnEl = okBtn;
 
   dialogEl = dialog;
 }
@@ -64,7 +68,8 @@ export function showMessage(message, kind = "info", title) {
   iconEl.textContent = k.icon;
 
   titleEl.className = "text-base font-semibold " + k.accent;
-  titleEl.textContent = title ?? k.label;
+  titleEl.textContent = title ?? t(k.labelKey);
+  okBtnEl.textContent = t("message.close");
 
   bodyEl.textContent = message ?? "";
 

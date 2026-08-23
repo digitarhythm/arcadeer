@@ -1,0 +1,166 @@
+// リファレンスの表示（仕様書4.9節）
+//
+// ヘッダーの辞書アイコンで開閉する。
+// 横長のときはゲーム表示エリアと同じ場所へ、そうでないときは右ペイン全体へ出す。
+
+import { getLanguage, FALLBACK_LANG, t } from "./i18n.js";
+import { SECTIONS } from "./reference/structure.js";
+
+const OPEN_CLASS = "reference-open";
+
+/** 言語 → 読み込んだ内容 */
+const loaded = new Map();
+let shownLang = null;
+
+/** その言語の内容を読み込む（一度読んだら覚えておく） */
+async function loadReference(lang) {
+  if (loaded.has(lang)) return loaded.get(lang);
+  try {
+    const res = await fetch(`./reference/${lang}.json`);
+    if (!res.ok) throw new Error(String(res.status));
+    const data = await res.json();
+    loaded.set(lang, data);
+    return data;
+  } catch {
+    // 読めない言語があってもリファレンス自体は開けるようにする
+    if (lang !== FALLBACK_LANG) return loadReference(FALLBACK_LANG);
+    return {};
+  }
+}
+
+/** 開いているか */
+export function isReferenceOpen() {
+  return document.body.classList.contains(OPEN_CLASS);
+}
+
+/** セルを文字列にする（{k} は翻訳、それ以外はそのまま） */
+function cellText(cell, dict) {
+  if (cell && typeof cell === "object" && typeof cell.k === "string") {
+    return dict[cell.k] ?? cell.k;
+  }
+  return String(cell);
+}
+
+/** ブロックを組み立てる */
+function buildBlock(block, dict) {
+  if (block.type === "heading") {
+    const el = document.createElement("h3");
+    el.className = "reference-heading";
+    el.textContent = dict[block.k] ?? block.k;
+    return el;
+  }
+  if (block.type === "text") {
+    const el = document.createElement("p");
+    el.className = "reference-text";
+    el.textContent = dict[block.k] ?? block.k;
+    return el;
+  }
+  if (block.type === "code") {
+    const pre = document.createElement("pre");
+    pre.className = "reference-code";
+    // コードは翻訳しないため、そのまま置く
+    pre.textContent = block.code;
+    return pre;
+  }
+
+  // 表。横幅が足りない場合は表だけを横スクロールさせる
+  const wrap = document.createElement("div");
+  wrap.className = "reference-table-wrap";
+  const table = document.createElement("table");
+  table.className = "reference-table";
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  for (const cell of block.head) {
+    const th = document.createElement("th");
+    th.textContent = cellText(cell, dict);
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  for (const row of block.rows) {
+    const tr = document.createElement("tr");
+    row.forEach((cell, i) => {
+      const td = document.createElement("td");
+      const text = cellText(cell, dict);
+      // 翻訳しないセル（API名や記号）は等幅で見せる
+      if (typeof cell === "string") td.className = "reference-mono";
+      td.textContent = text;
+      // 最初の列は見出し扱いにして読みやすくする
+      if (i === 0) td.classList.add("reference-first");
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+/** 目次と本文を作り直す */
+async function render() {
+  const body = document.getElementById("reference-body");
+  const nav = document.getElementById("reference-nav");
+  if (!body || !nav) return;
+
+  const lang = getLanguage();
+  const dict = await loadReference(lang);
+  shownLang = lang;
+
+  nav.textContent = "";
+  body.textContent = "";
+
+  for (const section of SECTIONS) {
+    const title = dict[section.title] ?? section.title;
+
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "reference-nav-item";
+    link.textContent = title;
+    link.addEventListener("click", () => {
+      document.getElementById(`reference-${section.id}`)?.scrollIntoView({ block: "start" });
+    });
+    nav.appendChild(link);
+
+    const heading = document.createElement("h2");
+    heading.className = "reference-section-title";
+    heading.id = `reference-${section.id}`;
+    heading.textContent = title;
+    body.appendChild(heading);
+
+    for (const block of section.blocks) body.appendChild(buildBlock(block, dict));
+  }
+
+  const titleEl = document.getElementById("reference-title");
+  if (titleEl) titleEl.textContent = t("header.reference");
+}
+
+/** 開閉を切り替える */
+export async function toggleReference() {
+  const open = document.body.classList.toggle(OPEN_CLASS);
+  const btn = document.getElementById("btn-reference");
+  if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+  // 表示言語が変わっていたら作り直す
+  if (open && shownLang !== getLanguage()) await render();
+  return open;
+}
+
+/** 辞書アイコンの操作を組み立てる */
+export function initReference() {
+  const btn = document.getElementById("btn-reference");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    toggleReference();
+  });
+  render();
+  // 表示言語が変わったら作り直す
+  window.addEventListener("arcadeer:languagechange", () => {
+    render();
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.arcadeerToggleReference = toggleReference;
+}

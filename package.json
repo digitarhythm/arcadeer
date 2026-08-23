@@ -8,6 +8,8 @@
     "build": "wasm-pack build --target web --out-dir web/pkg",
     "build:release": "wasm-pack build --release --target web --out-dir web/pkg",
     "dev": "bun run build && bun run serve",
-    "serve": "bun run serve.ts"
+    "serve": "bun run serve.ts",
+    "test": "bun test",
+    "test:rust": "cargo test --lib"
   }
 }
