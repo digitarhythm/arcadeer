@@ -145,5 +145,6 @@
   "padconf.stick.rightDown": "Spingi la levetta destra in basso",
   "padconf.hint": "Premendolo si passa da sé al punto seguente. Se il tuo controller non ce l'ha, scegli «Salta».",
   "padconf.restart": "Ricomincia",
-  "padconf.hatFound": "La tua croce direzionale manda le quattro direzioni su un solo asse: le altre tre sono state impostate da sé."
+  "padconf.hatFound": "La tua croce direzionale manda le quattro direzioni su un solo asse: le altre tre sono state impostate da sé.",
+  "sw.updated": "È disponibile una nuova versione. Ricarica per passare a essa."
 }

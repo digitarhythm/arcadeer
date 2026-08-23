@@ -145,5 +145,6 @@
   "padconf.stick.rightDown": "Inclina la palanca derecha hacia abajo",
   "padconf.hint": "Al pulsarlo se pasa solo al siguiente. Si tu mando no lo tiene, elige «Saltar este».",
   "padconf.restart": "Empezar de nuevo",
-  "padconf.hatFound": "Tu cruceta envía las cuatro direcciones en un solo eje, así que las otras tres se han configurado solas y hemos avanzado."
+  "padconf.hatFound": "Tu cruceta envía las cuatro direcciones en un solo eje, así que las otras tres se han configurado solas y hemos avanzado.",
+  "sw.updated": "Hay una versión nueva. Recarga para cambiar a ella."
 }

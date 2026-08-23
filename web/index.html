@@ -205,7 +205,8 @@
     import { initReference } from "./reference.js";
     import "./message-dialog.js";
     import "./handle-store.js";
-    import { initI18n } from "./i18n.js";
+    import { initI18n, t } from "./i18n.js";
+    import { registerServiceWorker } from "./sw-update.js";
     import { showSettings } from "./settings-dialog.js";
     import "./editor.js";
     import "./asset-picker.js";
@@ -234,13 +235,15 @@
     initFooterLog();
     initReference();
 
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("./service-worker.js")
-          .catch((err) => console.warn("Service Worker registration failed:", err));
-      });
-    }
+    // load を待ってはいけない。この本体は上の await で待つため、
+    // ここへ来た時には load が**終わっている**ことがあり、
+    // 聞き手を足しても二度と呼ばれない（登録されないまま動いてしまう）
+    //
+    // 新しい版になっても、勝手に読み込み直さずに知らせるだけにする。
+    // 編集中のコードを抱えているため（2.2節）
+    registerServiceWorker(navigator.serviceWorker, () => {
+      window.arcadeerLog?.(t("sw.updated"));
+    });
   </script>
 </body>
 </html>

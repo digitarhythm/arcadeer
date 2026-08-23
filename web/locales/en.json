@@ -145,5 +145,6 @@
   "padconf.stick.rightDown": "Push the right stick down",
   "padconf.hint": "Press it and the next step follows automatically. If your pad has no such control, choose “Skip this one”.",
   "padconf.restart": "Start over",
-  "padconf.hatFound": "Your D-pad reports all four directions on one axis, so the other three were set automatically and we skipped ahead."
+  "padconf.hatFound": "Your D-pad reports all four directions on one axis, so the other three were set automatically and we skipped ahead.",
+  "sw.updated": "A new version is available. Reload to switch to it."
 }

@@ -145,5 +145,6 @@
   "padconf.stick.rightDown": "请将右摇杆向下推",
   "padconf.hint": "按下后会自动进入下一项。若手柄没有该部件，请选择「跳过此项」。",
   "padconf.restart": "从头开始",
-  "padconf.hatFound": "你的方向键把四个方向合并在一个轴上，因此其余三个方向已自动设定并一并跳过。"
+  "padconf.hatFound": "你的方向键把四个方向合并在一个轴上，因此其余三个方向已自动设定并一并跳过。",
+  "sw.updated": "有新版本。重新加载即可切换。"
 }

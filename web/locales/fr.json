@@ -145,5 +145,6 @@
   "padconf.stick.rightDown": "Poussez le manche droit vers le bas",
   "padconf.hint": "Une pression fait passer à l'étape suivante. Si votre manette n'a pas cette commande, choisissez « Passer ».",
   "padconf.restart": "Recommencer",
-  "padconf.hatFound": "Votre croix directionnelle envoie les quatre directions sur un seul axe : les trois autres ont été réglées automatiquement."
+  "padconf.hatFound": "Votre croix directionnelle envoie les quatre directions sur un seul axe : les trois autres ont été réglées automatiquement.",
+  "sw.updated": "Une nouvelle version est disponible. Rechargez pour l'utiliser."
 }

@@ -145,5 +145,6 @@
   "padconf.stick.rightDown": "Duw de rechterstick omlaag",
   "padconf.hint": "Na het indrukken ga je vanzelf verder. Heeft je gamepad die knop niet, kies dan „Overslaan”.",
   "padconf.restart": "Opnieuw beginnen",
-  "padconf.hatFound": "Je richtingsknoppen sturen alle vier de richtingen via één as, dus de andere drie zijn vanzelf ingesteld."
+  "padconf.hatFound": "Je richtingsknoppen sturen alle vier de richtingen via één as, dus de andere drie zijn vanzelf ingesteld.",
+  "sw.updated": "Er is een nieuwe versie. Herlaad om over te schakelen."
 }

@@ -145,5 +145,6 @@
   "padconf.stick.rightDown": "Drücke den rechten Stick nach unten",
   "padconf.hint": "Nach dem Drücken geht es automatisch weiter. Fehlt die Taste an deinem Gamepad, wähle „Überspringen“.",
   "padconf.restart": "Von vorn beginnen",
-  "padconf.hatFound": "Dein Steuerkreuz meldet alle vier Richtungen über eine Achse. Die übrigen drei wurden automatisch gesetzt."
+  "padconf.hatFound": "Dein Steuerkreuz meldet alle vier Richtungen über eine Achse. Die übrigen drei wurden automatisch gesetzt.",
+  "sw.updated": "Eine neue Version ist verfügbar. Neu laden, um zu wechseln."
 }
