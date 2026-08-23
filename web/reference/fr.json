@@ -144,5 +144,6 @@
   "ref.pad.pressed": "S'il est enfoncé",
   "ref.pad.value": "De 0.0 à 1.0. Les boutons analogiques indiquent la profondeur d'appui",
   "ref.pad.note": "Le clavier ne se mélange que dans GAMEPAD[0]. Une commande est considérée enfoncée si l'une des deux sources l'est, et la plus grande valeur l'emporte. La disposition variant selon les modèles, le moteur essaie la disposition standard, puis un réglage par modèle, puis une déduction automatique.",
-  "ref.pad.stick": "En activant stickAsCursor avec setGamepadOption, les directions du manche gauche se mélangent aux quatre directions : les deux fonctionnent. deadzone indique l'inclinaison nécessaire pour compter comme enfoncée (0.5 par défaut). Les valeurs de axes restent lisibles."
+  "ref.pad.stick": "En activant stickAsCursor avec setGamepadOption, les directions du manche gauche se mélangent aux quatre directions : les deux fonctionnent. deadzone indique l'inclinaison nécessaire pour compter comme enfoncée (0.5 par défaut). Les valeurs de axes restent lisibles.",
+  "ref.pad.use": "Indiquez dans use les commandes utilisées par votre jeu : la configuration ne demandera que celles-là. Seuls les types écrits sont traités ; les autres ne sont pas demandés. Une manette à peu de boutons suffit alors. Ce que le joueur a passé renvoie toujours 0."
 }

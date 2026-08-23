@@ -144,5 +144,6 @@
   "ref.pad.pressed": "是否被按下",
   "ref.pad.value": "0.0～1.0。模拟按键会记录按下的深度",
   "ref.pad.note": "键盘只混入 GAMEPAD[0]。任一来源被按下即视为按下，数值取较大者。由于各机型的排列不同，会依次尝试标准排列、机型预设、自动判断。",
-  "ref.pad.stick": "用 setGamepadOption 打开 stickAsCursor 后，左摇杆的上下左右会混入四方向键，两者效果相同。deadzone 决定倾斜多少才算按下（默认 0.5）。axes 的数值仍可读取。"
+  "ref.pad.stick": "用 setGamepadOption 打开 stickAsCursor 后，左摇杆的上下左右会混入四方向键，两者效果相同。deadzone 决定倾斜多少才算按下（默认 0.5）。axes 的数值仍可读取。",
+  "ref.pad.use": "在 use 中写下本游戏使用的操作，按键设置就只询问这些项目。只有写出的种类才会涉及，没写的种类不会询问。即使按键较少的手柄，只要设置好必要的项目也能游玩。玩家选择跳过的操作，始终返回 0。"
 }

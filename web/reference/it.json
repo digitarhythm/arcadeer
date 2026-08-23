@@ -144,5 +144,6 @@
   "ref.pad.pressed": "Se è premuto",
   "ref.pad.value": "Da 0.0 a 1.0. I pulsanti analogici indicano quanto sono premuti",
   "ref.pad.note": "La tastiera si unisce solo a GAMEPAD[0]. Vale come premuto se lo è una delle due fonti e prevale il valore più grande. Poiché la disposizione cambia da modello a modello, si prova prima quella standard, poi una preimpostazione per modello e infine una deduzione automatica.",
-  "ref.pad.stick": "Attivando stickAsCursor con setGamepadOption, le direzioni della levetta sinistra si uniscono ai quattro tasti direzionali, così funzionano entrambi. deadzone indica quanto va inclinata per contare come premuta (0.5 di base). I valori di axes restano leggibili."
+  "ref.pad.stick": "Attivando stickAsCursor con setGamepadOption, le direzioni della levetta sinistra si uniscono ai quattro tasti direzionali, così funzionano entrambi. deadzone indica quanto va inclinata per contare come premuta (0.5 di base). I valori di axes restano leggibili.",
+  "ref.pad.use": "Scrivi in use i comandi che il gioco usa: la configurazione chiederà solo quelli. Valgono solo i tipi scritti; quelli omessi non vengono chiesti. Così basta anche un pad con pochi tasti. Ciò che il giocatore ha saltato restituisce sempre 0."
 }

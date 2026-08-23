@@ -17,6 +17,7 @@ import { echo, logClear } from "./console-log.js";
 import { resetKindWarnings } from "./kind.js";
 import { GLOBAL, clearGlobals } from "./globals.js";
 import { GAMEPAD, clearGamepads, setGamepadOption } from "./gamepad.js";
+import { openGamePadConfig, applySavedConfig } from "./gamepad-config-ui.js";
 import {
   addLight,
   setLight,
@@ -107,6 +108,7 @@ function compileClass(compiler, className, source) {
       "GLOBAL",
       "GAMEPAD",
       "setGamepadOption",
+      "openGamePadConfig",
       `${js}\nreturn typeof ${className} !== "undefined" ? ${className} : null;`,
     );
     const klass = factory(
@@ -128,6 +130,7 @@ function compileClass(compiler, className, source) {
       GLOBAL,
       GAMEPAD,
       setGamepadOption,
+      openGamePadConfig,
     );
     if (typeof klass !== "function") {
       return `${className}.coffee: class ${className} not found`;
@@ -162,6 +165,8 @@ export async function buildClasses(files) {
   // 前回の実行で入れた値を持ち越さない
   clearGlobals();
   clearGamepads();
+  // 遊ぶ人が保存した割り当てを読み込み直す
+  applySavedConfig();
   // 前回の実行で出した @KIND の警告を持ち越さない
   resetKindWarnings();
   const errors = [];

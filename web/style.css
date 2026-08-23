@@ -1520,3 +1520,206 @@ body.footer-expanded .footer-log {
   line-height: 1.7;
   color: var(--fg-dim);
 }
+
+/* ============================================================
+   キーコンフィグ（6.2.10節）
+   コントローラーの絵の上で、押してほしい箇所を光らせる。
+   ============================================================ */
+
+.padconf-dialog {
+  /* 指示している箇所を示す色。図の中で最も目立たせる */
+  --padconf-mark: #ff3b30;
+  margin: auto;
+  width: min(92vw, 560px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-panel);
+  color: var(--fg);
+}
+
+.padconf-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.padconf-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.padconf-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.padconf-device {
+  margin: 0 0 12px;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+
+.padconf-figure svg {
+  width: 100%;
+  height: auto;
+  max-height: 40vh;
+}
+
+/* SVG側から色指定を外してあるので、すべてここで決める。
+   インラインの style が残っているとクラス指定が効かないため */
+.padconf-figure svg path,
+.padconf-figure svg circle,
+.padconf-figure svg rect {
+  fill: none;
+  stroke: var(--fg-dim);
+  stroke-width: 0.6;
+}
+
+.padconf-figure svg text,
+.padconf-figure svg tspan {
+  fill: var(--fg-dim);
+  stroke: none;
+}
+
+/* 十字キーの目印は位置を示すためだけのもの。指している時以外は見せない。
+   :not() を使い、指している時の指定と競合しないようにする */
+.padconf-figure svg #pad-markers circle:not(.padconf-target) {
+  fill: none;
+  stroke: none;
+}
+
+/* いま押してほしい箇所。赤で示し、ゆっくり明滅させて目を引く。
+   図の他の部分は控えめな色なので、赤が最も目立つ */
+.padconf-figure svg .padconf-target {
+  stroke: var(--padconf-mark);
+  stroke-width: 2;
+  fill: color-mix(in srgb, var(--padconf-mark) 30%, transparent);
+  animation: padconf-blink 1.2s ease-in-out infinite;
+}
+
+.padconf-figure svg text.padconf-target,
+.padconf-figure svg tspan.padconf-target {
+  fill: var(--padconf-mark);
+}
+
+/* 倒す向きを示す矢印。押す手順との違いが分かるようにする */
+.padconf-figure svg #padconf-arrow path {
+  fill: none;
+  stroke: var(--padconf-mark);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.padconf-figure svg .padconf-arrow-inner {
+  animation: padconf-slide 1s ease-in-out infinite;
+}
+
+/* 倒す向きへ、ゆっくり出ていく動き */
+@keyframes padconf-slide {
+  0% { transform: translateX(0); opacity: 0.2; }
+  40% { opacity: 1; }
+  100% { transform: translateX(6px); opacity: 0; }
+}
+
+@keyframes padconf-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* 動きに敏感な人への配慮。矢印は向きだけ示して止める */
+@media (prefers-reduced-motion: reduce) {
+  .padconf-figure svg .padconf-target,
+  .padconf-figure svg .padconf-arrow-inner {
+    animation: none;
+  }
+
+  .padconf-figure svg .padconf-arrow-inner {
+    opacity: 1;
+  }
+}
+
+.padconf-ask {
+  /* 文の長さで行数が変わっても、画面の高さが動かないようにする */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3em;
+  margin: 12px 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.padconf-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--fg-dim);
+}
+
+/* 自動で決まったことの知らせ。
+   出し入れで画面の大きさが変わらないよう、場所は常に確保しておく */
+.padconf-notice {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  min-height: 2.6em;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--accent);
+  transition: opacity 0.3s ease;
+}
+
+/* hidden でも場所は残す（消えるのは見た目だけ） */
+.padconf-notice[hidden] {
+  display: block;
+  opacity: 0;
+  border-color: transparent;
+}
+
+.padconf-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.padconf-bar {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.padconf-step {
+  margin: 6px 0 14px;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+
+.padconf-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.padconf-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.padconf-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.padconf-cancel:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}

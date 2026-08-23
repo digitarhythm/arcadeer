@@ -81,6 +81,8 @@ pub struct KeyContext {
     pub project_open: bool,
     /// リファレンスを開いているか
     pub reference_open: bool,
+    /// ダイアログ（キーコンフィグなど）を開いているか
+    pub dialog_open: bool,
 }
 
 /// 押されたキーから、行う操作を決める
@@ -96,6 +98,12 @@ pub fn resolve(press: &KeyPress, ctx: &KeyContext) -> Shortcut {
     }
 
     if press.key == "Escape" {
+        // ダイアログを開いている間は横取りしない。
+        // ESCで閉じるのはダイアログの役目で、**ゲームを止めるより先**に来る。
+        // 横取りするとゲームだけが止まり、閉じるのに2回押すことになる。
+        if ctx.dialog_open {
+            return Shortcut::None;
+        }
         // エディタの編集中は横取りしない（vimが入力モードを抜けるのに使うため）
         if ctx.editor_focused {
             return Shortcut::None;
@@ -129,7 +137,37 @@ mod tests {
 
     /// テスト用に、そのときの状態を組み立てる
     fn ctx(running: bool, editor_focused: bool, project_open: bool, reference_open: bool) -> KeyContext {
-        KeyContext { running, editor_focused, project_open, reference_open }
+        KeyContext { running, editor_focused, project_open, reference_open, dialog_open: false }
+    }
+
+    /// ダイアログを開いている状態
+    fn ctx_dialog(running: bool, reference_open: bool) -> KeyContext {
+        KeyContext {
+            running,
+            editor_focused: false,
+            project_open: true,
+            reference_open,
+            dialog_open: true,
+        }
+    }
+
+    #[test]
+    fn ダイアログを開いている間のescはゲームを止めない() {
+        // 先にゲームが止まると、ダイアログを閉じるのに2回押すことになる
+        assert_eq!(resolve(&press("Escape", false), &ctx_dialog(true, false)), Shortcut::None);
+    }
+
+    #[test]
+    fn ダイアログはリファレンスよりも先に閉じる() {
+        assert_eq!(resolve(&press("Escape", false), &ctx_dialog(true, true)), Shortcut::None);
+    }
+
+    #[test]
+    fn ダイアログを閉じたあとのescはゲームを止める() {
+        assert_eq!(
+            resolve(&press("Escape", false), &ctx(true, false, true, false)),
+            Shortcut::Stop,
+        );
     }
 
     #[test]

@@ -1642,6 +1642,7 @@ fn wire_game_input() -> Result<(), JsValue> {
                 editor_focused: is_editor_focused(),
                 project_open: CURRENT_PROJECT.with(|c| c.borrow().is_some()),
                 reference_open: is_reference_open(),
+                dialog_open: is_dialog_open(),
             },
         );
         match action {
@@ -1720,6 +1721,17 @@ fn focus_game_canvas() {
         &JsValue::TRUE,
     );
     let _ = func.call1(canvas.as_ref(), &options);
+}
+
+/// ダイアログを開いているか
+///
+/// キーコンフィグなどの `<dialog>` が開いている間は、ESCで閉じるのが
+/// ダイアログの役目なので、こちらは何もしない。
+fn is_dialog_open() -> bool {
+    window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.query_selector("dialog[open]").ok().flatten())
+        .is_some()
 }
 
 /// リファレンスを開いているか

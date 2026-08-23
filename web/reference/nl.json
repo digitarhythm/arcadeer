@@ -144,5 +144,6 @@
   "ref.pad.pressed": "Of hij ingedrukt is",
   "ref.pad.value": "0.0 tot 1.0. Analoge knoppen geven aan hoe ver ze ingedrukt zijn",
   "ref.pad.note": "Het toetsenbord mengt alleen in GAMEPAD[0]. Iets geldt als ingedrukt zodra een van beide bronnen ingedrukt is, en de grootste waarde wint. Omdat de indeling per model verschilt, wordt eerst de standaardindeling geprobeerd, dan een instelling per model en ten slotte een automatische bepaling.",
-  "ref.pad.stick": "Zet je stickAsCursor aan met setGamepadOption, dan mengen de richtingen van de linkerstick zich onder de vier richtingstoetsen, zodat beide werken. deadzone bepaalt hoe ver hij moet doorslaan om als ingedrukt te tellen (standaard 0.5). De waarden in axes blijven leesbaar."
+  "ref.pad.stick": "Zet je stickAsCursor aan met setGamepadOption, dan mengen de richtingen van de linkerstick zich onder de vier richtingstoetsen, zodat beide werken. deadzone bepaalt hoe ver hij moet doorslaan om als ingedrukt te tellen (standaard 0.5). De waarden in axes blijven leesbaar.",
+  "ref.pad.use": "Zet in use welke besturing je spel gebruikt; de toetsinstelling vraagt dan alleen daarnaar. Alleen de soorten die je noemt tellen mee; wat je weglaat wordt niet gevraagd. Zo volstaat ook een pad met weinig knoppen. Wat de speler oversloeg, geeft altijd 0."
 }

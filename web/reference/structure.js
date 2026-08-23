@@ -299,6 +299,12 @@ GLOBAL.SCORE += 100` },
       { type: "code", code: `setGamepadOption
   stickAsCursor: true
   deadzone: 0.5` },
+      { type: "text", k: "ref.pad.use" },
+      { type: "code", code: `setGamepadOption
+  use:
+    cursor: true
+    button: [0, 1]
+    stick: ["left"]` },
     ],
   },
 
