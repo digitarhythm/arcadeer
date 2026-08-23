@@ -107,5 +107,14 @@
   "msg.screenSize": "画面解像度を {width}x{height} に設定しました",
   "msg.renderInitFailed": "描画の準備に失敗しました\n{detail}",
   "msg.modelLoadFailed": "モデル '{name}' を読み込めませんでした",
-  "msg.modelsLoaded": "3Dモデルを {count} 件読み込みました"
+  "msg.modelsLoaded": "3Dモデルを {count} 件読み込みました",
+  "welcome.title": "はじめに、ゲームを保存する場所を選びます",
+  "welcome.lead": "ゲーム1本が、1つのフォルダーになります。まず、それらをまとめて置く場所をこのアプリへ知らせてください。選んだ場所の中だけを読み書きします。",
+  "welcome.step1.title": "フォルダーアイコンを押す",
+  "welcome.step1.body": "ヘッダー左のフォルダーアイコンから、ゲームをまとめて置きたい場所を選びます。",
+  "welcome.step2.title": "アクセスを許可する",
+  "welcome.step2.body": "ブラウザが確認を出すので許可します。ここで選んだ場所の外には、いっさい触れません。",
+  "welcome.step3.title": "ファイルアイコンで新しく作る",
+  "welcome.step3.body": "その隣のファイルアイコンから、ゲームを1本作ります。フォルダーが1つできて、すぐ編集を始められます。",
+  "welcome.note": "選んだ場所はブラウザが覚えるため、次に開いた時は前回のゲームが自動で開きます。"
 }

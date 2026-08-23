@@ -1421,3 +1421,102 @@ body.footer-expanded .footer-log {
     border-left: none;
   }
 }
+
+/* ============================================================
+   プロジェクトを開いていない間の案内（4.10節）
+   Chrome のファイル操作に慣れていなくても、
+   「何を選ぶ操作なのか」が分かるようにする。
+   ============================================================ */
+
+.ide-welcome {
+  /* メイン部と重ねて置く。プロジェクトを開くと隠れる */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* プロジェクトを開いたら用済み */
+.ide-main.has-project .ide-welcome {
+  display: none;
+}
+
+.welcome-inner {
+  max-width: 560px;
+}
+
+.welcome-title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.welcome-lead {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--fg-dim);
+}
+
+.welcome-steps {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.welcome-step {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-panel);
+}
+
+.welcome-step-no {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.welcome-step-icon {
+  display: flex;
+  color: var(--accent);
+}
+
+.welcome-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fg-dim);
+}
+
+.welcome-step-text b {
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.welcome-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--fg-dim);
+}

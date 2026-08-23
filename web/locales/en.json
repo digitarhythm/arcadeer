@@ -107,5 +107,14 @@
   "msg.screenSize": "Screen resolution set to {width}x{height}",
   "msg.renderInitFailed": "Could not prepare rendering\n{detail}",
   "msg.modelLoadFailed": "Could not load the model '{name}'",
-  "msg.modelsLoaded": "Loaded {count} 3D model(s)"
+  "msg.modelsLoaded": "Loaded {count} 3D model(s)",
+  "welcome.title": "First, choose where your games will live",
+  "welcome.lead": "Each game becomes one folder. Start by telling this app where to keep them all. It only reads and writes inside the place you choose.",
+  "welcome.step1.title": "Press the folder icon",
+  "welcome.step1.body": "Use the folder icon at the left of the header to choose where you want your games kept.",
+  "welcome.step2.title": "Grant access",
+  "welcome.step2.body": "Your browser will ask for permission. Nothing outside the place you picked is ever touched.",
+  "welcome.step3.title": "Create one with the file icon",
+  "welcome.step3.body": "The file icon next to it creates a game. One folder appears and you can start editing right away.",
+  "welcome.note": "Your browser remembers the place you chose, so the last game opens automatically next time."
 }

@@ -107,5 +107,14 @@
   "msg.screenSize": "Risoluzione dello schermo impostata su {width}x{height}",
   "msg.renderInitFailed": "Impossibile preparare il rendering\n{detail}",
   "msg.modelLoadFailed": "Impossibile caricare il modello «{name}»",
-  "msg.modelsLoaded": "Caricati {count} modelli 3D"
+  "msg.modelsLoaded": "Caricati {count} modelli 3D",
+  "welcome.title": "Per prima cosa, scegli dove tenere i tuoi giochi",
+  "welcome.lead": "Ogni gioco diventa una cartella. Comincia indicando a questa applicazione dove raccoglierli tutti. Legge e scrive solo dentro il posto che scegli.",
+  "welcome.step1.title": "Premi l'icona della cartella",
+  "welcome.step1.body": "Con l'icona della cartella a sinistra nell'intestazione, scegli dove tenere i tuoi giochi.",
+  "welcome.step2.title": "Concedi l'accesso",
+  "welcome.step2.body": "Il browser chiederà il permesso. Fuori dal posto scelto non viene mai toccato nulla.",
+  "welcome.step3.title": "Creane uno con l'icona del file",
+  "welcome.step3.body": "L'icona del file accanto crea un gioco. Compare una cartella e puoi metterti subito a modificarlo.",
+  "welcome.note": "Il browser ricorda il posto scelto, così la volta dopo si apre da solo l'ultimo gioco."
 }

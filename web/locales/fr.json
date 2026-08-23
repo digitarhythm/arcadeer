@@ -107,5 +107,14 @@
   "msg.screenSize": "Résolution d'écran définie sur {width}x{height}",
   "msg.renderInitFailed": "Impossible de préparer le rendu\n{detail}",
   "msg.modelLoadFailed": "Impossible de charger le modèle « {name} »",
-  "msg.modelsLoaded": "{count} modèle(s) 3D chargé(s)"
+  "msg.modelsLoaded": "{count} modèle(s) 3D chargé(s)",
+  "welcome.title": "Commencez par choisir où ranger vos jeux",
+  "welcome.lead": "Chaque jeu devient un dossier. Indiquez d'abord à cette application où les regrouper. Elle ne lit et n'écrit qu'à l'intérieur de l'endroit choisi.",
+  "welcome.step1.title": "Appuyez sur l'icône de dossier",
+  "welcome.step1.body": "Avec l'icône de dossier à gauche de l'en-tête, choisissez où ranger vos jeux.",
+  "welcome.step2.title": "Accordez l'accès",
+  "welcome.step2.body": "Le navigateur demandera l'autorisation. Rien en dehors de l'endroit choisi n'est jamais touché.",
+  "welcome.step3.title": "Créez-en un avec l'icône de fichier",
+  "welcome.step3.body": "L'icône de fichier voisine crée un jeu. Un dossier apparaît et vous pouvez éditer aussitôt.",
+  "welcome.note": "Le navigateur retient l'endroit choisi : la prochaine fois, le dernier jeu s'ouvre tout seul."
 }

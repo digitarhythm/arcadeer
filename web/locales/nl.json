@@ -107,5 +107,14 @@
   "msg.screenSize": "Schermresolutie ingesteld op {width}x{height}",
   "msg.renderInitFailed": "Kan het renderen niet voorbereiden\n{detail}",
   "msg.modelLoadFailed": "Kan het model '{name}' niet laden",
-  "msg.modelsLoaded": "{count} 3D-model(len) geladen"
+  "msg.modelsLoaded": "{count} 3D-model(len) geladen",
+  "welcome.title": "Kies eerst waar je spellen komen te staan",
+  "welcome.lead": "Elk spel wordt één map. Vertel deze toepassing eerst waar je ze allemaal wilt bewaren. Er wordt alleen gelezen en geschreven binnen de gekozen plek.",
+  "welcome.step1.title": "Druk op het mappictogram",
+  "welcome.step1.body": "Kies met het mappictogram links in de kopregel waar je spellen moeten staan.",
+  "welcome.step2.title": "Geef toegang",
+  "welcome.step2.body": "De browser vraagt om toestemming. Buiten de gekozen plek wordt nooit iets aangeraakt.",
+  "welcome.step3.title": "Maak er een met het bestandspictogram",
+  "welcome.step3.body": "Het bestandspictogram ernaast maakt een spel aan. Er verschijnt een map en je kunt meteen aan de slag.",
+  "welcome.note": "De browser onthoudt de gekozen plek, dus de volgende keer opent het laatste spel vanzelf."
 }

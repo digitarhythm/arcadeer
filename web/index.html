@@ -68,6 +68,61 @@
         <canvas id="game-canvas" class="game-canvas" tabindex="0"></canvas>
       </div>
     </div>
+    <!-- プロジェクトを開いていない間の案内。開くとCSSで隠れる -->
+    <section id="ide-welcome" class="ide-welcome">
+      <div class="welcome-inner">
+        <h1 class="welcome-title" data-i18n="welcome.title"></h1>
+        <p class="welcome-lead" data-i18n="welcome.lead"></p>
+        <ol class="welcome-steps">
+          <li class="welcome-step">
+            <span class="welcome-step-no" aria-hidden="true">1</span>
+            <span class="welcome-step-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V11" />
+                <path d="M3 7v11a1 1 0 0 0 1 1h14.3a1 1 0 0 0 .95-.68l2.2-6.6a1 1 0 0 0-.95-1.32H7.2a1 1 0 0 0-.95.68z" />
+              </svg>
+            </span>
+            <span class="welcome-step-text">
+              <b data-i18n="welcome.step1.title"></b>
+              <span data-i18n="welcome.step1.body"></span>
+            </span>
+          </li>
+          <li class="welcome-step">
+            <span class="welcome-step-no" aria-hidden="true">2</span>
+            <span class="welcome-step-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h4L11 7h7.5A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z" />
+                <path d="M9 13.5h6M12 10.5v6" />
+              </svg>
+            </span>
+            <span class="welcome-step-text">
+              <b data-i18n="welcome.step2.title"></b>
+              <span data-i18n="welcome.step2.body"></span>
+            </span>
+          </li>
+          <li class="welcome-step">
+            <span class="welcome-step-no" aria-hidden="true">3</span>
+            <span class="welcome-step-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                <path d="M6 3h7l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+                <path d="M13 3v5h5" />
+                <path d="M12 12v5" />
+                <path d="M9.5 14.5h5" />
+              </svg>
+            </span>
+            <span class="welcome-step-text">
+              <b data-i18n="welcome.step3.title"></b>
+              <span data-i18n="welcome.step3.body"></span>
+            </span>
+          </li>
+        </ol>
+        <p class="welcome-note" data-i18n="welcome.note"></p>
+      </div>
+    </section>
+
     <!-- 仕様・リファレンス。辞書アイコンで開閉する -->
     <section id="ide-reference" class="ide-reference" aria-hidden="true">
       <div class="reference-header">

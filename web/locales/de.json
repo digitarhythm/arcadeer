@@ -107,5 +107,14 @@
   "msg.screenSize": "Bildschirmauflösung auf {width}x{height} gesetzt",
   "msg.renderInitFailed": "Das Rendering konnte nicht vorbereitet werden\n{detail}",
   "msg.modelLoadFailed": "Das Modell „{name}“ konnte nicht geladen werden",
-  "msg.modelsLoaded": "{count} 3D-Modell(e) geladen"
+  "msg.modelsLoaded": "{count} 3D-Modell(e) geladen",
+  "welcome.title": "Wähle zuerst, wo deine Spiele liegen sollen",
+  "welcome.lead": "Jedes Spiel wird ein Ordner. Sag dieser Anwendung zunächst, wo du sie alle aufbewahren möchtest. Gelesen und geschrieben wird nur innerhalb des gewählten Ortes.",
+  "welcome.step1.title": "Auf das Ordnersymbol drücken",
+  "welcome.step1.body": "Wähle über das Ordnersymbol links in der Kopfzeile den Ort, an dem deine Spiele liegen sollen.",
+  "welcome.step2.title": "Zugriff erlauben",
+  "welcome.step2.body": "Der Browser fragt nach der Erlaubnis. Außerhalb des gewählten Ortes wird nichts angerührt.",
+  "welcome.step3.title": "Mit dem Dateisymbol eines anlegen",
+  "welcome.step3.body": "Das Dateisymbol daneben legt ein Spiel an. Ein Ordner entsteht und du kannst sofort loslegen.",
+  "welcome.note": "Der Browser merkt sich den gewählten Ort, sodass beim nächsten Start das letzte Spiel von selbst geöffnet wird."
 }

@@ -107,5 +107,14 @@
   "msg.screenSize": "Resolução do ecrã definida para {width}x{height}",
   "msg.renderInitFailed": "Não foi possível preparar a renderização\n{detail}",
   "msg.modelLoadFailed": "Não foi possível carregar o modelo «{name}»",
-  "msg.modelsLoaded": "Foram carregados {count} modelo(s) 3D"
+  "msg.modelsLoaded": "Foram carregados {count} modelo(s) 3D",
+  "welcome.title": "Primeiro, escolha onde guardar os seus jogos",
+  "welcome.lead": "Cada jogo passa a ser uma pasta. Comece por indicar a esta aplicação onde os quer reunir. Só lê e escreve dentro do local que escolher.",
+  "welcome.step1.title": "Carregue no ícone de pasta",
+  "welcome.step1.body": "Com o ícone de pasta à esquerda do cabeçalho, escolha onde quer guardar os seus jogos.",
+  "welcome.step2.title": "Conceda o acesso",
+  "welcome.step2.body": "O navegador vai pedir permissão. Nada fora do local escolhido é alguma vez tocado.",
+  "welcome.step3.title": "Crie um com o ícone de ficheiro",
+  "welcome.step3.body": "O ícone de ficheiro ao lado cria um jogo. Aparece uma pasta e pode começar a editar de imediato.",
+  "welcome.note": "O navegador guarda o local escolhido, por isso da próxima vez o último jogo abre sozinho."
 }

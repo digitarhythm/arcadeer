@@ -107,5 +107,14 @@
   "msg.screenSize": "화면 해상도를 {width}x{height}로 설정했습니다",
   "msg.renderInitFailed": "렌더링 준비에 실패했습니다\n{detail}",
   "msg.modelLoadFailed": "모델 '{name}'을(를) 불러오지 못했습니다",
-  "msg.modelsLoaded": "3D 모델 {count}개를 불러왔습니다"
+  "msg.modelsLoaded": "3D 모델 {count}개를 불러왔습니다",
+  "welcome.title": "먼저 게임을 저장할 장소를 고릅니다",
+  "welcome.lead": "게임 하나가 폴더 하나가 됩니다. 우선 그것들을 모아 둘 장소를 이 앱에 알려 주세요. 고른 장소 안에서만 읽고 씁니다.",
+  "welcome.step1.title": "폴더 아이콘을 누른다",
+  "welcome.step1.body": "헤더 왼쪽의 폴더 아이콘에서, 게임을 모아 둘 장소를 고릅니다.",
+  "welcome.step2.title": "접근을 허용한다",
+  "welcome.step2.body": "브라우저가 확인을 요청하니 허용해 주세요. 고른 장소 밖은 전혀 건드리지 않습니다.",
+  "welcome.step3.title": "파일 아이콘으로 새로 만든다",
+  "welcome.step3.body": "그 옆의 파일 아이콘으로 게임을 하나 만듭니다. 폴더가 하나 생기고 바로 편집을 시작할 수 있습니다.",
+  "welcome.note": "고른 장소를 브라우저가 기억하므로, 다음에 열 때는 지난번 게임이 자동으로 열립니다."
 }

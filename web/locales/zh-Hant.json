@@ -107,5 +107,14 @@
   "msg.screenSize": "畫面解析度已設為 {width}x{height}",
   "msg.renderInitFailed": "繪製準備失敗\n{detail}",
   "msg.modelLoadFailed": "無法載入模型「{name}」",
-  "msg.modelsLoaded": "已載入 {count} 個 3D 模型"
+  "msg.modelsLoaded": "已載入 {count} 個 3D 模型",
+  "welcome.title": "首先，選擇儲存遊戲的位置",
+  "welcome.lead": "一個遊戲就是一個資料夾。請先告訴本應用程式要把它們統一放在哪裡。只會在所選位置內讀寫。",
+  "welcome.step1.title": "點選資料夾圖示",
+  "welcome.step1.body": "以標題列左側的資料夾圖示，選擇想要存放遊戲的位置。",
+  "welcome.step2.title": "允許存取",
+  "welcome.step2.body": "瀏覽器會請求許可，請予以允許。所選位置以外的地方絕不會被碰觸。",
+  "welcome.step3.title": "用檔案圖示新建",
+  "welcome.step3.body": "旁邊的檔案圖示可新建一個遊戲。會產生一個資料夾，隨即就能開始編輯。",
+  "welcome.note": "瀏覽器會記住所選位置，下次開啟時會自動開啟上次的遊戲。"
 }

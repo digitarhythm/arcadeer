@@ -107,5 +107,14 @@
   "msg.screenSize": "画面分辨率已设为 {width}x{height}",
   "msg.renderInitFailed": "绘制准备失败\n{detail}",
   "msg.modelLoadFailed": "无法加载模型“{name}”",
-  "msg.modelsLoaded": "已加载 {count} 个 3D 模型"
+  "msg.modelsLoaded": "已加载 {count} 个 3D 模型",
+  "welcome.title": "首先，选择保存游戏的位置",
+  "welcome.lead": "一个游戏就是一个文件夹。请先告诉本应用要把它们统一放在哪里。只会在所选位置内读写。",
+  "welcome.step1.title": "点击文件夹图标",
+  "welcome.step1.body": "用标题栏左侧的文件夹图标，选择想要存放游戏的位置。",
+  "welcome.step2.title": "允许访问",
+  "welcome.step2.body": "浏览器会请求许可，请予以允许。所选位置以外的地方绝不会被触碰。",
+  "welcome.step3.title": "用文件图标新建",
+  "welcome.step3.body": "旁边的文件图标可新建一个游戏。会生成一个文件夹，随即就能开始编辑。",
+  "welcome.note": "浏览器会记住所选位置，下次打开时会自动开启上次的游戏。"
 }
