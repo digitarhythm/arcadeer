@@ -5,7 +5,7 @@
 // ブラウザは requestAnimationFrame の終わりに自動で画面を更新するため、
 // 「表示時間まで待ってから入れ替える」挙動を自前のバッファで再現している。
 
-import { parseGlb, collectPrimitives, collectClips, collectSkin } from "./glb.js";
+import { parseGlb, collectPrimitives, collectClips, collectSkin, computeBox } from "./glb.js";
 import { sampleClip, jointMatrices, stripRootMotion } from "./animation.js";
 import { stepAnimation } from "./runtime.js";
 import { multiply, lightViewProjection, transformPoint } from "./matrix.js";
@@ -14,6 +14,7 @@ import { lights, shadowLight, ambient, lightVector, MAX_LIGHTS as LIGHT_LIMIT } 
 import { isRenderable3D, isPrimitive, modelMatrix } from "./scene.js";
 import { buildPrimitive } from "./primitive.js";
 import { parseColor, WHITE } from "./color.js";
+import { setModelBoxLookup } from "./collision.js";
 
 /** シェーダーへ渡せるボーンの上限 */
 const MAX_JOINTS = 32;
@@ -381,10 +382,16 @@ export async function loadModel(name, url) {
       clips,
       json,
       skin: skinIndex !== null ? collectSkin(json, bin, skinIndex) : null,
+      // 当たり判定で「見た目そのもの」を使う時のもと（5.5節）。
+      // 頂点はGPUへ渡してしまうため、この時点で求めて覚えておく
+      box: computeBox(primitives),
     });
     return true;
   }
 }
+
+// 当たり判定から、モデルの大きさを引けるようにする（5.5節）
+setModelBoxLookup((name) => models.get(name)?.box ?? null);
 
 /** 組み込みプリミティブの形状名 → GPUへ載せた頂点 */
 const primitives = new Map();

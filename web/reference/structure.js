@@ -205,9 +205,12 @@ export const SECTIONS = [
 @X += 4 if isKeyDown("ArrowRight")
 
 echo "X=%@ Y=%@", @X, @Y
+echo "X=%08.2@", @X
 
 GLOBAL.SCORE = 0
 GLOBAL.SCORE += 100` },
+
+      { type: "text", k: "ref.m.echo.format" },
 
       { type: "heading", k: "ref.api.h.camera" },
       {
@@ -272,6 +275,46 @@ GLOBAL.SCORE += 100` },
           ["shadow", t("ref.light.shadow"), "false"],
         ],
       },
+
+      { type: "heading", k: "ref.api.h.hit" },
+      { type: "text", k: "ref.hit.d" },
+      {
+        type: "table",
+        head: [t("ref.hit.col.value"), t("ref.hit.col.area"), t("ref.hit.col.scale")],
+        rows: [
+          [t("ref.hit.row.none"), t("ref.hit.row.none.area"), t("ref.hit.row.none.scale")],
+          ["null / false", t("ref.hit.row.off.area"), "-"],
+          [t("ref.hit.row.written"), t("ref.hit.row.written.area"), t("ref.hit.row.written.scale")],
+        ],
+      },
+      { type: "code", code: `@BOUNDARY =
+  shape: "box"      # "box" / "sphere"
+  width:  1
+  height: 1
+  depth:  1
+  radius: 0.5       # shape: "sphere" のとき
+  offsetX: 0
+  offsetY: 0
+  offsetZ: 0` },
+      { type: "text", k: "ref.hit.scale" },
+      { type: "text", k: "ref.hit.ask" },
+      {
+        type: "table",
+        head: [t("ref.col.member"), t("ref.col.meaning")],
+        rows: [
+          ["@intersect(相手)", t("ref.hit.intersect")],
+          ["@collision(相手)", t("ref.hit.collision")],
+        ],
+      },
+      { type: "code", code: `behavior: (e) ->
+  super(e)
+  if @collision(@ground)
+    @Y = 0.5
+    @YS = 0
+
+  敵 = @collision(@enemies)
+  @damage() if 敵` },
+      { type: "text", k: "ref.hit.ret" },
 
       { type: "heading", k: "ref.api.h.pad" },
       { type: "text", k: "ref.api.d.pad" },

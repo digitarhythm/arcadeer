@@ -9,6 +9,7 @@ import {
   readAccessor,
   collectPrimitives,
   computeBounds,
+  computeBox,
   collectClips,
 } from "../web/glb.js";
 
@@ -87,6 +88,27 @@ describe("バウンディングの計算", () => {
   test("対象が無ければ半径0になる", () => {
     const bounds = computeBounds([]);
     expect(bounds.radius).toBe(0);
+  });
+
+  test("外接直方体が求まる（当たり判定に使う）", () => {
+    const { json, bin } = parseGlb(loadGlb());
+    const box = computeBox(collectPrimitives(json, bin));
+    expect(box.center.length).toBe(3);
+    expect(box.half.length).toBe(3);
+    for (const v of box.half) expect(v).toBeGreaterThan(0);
+  });
+
+  test("外接直方体は、外接球より小さいか同じ", () => {
+    // 球は角までの距離、直方体は各軸の半分なので、各辺は半径を超えない
+    const { json, bin } = parseGlb(loadGlb());
+    const 頂点 = collectPrimitives(json, bin);
+    const 球 = computeBounds(頂点);
+    const 箱 = computeBox(頂点);
+    for (const v of 箱.half) expect(v).toBeLessThanOrEqual(球.radius + 1e-6);
+  });
+
+  test("対象が無ければ大きさ0になる", () => {
+    expect(computeBox([])).toEqual({ center: [0, 0, 0], half: [0, 0, 0] });
   });
 });
 

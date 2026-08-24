@@ -1,4 +1,4 @@
-const CACHE_NAME = "arcadeer-v150";
+const CACHE_NAME = "arcadeer-v155";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -24,6 +24,7 @@ const PRECACHE = [
   "./camera.js",
   "./light.js",
   "./globals.js",
+  "./collision.js",
   "./gamepad.js",
   "./gamepad-config.js",
   "./gamepad-config-ui.js",

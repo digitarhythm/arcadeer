@@ -5,6 +5,7 @@
 // CoffeeScriptのコンパイルは coffee.js が担当し、ここは実行時の土台だけを持つ。
 
 import { isPrimitiveName } from "./primitive.js";
+import { findHit } from "./collision.js";
 
 /** 現在時刻（ミリ秒）を返す関数。テストから差し替えられるようにする */
 let clock = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -230,6 +231,14 @@ export class ArcadeerMain {
     // 影を落とすか。false にすると、このオブジェクトは影を作らない（6.2.6節）
     this.SHADOW = param.SHADOW ?? true;
 
+    // 当たり判定に使う範囲（5.5節）。
+    // **書かなければ見た目そのもの**が範囲になる（拡大縮小が効く）。
+    // 自分で書いた場合は見た目と切り離され、@SCALE や @ROT に影響されない。
+    // null や false を入れれば、判定を持たせないこともできる。
+    //
+    // `?? null` にしてはいけない。「書かない」と「外す」を区別できなくなる
+    if (param.BOUNDARY !== undefined) this.BOUNDARY = param.BOUNDARY;
+
     // ステータス番号
     this.proc = param.proc ?? 0;
 
@@ -292,6 +301,42 @@ export class ArcadeerMain {
     this.ROTX = normalizeAngle(this.ROTX);
     this.ROTY = normalizeAngle(this.ROTY);
     this.ROTZ = normalizeAngle(this.ROTZ);
+  }
+
+  /**
+   * 相手と重なっているかを調べる（**奥行きを見ない**）
+   *
+   * 見下ろし型や横スクロールのように、Z方向を気にしない遊びで使う。
+   *
+   * ```coffee
+   * @damage() if @intersect(@enemy)
+   * 敵 = @intersect(@enemies)      # 配列も渡せる
+   * ```
+   *
+   * @returns 当たった相手。当たっていなければ null
+   */
+  intersect(target) {
+    return findHit(this, target, "2d");
+  }
+
+  /**
+   * 相手と衝突しているかを調べる（XYZ すべてを見る）
+   *
+   * **呼んだ瞬間の位置**で判断するため、動かした直後に聞いて、
+   * その場で戻す、という書き方ができる。
+   *
+   * ```coffee
+   * behavior: (e) ->
+   *   super(e)
+   *   if @collision(@ground)
+   *     @Y = 0.5
+   *     @YS = 0
+   * ```
+   *
+   * @returns 当たった相手。当たっていなければ null
+   */
+  collision(target) {
+    return findHit(this, target);
   }
 
   /**

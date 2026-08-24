@@ -707,3 +707,74 @@ describe("回転角は自動でそろう", () => {
     expect([o.ROTX, o.ROTY, o.ROTZ]).toEqual([350, 40, 320]);
   });
 });
+
+describe("当たり判定のメソッド", () => {
+  /** 判定を持つオブジェクトを作る */
+  const 置く = (X, Y, Z, param = {}) =>
+    new ArcadeerMain({ X, Y, Z, MODEL: "box", ...param });
+
+  test("collision は、当たった相手を返す", () => {
+    const 自分 = 置く(0, 0, 0);
+    const 相手 = 置く(0.5, 0, 0);
+    expect(自分.collision(相手)).toBe(相手);
+  });
+
+  test("collision は、当たっていなければ null", () => {
+    expect(置く(0, 0, 0).collision(置く(9, 0, 0))).toBeNull();
+  });
+
+  test("if でそのまま書ける", () => {
+    const 自分 = 置く(0, 0, 0);
+    expect(自分.collision(置く(0.5, 0, 0)) ? "当たり" : "外れ").toBe("当たり");
+    expect(自分.collision(置く(9, 0, 0)) ? "当たり" : "外れ").toBe("外れ");
+  });
+
+  test("配列を渡せる", () => {
+    const 自分 = 置く(0, 0, 0);
+    const 外れ = 置く(9, 0, 0);
+    const 当たり = 置く(0.5, 0, 0);
+    expect(自分.collision([外れ, 当たり])).toBe(当たり);
+  });
+
+  test("intersect は奥行きを見ない", () => {
+    const 自分 = 置く(0, 0, 0);
+    const 奥 = 置く(0.5, 0, 100);
+    expect(自分.collision(奥)).toBeNull();
+    expect(自分.intersect(奥)).toBe(奥);
+  });
+
+  test("動かした直後の位置で判断できる", () => {
+    // 1フレーム遅れないことを確かめる
+    const 自分 = 置く(0, 0, 0);
+    const 相手 = 置く(3, 0, 0);
+    expect(自分.collision(相手)).toBeNull();
+    自分.X = 2.6;
+    expect(自分.collision(相手)).toBe(相手);
+  });
+
+  test("自分自身は当たらない", () => {
+    const 自分 = 置く(0, 0, 0);
+    expect(自分.collision(自分)).toBeNull();
+    expect(自分.intersect(自分)).toBeNull();
+  });
+
+  test("BOUNDARY を書けば、その形で判断する", () => {
+    const 自分 = 置く(0, 0, 0, { BOUNDARY: { width: 0.1, height: 0.1, depth: 0.1 } });
+    const 相手 = 置く(0.9, 0, 0);
+    // 見た目どうしなら当たるが、判定を小さくしたので当たらない
+    expect(置く(0, 0, 0).collision(相手)).toBe(相手);
+    expect(自分.collision(相手)).toBeNull();
+  });
+
+  test("BOUNDARY に null を入れると、何とも当たらない", () => {
+    const 自分 = 置く(0, 0, 0, { BOUNDARY: null });
+    expect(自分.collision(置く(0, 0, 0))).toBeNull();
+  });
+
+  test("相手を渡さなくても落ちない", () => {
+    const 自分 = 置く(0, 0, 0);
+    expect(自分.collision()).toBeNull();
+    expect(自分.intersect(null)).toBeNull();
+    expect(自分.collision([])).toBeNull();
+  });
+});

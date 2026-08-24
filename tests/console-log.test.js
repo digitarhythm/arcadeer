@@ -134,3 +134,101 @@ describe("logClear", () => {
     expect(logLines()).toEqual([]);
   });
 });
+
+describe("echo の桁指定（printf に合わせる）", () => {
+  test("小数の桁数を指定できる", () => {
+    expect(formatEcho("%.2@", 3.14159)).toBe("3.14");
+    expect(formatEcho("%.4@", 3.14159)).toBe("3.1416");
+    expect(formatEcho("%.0@", 3.7)).toBe("4");
+  });
+
+  test("整数にも小数の桁数が付く", () => {
+    expect(formatEcho("%.2@", 42)).toBe("42.00");
+  });
+
+  test("幅を指定すると右寄せになる", () => {
+    expect(formatEcho("%8.2@", 3.14159)).toBe("    3.14");
+    expect(formatEcho("%8.2@", 42)).toBe("   42.00");
+  });
+
+  test("0 を付けると0埋めになる", () => {
+    expect(formatEcho("%08.2@", 3.14159)).toBe("00003.14");
+    expect(formatEcho("%04@", 42)).toBe("0042");
+  });
+
+  test("整数部と小数部の桁をそろえる書き方", () => {
+    // printf と同じく、幅は**全体の文字数**（4 + 小数点 + 4 = 9）
+    expect(formatEcho("%09.4@", 3.14159)).toBe("0003.1416");
+  });
+
+  test("桁数を指定しなければ、値はそのまま（削らない）", () => {
+    // 幅だけの指定で小数を切り捨てると、黙って情報が消えてしまう
+    expect(formatEcho("%04@", 3.14159)).toBe("3.14159");
+    expect(formatEcho("%10@", 3.5)).toBe("       3.5");
+  });
+
+  test("- を付けると左寄せになる", () => {
+    expect(formatEcho("[%-8.2@]", 3.14159)).toBe("[3.14    ]");
+    // 左寄せと0埋めが重なったら、左寄せを採る（printf と同じ）
+    expect(formatEcho("[%-08.2@]", 3.14159)).toBe("[3.14    ]");
+  });
+
+  test("+ を付けると符号が必ず出る", () => {
+    expect(formatEcho("%+.2@", 3.14159)).toBe("+3.14");
+    expect(formatEcho("%+.2@", -3.14159)).toBe("-3.14");
+  });
+
+  test("空白を付けると、正の数の前に空白が入る", () => {
+    expect(formatEcho("[% .2@]", 3.14159)).toBe("[ 3.14]");
+    expect(formatEcho("[% .2@]", -3.14159)).toBe("[-3.14]");
+  });
+
+  test("0埋めは符号のあとに入る", () => {
+    expect(formatEcho("%08.2@", -3.14159)).toBe("-0003.14");
+    expect(formatEcho("%+08.2@", 3.14159)).toBe("+0003.14");
+  });
+
+  test("幅に足りていれば、そのまま出す", () => {
+    expect(formatEcho("%2.2@", 3.14159)).toBe("3.14");
+  });
+
+  test("文字列にも幅が効く", () => {
+    expect(formatEcho("[%6@]", "abc")).toBe("[   abc]");
+    expect(formatEcho("[%-6@]", "abc")).toBe("[abc   ]");
+    // 数値でないものは 0 埋めしない（printf と同じ）
+    expect(formatEcho("[%06@]", "abc")).toBe("[   abc]");
+  });
+
+  test("文字列に桁数を指定すると切り詰める", () => {
+    expect(formatEcho("%.3@", "abcdef")).toBe("abc");
+  });
+
+  test("数でないものは符号を付けない", () => {
+    expect(formatEcho("%+@", "abc")).toBe("abc");
+  });
+
+  test("NaN や Infinity はそのまま出す", () => {
+    expect(formatEcho("%.2@", NaN)).toBe("NaN");
+    expect(formatEcho("%.2@", Infinity)).toBe("Infinity");
+    expect(formatEcho("%.2@", -Infinity)).toBe("-Infinity");
+  });
+
+  test("引数が足りなければ、書式をそのまま残す", () => {
+    expect(formatEcho("%08.2@")).toBe("%08.2@");
+    expect(formatEcho("%.2@ と %.3@", 1)).toBe("1.00 と %.3@");
+  });
+
+  test("解釈できない並びは、そのまま出す", () => {
+    expect(formatEcho("%4.4x", 1)).toBe("%4.4x 1");
+    expect(formatEcho("%z@", 1)).toBe("%z@ 1");
+  });
+
+  test("%% は今までどおり % になる", () => {
+    expect(formatEcho("%08.2@%%", 3.14159)).toBe("00003.14%");
+  });
+
+  test("桁指定なしの %@ は、これまでと変わらない", () => {
+    expect(formatEcho("%@", 3.14159)).toBe("3.14159");
+    expect(formatEcho("%@", "abc")).toBe("abc");
+  });
+});

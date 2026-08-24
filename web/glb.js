@@ -346,10 +346,24 @@ export function collectClips(gltf, bin) {
 }
 
 /**
- * プリミティブ全体を包む中心と半径を求める
- * カメラを自動で合わせるために使う。
+ * プリミティブ全体を包む軸沿いの直方体を求める
+ *
+ * 当たり判定で「見た目そのもの」を使う時のもとになる（5.5節）。
+ * カメラ合わせに使う外接球（`computeBounds`）と違い、**各軸ごとの長さ**が要る。
+ *
+ * @returns `{ center, half }`。中身が無ければ大きさ0
  */
-export function computeBounds(primitives) {
+export function computeBox(primitives) {
+  const { min, max } = 範囲(primitives);
+  if (!Number.isFinite(min[0])) return { center: [0, 0, 0], half: [0, 0, 0] };
+  return {
+    center: [0, 1, 2].map((i) => (min[i] + max[i]) / 2),
+    half: [0, 1, 2].map((i) => (max[i] - min[i]) / 2),
+  };
+}
+
+/** 全頂点を配置行列に通して、各軸の最小と最大を求める */
+function 範囲(primitives) {
   let min = [Infinity, Infinity, Infinity];
   let max = [-Infinity, -Infinity, -Infinity];
 
@@ -364,6 +378,15 @@ export function computeBounds(primitives) {
       max = [Math.max(max[0], wx), Math.max(max[1], wy), Math.max(max[2], wz)];
     }
   }
+  return { min, max };
+}
+
+/**
+ * プリミティブ全体を包む中心と半径を求める
+ * カメラを自動で合わせるために使う。
+ */
+export function computeBounds(primitives) {
+  const { min, max } = 範囲(primitives);
 
   if (!Number.isFinite(min[0])) return { center: [0, 0, 0], radius: 0 };
 
