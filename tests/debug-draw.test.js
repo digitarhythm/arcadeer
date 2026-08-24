@@ -183,3 +183,37 @@ describe("描かない場合", () => {
     expect(boundaryLines(undefined, KIND_3D)).toEqual(new Float32Array(0));
   });
 });
+
+describe("円柱の枠", () => {
+  /** 円柱の判定 */
+  const 柱 = (X = 0, Y = 0, Z = 0, r = 1, hh = 2) => ({
+    shape: "cylinder", X, Y, Z, hw: r, hh, hd: r, r,
+  });
+
+  test("上下の輪と、縦の線で描く", () => {
+    const 本数 = 線分(boundaryLines(柱(), KIND_3D)).length;
+    // 輪2つ（24分割）＋ 縦4本
+    expect(本数).toBe(24 * 2 + 4);
+  });
+
+  test("上下の面のYに置かれる", () => {
+    const 線 = boundaryLines(柱(0, 5, 0, 1, 2), KIND_3D);
+    const ys = new Set();
+    for (let i = 1; i < 線.length; i += 3) ys.add(Math.round(線[i] * 1000) / 1000);
+    expect([...ys].sort((a, b) => a - b)).toEqual([3, 7]);
+  });
+
+  test("輪の点は、中心から半径ぶん離れている", () => {
+    const 線 = boundaryLines(柱(1, 0, 2, 3), KIND_3D);
+    for (let i = 0; i + 2 < 線.length; i += 3) {
+      const d = Math.hypot(線[i] - 1, 線[i + 2] - 2);
+      expect(Math.abs(d - 3)).toBeLessThan(1e-6);
+    }
+  });
+
+  test("2Dなら、横から見た矩形にする", () => {
+    const 線 = boundaryLines(柱(0, 0, 7), KIND_2D);
+    expect(線分(線).length).toBe(4);
+    for (let i = 2; i < 線.length; i += 3) expect(線[i]).toBe(7);
+  });
+});

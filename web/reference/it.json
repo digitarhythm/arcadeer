@@ -138,7 +138,7 @@
   "ref.event.time": "Secondi trascorsi dall'avvio. Si ricava dal numero di fotogrammi, così pause e rallentamenti non lo fanno saltare",
   "ref.api.h.hit": "Collisioni",
   "ref.hit.d": "Per impostazione predefinita collide ciò che si vede, quindi puoi iniziare senza scrivere nulla. Scrivi una forma in @BOUNDARY solo per rifinire: così stacchi l'area d'urto dall'aspetto. Un oggetto enorme può allora avere un'area minuscola. Metti null per non averne nessuna.",
-  "ref.hit.scale": "Se omesso, l'area è 1×1×1 per una primitiva, o il parallelepipedo che racchiude il modello 3D, moltiplicato per @SCALEX e simili. Se scrivi tu la forma, la scala non si applica e la dimensione viene da width e gli altri. La rotazione non si applica mai. Anche il semplice contatto conta come urto.",
+  "ref.hit.scale": "Se omesso, l'area è 1×1×1 per una primitiva, o il parallelepipedo che racchiude il modello 3D, moltiplicato per @SCALEX e simili. Se scrivi tu la forma, la scala non si applica e la dimensione viene da width e gli altri. La rotazione non si applica mai. Anche il semplice contatto conta come urto. La forma può essere box, sphere o cylinder. Il cilindro si erge lungo l'asse Y ed è definito da radius e height.",
   "ref.api.h.pad": "Controller di gioco",
   "ref.api.h.padconf": "Configurazione del controller",
   "ref.api.d.pad": "Lo stato del controller e della tastiera viene unito in GAMEPAD. È un array perché si possono collegare più controller. Anche senza controller GAMEPAD[0] esiste sempre e si gioca con la tastiera.",

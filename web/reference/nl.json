@@ -138,7 +138,7 @@
   "ref.event.time": "Seconden sinds de start. Wordt uit het aantal beelden afgeleid, zodat pauzes en haperingen geen sprong veroorzaken",
   "ref.api.h.hit": "Botsingen",
   "ref.hit.d": "Standaard botst wat je ziet, dus je kunt beginnen zonder iets te schrijven. Schrijf pas een vorm in @BOUNDARY als je wilt bijstellen: dat maakt het raakvlak los van het uiterlijk. Een enorm ogend object kan dan een piepklein raakvlak hebben. Zet null om er helemaal geen te geven.",
-  "ref.hit.scale": "Laat je het weg, dan is het vlak 1×1×1 bij een primitief, of de omhullende doos van het 3D-model, maal @SCALEX en de rest. Schrijf je de vorm zelf, dan werkt schalen niet door en bepaalt width de maat. Draaien werkt nooit door. Elkaar net raken telt al als botsing.",
+  "ref.hit.scale": "Laat je het weg, dan is het vlak 1×1×1 bij een primitief, of de omhullende doos van het 3D-model, maal @SCALEX en de rest. Schrijf je de vorm zelf, dan werkt schalen niet door en bepaalt width de maat. Draaien werkt nooit door. Elkaar net raken telt al als botsing. De vorm kan box, sphere of cylinder zijn. Een cilinder staat langs de Y-as en wordt bepaald door radius en height.",
   "ref.api.h.pad": "Spelbesturing",
   "ref.api.h.padconf": "Controller instellen",
   "ref.api.d.pad": "De stand van gamepad en toetsenbord wordt samengevoegd in GAMEPAD. Het is een array omdat er meerdere gamepads kunnen worden aangesloten. Ook zonder gamepad bestaat GAMEPAD[0] altijd, zodat je met het toetsenbord kunt spelen.",

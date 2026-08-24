@@ -288,11 +288,11 @@ GLOBAL.SCORE += 100` },
         ],
       },
       { type: "code", code: `@BOUNDARY =
-  shape: "box"      # "box" / "sphere"
+  shape: "box"      # "box" / "sphere" / "cylinder"
   width:  1
   height: 1
   depth:  1
-  radius: 0.5       # shape: "sphere" のとき
+  radius: 0.5       # shape: "sphere" / "cylinder" のとき
   offsetX: 0
   offsetY: 0
   offsetZ: 0` },

@@ -138,7 +138,7 @@
   "ref.event.time": "Sekunden seit dem Start. Aus der Zahl der Einzelbilder berechnet, damit Pausen und Ruckler keinen Sprung verursachen",
   "ref.api.h.hit": "Kollision",
   "ref.hit.d": "Standardmäßig trifft, was man sieht — du kannst also loslegen, ohne etwas zu schreiben. Schreibe eine Form in @BOUNDARY nur zum Feinjustieren; damit löst du die Trefferfläche vom Aussehen. Ein riesig aussehendes Objekt kann dann eine winzige Trefferfläche haben. Mit null bekommt ein Objekt gar keine.",
-  "ref.hit.scale": "Ohne Angabe ist die Fläche 1×1×1 bei einer Primitive bzw. der Hüllquader des 3D-Modells, multipliziert mit @SCALEX usw. Schreibst du die Form selbst, wirkt die Skalierung nicht und die Größe kommt aus width und den anderen. Drehung wirkt in keinem Fall. Auch bloßes Berühren zählt als Treffer.",
+  "ref.hit.scale": "Ohne Angabe ist die Fläche 1×1×1 bei einer Primitive bzw. der Hüllquader des 3D-Modells, multipliziert mit @SCALEX usw. Schreibst du die Form selbst, wirkt die Skalierung nicht und die Größe kommt aus width und den anderen. Drehung wirkt in keinem Fall. Auch bloßes Berühren zählt als Treffer. Als Form stehen box, sphere und cylinder zur Wahl. Ein Zylinder steht entlang der Y-Achse und wird über radius und height bestimmt.",
   "ref.api.h.pad": "Spielesteuerung",
   "ref.api.h.padconf": "Controller einrichten",
   "ref.api.d.pad": "Der Zustand von Gamepad und Tastatur wird in GAMEPAD zusammengeführt. Es ist ein Feld, weil sich mehrere Gamepads anschließen lassen. Auch ohne Gamepad gibt es GAMEPAD[0] immer, sodass sich mit der Tastatur spielen lässt.",

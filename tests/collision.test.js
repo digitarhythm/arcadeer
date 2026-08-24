@@ -278,3 +278,83 @@ describe("BOUNDARY を書かない場合は、見た目そのものが判定に�
     expect(findHit(地面, 猫)).toBe(猫);
   });
 });
+
+describe("円柱の判定", () => {
+  /** 円柱の判定を持つオブジェクト */
+  const 柱 = (X, Y, Z, 他 = {}) =>
+    obj(X, Y, Z, { shape: "cylinder", radius: 1, height: 2, ...他 });
+
+  test("半径と高さで決まる（既定は半径0.5・高さ1）", () => {
+    const b = boundsOf(obj(0, 0, 0, { shape: "cylinder" }));
+    expect(b.shape).toBe("cylinder");
+    expect(b.r).toBe(0.5);
+    expect(b.hh).toBe(0.5);
+    // 横幅は半径にそろえる（外接する直方体として扱えるように）
+    expect([b.hw, b.hd]).toEqual([0.5, 0.5]);
+  });
+
+  test("半径と高さを指定できる", () => {
+    const b = boundsOf(柱(0, 0, 0));
+    expect([b.r, b.hh]).toEqual([1, 1]);
+  });
+
+  test("扱えない値は既定へ戻す", () => {
+    const b = boundsOf(obj(0, 0, 0, { shape: "cylinder", radius: -1, height: "たかい" }));
+    expect([b.r, b.hh]).toEqual([0.5, 0.5]);
+  });
+
+  test("円柱どうしは、XZの円とYの範囲で見る", () => {
+    const a = boundsOf(柱(0, 0, 0));
+    // XZ が重なり、Y も重なる
+    expect(hitBetween(a, boundsOf(柱(1.5, 0, 0)))).toBe(true);
+    // XZ が離れている
+    expect(hitBetween(a, boundsOf(柱(2.5, 0, 0)))).toBe(false);
+    // XZ は重なるが、Y が離れている
+    expect(hitBetween(a, boundsOf(柱(0, 3, 0)))).toBe(false);
+    // 斜めでも、角ではなく距離で見る（直方体との違い）
+    expect(hitBetween(a, boundsOf(柱(1.5, 0, 1.5)))).toBe(false);
+  });
+
+  test("円柱と直方体は、XZの円と矩形で見る", () => {
+    const 柱b = boundsOf(柱(0, 0, 0));
+    const 箱 = (X, Y, Z) => boundsOf(obj(X, Y, Z, { width: 2, height: 2, depth: 2 }));
+    expect(hitBetween(柱b, 箱(1.5, 0, 0))).toBe(true);
+    expect(hitBetween(柱b, 箱(2.5, 0, 0))).toBe(false);
+    // 角のそば。中心どうしは遠いが、角には触れている
+    expect(hitBetween(柱b, 箱(1.7, 0, 1.7))).toBe(true);
+    // 角からも離れている
+    expect(hitBetween(柱b, 箱(2.5, 0, 2.5))).toBe(false);
+    // Y が離れていれば当たらない
+    expect(hitBetween(柱b, 箱(0, 3, 0))).toBe(false);
+    // 順番を入れ替えても同じ
+    expect(hitBetween(箱(1.5, 0, 0), 柱b)).toBe(true);
+  });
+
+  test("円柱と球は、いちばん近い点までの距離で見る", () => {
+    const 柱b = boundsOf(柱(0, 0, 0));
+    const 球 = (X, Y, Z, radius = 0.5) => boundsOf(obj(X, Y, Z, { shape: "sphere", radius }));
+    // 真横
+    expect(hitBetween(柱b, 球(1.4, 0, 0))).toBe(true);
+    expect(hitBetween(柱b, 球(1.6, 0, 0))).toBe(false);
+    // 真上
+    expect(hitBetween(柱b, 球(0, 1.4, 0))).toBe(true);
+    expect(hitBetween(柱b, 球(0, 1.6, 0))).toBe(false);
+    // 上の縁のそば。横にも上にもはみ出しているので、斜めの距離で見る。
+    // 縁からの距離は √((1.2-1)² + (1.2-1)²) ≈ 0.283 なので、半径0.5なら届く
+    expect(hitBetween(柱b, 球(1.2, 1.2, 0))).toBe(true);
+    // √((1.5-1)² + (1.5-1)²) ≈ 0.707 なので、半径0.5では届かない
+    expect(hitBetween(柱b, 球(1.5, 1.5, 0))).toBe(false);
+    // 順番を入れ替えても同じ
+    expect(hitBetween(球(1.4, 0, 0), 柱b)).toBe(true);
+  });
+
+  test("2Dでは、横から見た矩形として扱う", () => {
+    const a = boundsOf(柱(0, 0, 0));
+    // Zが離れていても、XYが重なっていれば当たり
+    expect(hitBetweenXY(a, boundsOf(柱(1.5, 0, 100)))).toBe(true);
+    // 幅は半径ぶん、高さは指定どおり
+    expect(hitBetweenXY(a, boundsOf(obj(2.1, 0, 0, { width: 0.2 })))).toBe(false);
+    expect(hitBetweenXY(a, boundsOf(obj(0, 1.2, 0, { height: 0.2 })))).toBe(false);
+    expect(hitBetweenXY(a, boundsOf(obj(0, 1.05, 0, { height: 0.2 })))).toBe(true);
+  });
+});

@@ -138,7 +138,7 @@
   "ref.event.time": "Seconds since the game started. Derived from the frame count, so pauses and slow frames never make it jump",
   "ref.api.h.hit": "Collision",
   "ref.hit.d": "By default what you see is what collides, so you can start building without writing anything. Write a shape in @BOUNDARY only when you want to tune it — that detaches the hit area from the look. A huge-looking object can then carry a tiny hit area. Put null to give an object no hit area at all.",
-  "ref.hit.scale": "When omitted, the area is 1×1×1 for a primitive, or the model's bounding box for 3D, multiplied by @SCALEX and friends. When you write the shape yourself, scaling does not apply and the size comes from width and the rest. Rotation never applies either way. Shapes that merely touch count as a hit.",
+  "ref.hit.scale": "When omitted, the area is 1×1×1 for a primitive, or the model's bounding box for 3D, multiplied by @SCALEX and friends. When you write the shape yourself, scaling does not apply and the size comes from width and the rest. Rotation never applies either way. Shapes that merely touch count as a hit. The shape can be box, sphere or cylinder. A cylinder stands along the Y axis and is set by radius and height.",
   "ref.api.h.pad": "Game controller",
   "ref.api.h.padconf": "Controller setup",
   "ref.api.d.pad": "Gamepad and keyboard states are mixed together into GAMEPAD. It is an array because several gamepads can be connected. Even with no gamepad, GAMEPAD[0] always exists so you can play with the keyboard.",

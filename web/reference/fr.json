@@ -138,7 +138,7 @@
   "ref.event.time": "Secondes écoulées depuis le lancement. Déduit du nombre d'images, donc les pauses et les ralentissements ne le font pas sauter",
   "ref.api.h.hit": "Collisions",
   "ref.hit.d": "Par défaut, ce que l'on voit est ce qui entre en collision : vous pouvez donc commencer sans rien écrire. N'écrivez une forme dans @BOUNDARY que pour affiner : cela détache la zone de contact de l'apparence. Un objet énorme peut alors porter une zone minuscule. Mettez null pour n'en avoir aucune.",
-  "ref.hit.scale": "Sans indication, la zone vaut 1×1×1 pour une primitive, ou la boîte englobante du modèle 3D, multipliée par @SCALEX, etc. Si vous écrivez la forme, l'échelle ne s'applique pas et la taille vient de width et des autres. La rotation ne s'applique jamais. Un simple contact compte comme une collision.",
+  "ref.hit.scale": "Sans indication, la zone vaut 1×1×1 pour une primitive, ou la boîte englobante du modèle 3D, multipliée par @SCALEX, etc. Si vous écrivez la forme, l'échelle ne s'applique pas et la taille vient de width et des autres. La rotation ne s'applique jamais. Un simple contact compte comme une collision. La forme peut être box, sphere ou cylinder. Le cylindre se dresse selon l'axe Y et se définit par radius et height.",
   "ref.api.h.pad": "Manette de jeu",
   "ref.api.h.padconf": "Configuration de la manette",
   "ref.api.d.pad": "L'état de la manette et du clavier est mélangé dans GAMEPAD. C'est un tableau car plusieurs manettes peuvent être branchées. Même sans manette, GAMEPAD[0] existe toujours et le clavier suffit pour jouer.",

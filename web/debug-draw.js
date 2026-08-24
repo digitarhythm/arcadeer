@@ -133,6 +133,24 @@ function 輪の線(b, 軸, out) {
 }
 
 /**
+ * 円柱の枠（上下の輪と、縦の線）
+ *
+ * 縦の線は4本だけにする。輪だけだと立体に見えず、
+ * 多くすると細かい枠が読みにくくなるため。
+ */
+function 柱の線(b, out) {
+  for (const 上下 of [b.Y - b.hh, b.Y + b.hh]) {
+    輪の線({ X: b.X, Y: 上下, Z: b.Z, r: b.r }, [0, 2], out);
+  }
+  for (let i = 0; i < 4; i += 1) {
+    const 角度 = (i / 4) * Math.PI * 2;
+    const x = b.X + Math.cos(角度) * b.r;
+    const z = b.Z + Math.sin(角度) * b.r;
+    out.push(x, b.Y - b.hh, z, x, b.Y + b.hh, z);
+  }
+}
+
+/**
  * 当たり判定の範囲から、線の頂点を組み立てる
  *
  * 種別で描き分ける。**2Dは平らな枠**（`@intersect` が見る範囲）、
@@ -147,7 +165,11 @@ export function boundaryLines(bounds, kind) {
 
   const out = [];
   const 平ら = kind === KIND_2D;
-  if (bounds.shape === "sphere") {
+  if (bounds.shape === "cylinder") {
+    // 真横から見ると矩形になるので、2Dでは幅を半径にそろえて描く
+    if (平ら) 矩形の線({ ...bounds, hw: bounds.r }, out);
+    else 柱の線(bounds, out);
+  } else if (bounds.shape === "sphere") {
     // 2Dなら、正面から見た輪だけで足りる
     if (平ら) 輪の線(bounds, [0, 1], out);
     else {

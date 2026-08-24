@@ -10,11 +10,11 @@
 //
 // ```coffee
 // @BOUNDARY =
-//   shape: "box"      # "box"（直方体）/ "sphere"（球）
+//   shape: "box"      # "box"（直方体）/ "sphere"（球）/ "cylinder"（円柱）
 //   width:  1
 //   height: 1
 //   depth:  1
-//   radius: 0.5       # shape: "sphere" のとき
+//   radius: 0.5       # shape: "sphere" / "cylinder" のとき
 //   offsetX: 0        # オブジェクトの位置からのずれ
 //   offsetY: 0
 //   offsetZ: 0
@@ -29,6 +29,9 @@
 // 画面にもWebGLにも依存しないため単体テストできる。
 
 import { KIND_2D, KIND_3D, KIND_PRIMITIVE, resolveKind } from "./kind.js";
+
+/** 指定できる形 */
+const SHAPES = ["box", "sphere", "cylinder"];
 
 /** 大きさの既定値（全長） */
 const DEFAULT_SIZE = 1;
@@ -123,18 +126,21 @@ export function boundsOf(object) {
 
   if (!c || typeof c !== "object") return null;
 
-  const shape = c.shape === "sphere" ? "sphere" : "box";
+  const shape = SHAPES.includes(c.shape) ? c.shape : "box";
+  const r = 正の数(c.radius, DEFAULT_RADIUS);
+  const 円柱 = shape === "cylinder";
   return {
     shape,
     // 位置はオブジェクトの座標にずれを足したもの
     X: 数(object.X) + 数(c.offsetX),
     Y: 数(object.Y) + 数(c.offsetY),
     Z: 数(object.Z) + 数(c.offsetZ),
-    // 直方体は「中心から端まで」で持つ。当たりを見る時に扱いやすい
-    hw: 正の数(c.width, DEFAULT_SIZE) / 2,
+    // 直方体は「中心から端まで」で持つ。当たりを見る時に扱いやすい。
+    // 円柱の横幅は半径にそろえ、外接する直方体としても使えるようにする
+    hw: 円柱 ? r : 正の数(c.width, DEFAULT_SIZE) / 2,
     hh: 正の数(c.height, DEFAULT_SIZE) / 2,
-    hd: 正の数(c.depth, DEFAULT_SIZE) / 2,
-    r: 正の数(c.radius, DEFAULT_RADIUS),
+    hd: 円柱 ? r : 正の数(c.depth, DEFAULT_SIZE) / 2,
+    r,
   };
 }
 
@@ -156,14 +162,57 @@ function 球と球(a, b) {
   return dx * dx + dy * dy + dz * dz <= 和 * 和;
 }
 
+/** その範囲の中で、いちばん近い値へ寄せる */
+function 寄せる(値, 中心, 半分) {
+  return Math.min(Math.max(値, 中心 - 半分), 中心 + 半分);
+}
+
 /** 球と直方体。直方体の中でいちばん近い点までの距離で見る */
 function 球と箱(球, 箱) {
-  const 寄せる = (値, 中心, 半分) =>
-    Math.min(Math.max(値, 中心 - 半分), 中心 + 半分);
   const dx = 球.X - 寄せる(球.X, 箱.X, 箱.hw);
   const dy = 球.Y - 寄せる(球.Y, 箱.Y, 箱.hh);
   const dz = 球.Z - 寄せる(球.Z, 箱.Z, 箱.hd);
   return dx * dx + dy * dy + dz * dz <= 球.r * 球.r;
+}
+
+/**
+ * Y方向の重なり
+ *
+ * 直方体も円柱も「XZ平面の形を、Y方向へ押し出したもの」なので、
+ * **XZの重なり × Yの重なり**に分けて考えられる。
+ */
+function 高さが重なる(a, b) {
+  return Math.abs(a.Y - b.Y) <= a.hh + b.hh;
+}
+
+/** 円柱どうし。XZは円と円で見る */
+function 柱と柱(a, b) {
+  if (!高さが重なる(a, b)) return false;
+  const dx = a.X - b.X;
+  const dz = a.Z - b.Z;
+  const 和 = a.r + b.r;
+  return dx * dx + dz * dz <= 和 * 和;
+}
+
+/** 円柱と直方体。XZは円と矩形で見る */
+function 柱と箱(柱, 箱) {
+  if (!高さが重なる(柱, 箱)) return false;
+  const dx = 柱.X - 寄せる(柱.X, 箱.X, 箱.hw);
+  const dz = 柱.Z - 寄せる(柱.Z, 箱.Z, 箱.hd);
+  return dx * dx + dz * dz <= 柱.r * 柱.r;
+}
+
+/**
+ * 円柱と球。円柱の中でいちばん近い点までの距離で見る
+ *
+ * 横のはみ出しと上下のはみ出しを別々に求めて合わせる。
+ * 縁（角）に触れている場合も、これで正しく拾える。
+ */
+function 柱と球(柱, 球) {
+  const 横 = Math.hypot(球.X - 柱.X, 球.Z - 柱.Z);
+  const dr = Math.max(0, 横 - 柱.r);
+  const dv = Math.max(0, Math.abs(球.Y - 柱.Y) - 柱.hh);
+  return dr * dr + dv * dv <= 球.r * 球.r;
 }
 
 /**
@@ -173,14 +222,31 @@ function 球と箱(球, 箱) {
  */
 export function hitBetween(a, b) {
   if (!a || !b) return false;
-  if (a.shape === "sphere" && b.shape === "sphere") return 球と球(a, b);
-  if (a.shape === "sphere") return 球と箱(a, b);
-  if (b.shape === "sphere") return 球と箱(b, a);
+
+  const 球a = a.shape === "sphere";
+  const 球b = b.shape === "sphere";
+  const 柱a = a.shape === "cylinder";
+  const 柱b = b.shape === "cylinder";
+
+  if (柱a && 柱b) return 柱と柱(a, b);
+  if (柱a && 球b) return 柱と球(a, b);
+  if (柱b && 球a) return 柱と球(b, a);
+  if (柱a) return 柱と箱(a, b);
+  if (柱b) return 柱と箱(b, a);
+
+  if (球a && 球b) return 球と球(a, b);
+  if (球a) return 球と箱(a, b);
+  if (球b) return 球と箱(b, a);
   return 箱と箱(a, b);
 }
 
-/** 奥行きを持たない形にする（Zを潰し、直方体の奥行きは無限にする） */
+/**
+ * 奥行きを持たない形にする（Zを潰し、直方体の奥行きは無限にする）
+ *
+ * 円柱はY方向へ押し出した形なので、**真横から見ると矩形**になる。
+ */
 function 平面にする(b) {
+  if (b.shape === "cylinder") return { ...b, shape: "box", hw: b.r, hd: Infinity, Z: 0 };
   return { ...b, Z: 0, hd: Infinity };
 }
 

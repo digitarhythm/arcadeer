@@ -138,7 +138,7 @@
   "ref.event.time": "Segundos desde o arranque. Deduz-se do número de fotogramas, por isso pausas e engasgos não o fazem saltar",
   "ref.api.h.hit": "Colisões",
   "ref.hit.d": "Por omissão colide aquilo que se vê, por isso podes começar sem escrever nada. Escreve uma forma em @BOUNDARY só para afinar: isso separa a área de impacto do aspeto. Assim um objeto enorme pode ter uma área minúscula. Põe null para não ter nenhuma.",
-  "ref.hit.scale": "Se for omitido, a área é 1×1×1 para uma primitiva, ou a caixa envolvente do modelo 3D, multiplicada por @SCALEX e afins. Se escreveres tu a forma, a escala não se aplica e o tamanho vem de width e dos restantes. A rotação nunca se aplica. Tocarem-se já conta como embate.",
+  "ref.hit.scale": "Se for omitido, a área é 1×1×1 para uma primitiva, ou a caixa envolvente do modelo 3D, multiplicada por @SCALEX e afins. Se escreveres tu a forma, a escala não se aplica e o tamanho vem de width e dos restantes. A rotação nunca se aplica. Tocarem-se já conta como embate. A forma pode ser box, sphere ou cylinder. O cilindro ergue-se ao longo do eixo Y e define-se com radius e height.",
   "ref.api.h.pad": "Comando de jogo",
   "ref.api.h.padconf": "Configuração do comando",
   "ref.api.d.pad": "O estado do comando e do teclado é misturado em GAMEPAD. É um vetor porque se podem ligar vários comandos. Mesmo sem comando, GAMEPAD[0] existe sempre e joga-se com o teclado.",
