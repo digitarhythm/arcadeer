@@ -166,5 +166,6 @@
   "ref.hit.ask": "Botsingen vraag je op door de ander te noemen. Het antwoord gebruikt de posities op het moment van vragen, dus je kunt verplaatsen, vragen en de verplaatsing meteen terugdraaien. Jij kiest de methode; @KIND bepaalt dat niet. De ander mag ook een array zijn. Een object raakt zichzelf nooit.",
   "ref.hit.intersect": "Kijkt alleen naar het XY-vlak, zonder diepte. Voor topdown en sidescroll",
   "ref.hit.collision": "Kijkt naar heel XYZ. Voor driedimensionaal spel",
-  "ref.hit.ret": "Je krijgt het geraakte object terug, of null als er niets geraakt is. Dat is bruikbaarder dan alleen true en leest in een if hetzelfde. Bij een array komt de eerste treffer terug. Beide kanten hebben een raakvlak nodig."
+  "ref.hit.ret": "Je krijgt het geraakte object terug, of null als er niets geraakt is. Dat is bruikbaarder dan alleen true en leest in een if hetzelfde. Bij een array komt de eerste treffer terug. Beide kanten hebben een raakvlak nodig.",
+  "ref.hit.debug": "Roep setDebug debug: true aan en de raakvlakken worden er in doorschijnend rood overheen getekend. Een 2D-object krijgt een plat kader, de rest een ruimtelijk, en bollen worden als ringen getekend. Randen die achter een model langs gaan worden verborgen, dus voor en achter lezen vanzelf. Opnieuw starten zet het weer uit. Met opacity stel je in hoe sterk de lijnen ogen (standaard 0.5)."
 }

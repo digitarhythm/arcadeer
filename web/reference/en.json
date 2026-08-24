@@ -166,5 +166,6 @@
   "ref.hit.ask": "You ask about collisions by naming the other side. The answer uses the positions at the moment you ask, so you can move, ask, and undo the move on the spot. You choose which method to use — @KIND does not decide it. The other side may also be an array. An object never hits itself.",
   "ref.hit.intersect": "Looks only at the XY plane, ignoring depth. For top-down and side-scrolling",
   "ref.hit.collision": "Looks at all of XYZ. For play in three dimensions",
-  "ref.hit.ret": "The return value is the object you hit, or null when nothing was hit. That is more useful than a bare true, and reads the same inside an if. Given an array, it returns the first one hit. Both sides need a hit area for anything to register."
+  "ref.hit.ret": "The return value is the object you hit, or null when nothing was hit. That is more useful than a bare true, and reads the same inside an if. Given an array, it returns the first one hit. Both sides need a hit area for anything to register.",
+  "ref.hit.debug": "Call setDebug debug: true and the hit areas are drawn on top in translucent red. A 2D object gets a flat frame, anything else a solid one, and spheres are drawn as rings. Edges that pass behind a model are hidden, so what is in front and what is behind reads naturally. Running the game again turns it back off. The opacity key changes how strong the lines look (0.5 by default)."
 }

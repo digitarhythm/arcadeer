@@ -166,5 +166,6 @@
   "ref.hit.ask": "On interroge les collisions en désignant l'autre. La réponse utilise les positions à l'instant de la question : vous pouvez donc déplacer, demander, puis annuler le déplacement sur-le-champ. C'est vous qui choisissez la méthode ; @KIND ne la décide pas. L'autre peut aussi être un tableau. Un objet ne se touche jamais lui-même.",
   "ref.hit.intersect": "Ne regarde que le plan XY, sans la profondeur. Vue de dessus, défilement latéral",
   "ref.hit.collision": "Regarde XYZ en entier. Pour un jeu en trois dimensions",
-  "ref.hit.ret": "La valeur renvoyée est l'objet touché, ou null si rien n'a été touché. C'est plus utile qu'un simple true et se lit pareil dans un if. Avec un tableau, le premier touché est renvoyé. Les deux côtés doivent avoir une zone de contact."
+  "ref.hit.ret": "La valeur renvoyée est l'objet touché, ou null si rien n'a été touché. C'est plus utile qu'un simple true et se lit pareil dans un if. Avec un tableau, le premier touché est renvoyé. Les deux côtés doivent avoir une zone de contact.",
+  "ref.hit.debug": "Appelez setDebug debug: true et les zones de contact sont tracées par-dessus, en rouge translucide. Un objet 2D reçoit un cadre plat, les autres un cadre en volume, et les sphères sont tracées en anneaux. Les arêtes qui passent derrière un modèle sont masquées : l'avant et l'arrière se lisent naturellement. Relancer le jeu remet cela à l'arrêt. La clé opacity règle l'intensité des lignes (0.5 par défaut)."
 }

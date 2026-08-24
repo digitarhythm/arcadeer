@@ -166,5 +166,6 @@
   "ref.hit.ask": "As colisões perguntam-se indicando o outro. A resposta usa as posições no momento em que perguntas, por isso podes mover, perguntar e desfazer o movimento logo ali. O método escolhe-lo tu; o @KIND não o decide. O outro também pode ser um array. Um objeto nunca embate consigo mesmo.",
   "ref.hit.intersect": "Olha só para o plano XY, sem profundidade. Para vista de topo e scroll lateral",
   "ref.hit.collision": "Olha para todo o XYZ. Para jogo tridimensional",
-  "ref.hit.ret": "Devolve o objeto em que bateste, ou null se não houve embate. É mais útil do que um simples true e lê-se igual dentro de um if. Com um array devolve o primeiro atingido. Ambos os lados precisam de área de impacto."
+  "ref.hit.ret": "Devolve o objeto em que bateste, ou null se não houve embate. É mais útil do que um simples true e lê-se igual dentro de um if. Com um array devolve o primeiro atingido. Ambos os lados precisam de área de impacto.",
+  "ref.hit.debug": "Chama setDebug debug: true e as áreas de impacto são desenhadas por cima, a vermelho translúcido. Um objeto 2D fica com um contorno plano, os restantes com um contorno em volume, e as esferas são desenhadas em anéis. As arestas que passam atrás de um modelo ficam escondidas, por isso percebe-se naturalmente o que está à frente e atrás. Executar de novo volta a desligar. A chave opacity muda a intensidade das linhas (0.5 por omissão)."
 }

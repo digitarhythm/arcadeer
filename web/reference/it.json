@@ -166,5 +166,6 @@
   "ref.hit.ask": "Le collisioni si chiedono indicando l'altro. La risposta usa le posizioni nel momento in cui chiedi, così puoi muovere, chiedere e annullare subito il movimento. Il metodo lo scegli tu; @KIND non lo decide. L'altro può anche essere un array. Un oggetto non colpisce mai sé stesso.",
   "ref.hit.intersect": "Guarda solo il piano XY, senza profondità. Per visuale dall'alto e scorrimento laterale",
   "ref.hit.collision": "Guarda tutto XYZ. Per il gioco tridimensionale",
-  "ref.hit.ret": "Restituisce l'oggetto colpito, oppure null se non è stato colpito nulla. È più utile di un semplice true e in un if si legge allo stesso modo. Con un array restituisce il primo colpito. Servono aree d'urto su entrambi i lati."
+  "ref.hit.ret": "Restituisce l'oggetto colpito, oppure null se non è stato colpito nulla. È più utile di un semplice true e in un if si legge allo stesso modo. Con un array restituisce il primo colpito. Servono aree d'urto su entrambi i lati.",
+  "ref.hit.debug": "Chiama setDebug debug: true e le aree d'urto vengono disegnate sopra, in rosso translucido. Un oggetto 2D ha una cornice piatta, gli altri una solida, e le sfere sono disegnate ad anelli. Gli spigoli che passano dietro un modello restano nascosti, così davanti e dietro si leggono con naturalezza. Rieseguendo il gioco torna spenta. La chiave opacity regola l'intensità delle linee (0.5 di base)."
 }

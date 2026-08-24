@@ -14,7 +14,9 @@ import { lights, shadowLight, ambient, lightVector, MAX_LIGHTS as LIGHT_LIMIT } 
 import { isRenderable3D, isPrimitive, modelMatrix } from "./scene.js";
 import { buildPrimitive } from "./primitive.js";
 import { parseColor, WHITE } from "./color.js";
-import { setModelBoxLookup } from "./collision.js";
+import { setModelBoxLookup, boundsOf } from "./collision.js";
+import { debugOption, boundaryLines, DEBUG_COLOR } from "./debug-draw.js";
+import { resolveKind } from "./kind.js";
 
 /** シェーダーへ渡せるボーンの上限 */
 const MAX_JOINTS = 32;
@@ -174,6 +176,24 @@ void main() {
 }`;
 
 // 裏バッファを画面へ転送するための、画面いっぱいの四角形
+// 当たり判定の枠を描くだけの、いちばん簡単な組（5.5節）
+const LINE_VERTEX = `
+attribute vec3 aPosition;
+uniform mat4 uProjection;
+uniform mat4 uModelView;
+void main() {
+  gl_Position = uProjection * uModelView * vec4(aPosition, 1.0);
+}
+`;
+
+const LINE_FRAGMENT = `
+precision mediump float;
+uniform vec4 uColor;
+void main() {
+  gl_FragColor = uColor;
+}
+`;
+
 const BLIT_VERTEX = `
 attribute vec2 aCorner;
 varying vec2 vUv;
@@ -203,6 +223,10 @@ let back = null;
 const models = new Map();
 
 /** シェーダをコンパイルしてプログラムを作る */
+/** 当たり判定の枠を描く組と、その頂点置き場（5.5節） */
+let lineProgram = null;
+let lineBuffer = null;
+
 function createProgram(vertexSource, fragmentSource) {
   const compile = (type, source) => {
     const shader = gl.createShader(type);
@@ -312,6 +336,7 @@ export function initRenderer(canvas) {
     shadowProgram = createProgram(SHADOW_VERTEX, SHADOW_FRAGMENT);
     shadowTarget = createShadowTarget();
     blitProgram = createProgram(BLIT_VERTEX, BLIT_FRAGMENT);
+    lineProgram = createProgram(LINE_VERTEX, LINE_FRAGMENT);
 
     blitBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, blitBuffer);
@@ -702,7 +727,58 @@ export function drawScene(objects, camera) {
     }
   }
 
+  drawBoundaries(objects ?? [], view, camera);
+
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+/**
+ * 当たり判定の枠を、赤い線で重ねて描く（5.5節）
+ *
+ * **深度判定を効かせたまま描く。**モデルの後ろへ回った辺は隠れ、
+ * 前後の関係が見た目どおりになる。
+ * `setDebug debug: true` を呼んでいない間は何もしない。
+ */
+function drawBoundaries(objects, view, camera) {
+  const 設定 = debugOption();
+  if (!設定.debug || !lineProgram) return;
+
+  const 線 = [];
+  for (const object of objects) {
+    const 頂点 = boundaryLines(boundsOf(object), resolveKind(object));
+    if (頂点.length > 0) 線.push(...頂点);
+  }
+  if (線.length === 0) return;
+
+  if (!lineBuffer) lineBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(線), gl.DYNAMIC_DRAW);
+
+  gl.useProgram(lineProgram);
+  gl.uniformMatrix4fv(
+    gl.getUniformLocation(lineProgram, "uProjection"),
+    false,
+    projectionMatrix(camera, back.width / back.height),
+  );
+  // 判定は世界座標そのままなので、配置行列は要らない
+  gl.uniformMatrix4fv(gl.getUniformLocation(lineProgram, "uModelView"), false, view);
+  gl.uniform4f(
+    gl.getUniformLocation(lineProgram, "uColor"),
+    DEBUG_COLOR[0], DEBUG_COLOR[1], DEBUG_COLOR[2], 設定.opacity,
+  );
+
+  const 位置 = gl.getAttribLocation(lineProgram, "aPosition");
+  gl.enableVertexAttribArray(位置);
+  gl.vertexAttribPointer(位置, 3, gl.FLOAT, false, 0, 0);
+
+  // 半透明で重ねる。枠は補助なので、下の絵を塗り潰さない
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  // 線そのものは深度を書き換えない。あとから描くものへ影響させないため
+  gl.depthMask(false);
+  gl.drawArrays(gl.LINES, 0, 線.length / 3);
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
 }
 
 /** 裏フレームバッファを画面へ転送する（バッファの入れ替えにあたる） */

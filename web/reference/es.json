@@ -166,5 +166,6 @@
   "ref.hit.ask": "Las colisiones se consultan indicando con quién. La respuesta usa las posiciones del momento en que preguntas, así que puedes mover, preguntar y deshacer el movimiento al instante. Tú eliges el método; @KIND no lo decide. El otro lado también puede ser un array. Un objeto nunca choca consigo mismo.",
   "ref.hit.intersect": "Solo mira el plano XY, sin profundidad. Para cenital y scroll lateral",
   "ref.hit.collision": "Mira XYZ por completo. Para juego tridimensional",
-  "ref.hit.ret": "Devuelve el objeto contra el que has chocado, o null si no hubo choque. Es más útil que un simple true y se lee igual dentro de un if. Con un array devuelve el primero que choca. Ambos lados necesitan área de impacto para que cuente."
+  "ref.hit.ret": "Devuelve el objeto contra el que has chocado, o null si no hubo choque. Es más útil que un simple true y se lee igual dentro de un if. Con un array devuelve el primero que choca. Ambos lados necesitan área de impacto para que cuente.",
+  "ref.hit.debug": "Llama a setDebug debug: true y las áreas de impacto se dibujan encima en rojo translúcido. Un objeto 2D recibe un marco plano, el resto uno tridimensional, y las esferas se dibujan como anillos. Las aristas que pasan por detrás de un modelo quedan ocultas, así que se ve con naturalidad qué está delante y qué detrás. Al ejecutar de nuevo vuelve a apagarse. La clave opacity cambia la intensidad de las líneas (0.5 por omisión)."
 }

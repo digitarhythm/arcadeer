@@ -315,6 +315,8 @@ GLOBAL.SCORE += 100` },
   敵 = @collision(@enemies)
   @damage() if 敵` },
       { type: "text", k: "ref.hit.ret" },
+      { type: "text", k: "ref.hit.debug" },
+      { type: "code", code: `setDebug debug: true, opacity: 0.3` },
 
       { type: "heading", k: "ref.api.h.pad" },
       { type: "text", k: "ref.api.d.pad" },

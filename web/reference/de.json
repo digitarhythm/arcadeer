@@ -166,5 +166,6 @@
   "ref.hit.ask": "Kollisionen erfragst du, indem du das Gegenüber nennst. Die Antwort nutzt die Positionen im Moment der Frage — du kannst also bewegen, fragen und die Bewegung sofort zurücknehmen. Welche Methode du nimmst, entscheidest du; @KIND legt das nicht fest. Das Gegenüber darf auch ein Array sein. Ein Objekt trifft sich nie selbst.",
   "ref.hit.intersect": "Sieht nur die XY-Ebene, ohne Tiefe. Für Draufsicht und Side-Scroller",
   "ref.hit.collision": "Sieht XYZ vollständig. Für dreidimensionales Spiel",
-  "ref.hit.ret": "Zurück kommt das getroffene Objekt selbst, sonst null. Das ist nützlicher als ein bloßes true und liest sich in einem if genauso. Bei einem Array kommt das erste getroffene zurück. Beide Seiten brauchen eine Trefferfläche, sonst passiert nichts."
+  "ref.hit.ret": "Zurück kommt das getroffene Objekt selbst, sonst null. Das ist nützlicher als ein bloßes true und liest sich in einem if genauso. Bei einem Array kommt das erste getroffene zurück. Beide Seiten brauchen eine Trefferfläche, sonst passiert nichts.",
+  "ref.hit.debug": "Rufe setDebug debug: true auf, und die Trefferflächen werden in durchscheinendem Rot darübergelegt. Ein 2D-Objekt bekommt einen flachen Rahmen, alles andere einen räumlichen, Kugeln werden als Ringe gezeichnet. Kanten hinter einem Modell werden verdeckt, sodass vorn und hinten so wirken, wie sie aussehen. Ein erneuter Start schaltet es wieder aus. Mit opacity änderst du, wie kräftig die Linien wirken (Vorgabe 0.5)."
 }
