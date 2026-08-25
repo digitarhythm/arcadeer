@@ -146,5 +146,8 @@
   "padconf.hint": "Na het indrukken ga je vanzelf verder. Heeft je gamepad die knop niet, kies dan „Overslaan”.",
   "padconf.restart": "Opnieuw beginnen",
   "padconf.hatFound": "Je richtingsknoppen sturen alle vier de richtingen via één as, dus de andere drie zijn vanzelf ingesteld.",
-  "sw.updated": "Er is een nieuwe versie. Herlaad om over te schakelen."
+  "sw.updated": "Er is een nieuwe versie. Herlaad om over te schakelen.",
+  "message.ok": "OK",
+  "message.cancel": "Annuleren",
+  "editor.fileChanged": "Het bestand is bijgewerkt.\nLaden?"
 }

@@ -146,5 +146,8 @@
   "padconf.hint": "Nach dem Drücken geht es automatisch weiter. Fehlt die Taste an deinem Gamepad, wähle „Überspringen“.",
   "padconf.restart": "Von vorn beginnen",
   "padconf.hatFound": "Dein Steuerkreuz meldet alle vier Richtungen über eine Achse. Die übrigen drei wurden automatisch gesetzt.",
-  "sw.updated": "Eine neue Version ist verfügbar. Neu laden, um zu wechseln."
+  "sw.updated": "Eine neue Version ist verfügbar. Neu laden, um zu wechseln.",
+  "message.ok": "OK",
+  "message.cancel": "Abbrechen",
+  "editor.fileChanged": "Die Datei wurde aktualisiert.\nLaden?"
 }

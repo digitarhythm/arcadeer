@@ -541,6 +541,25 @@ async fn read_text_file(
         .ok_or_else(|| JsValue::from_str("failed to read text file"))
 }
 
+/// テキストファイルを、**最終更新時刻**と一緒に読む（仕様書4.11節）
+///
+/// 下書きとファイルのどちらが新しいかを判断するために使う。
+async fn read_text_file_with_modified(
+    dir: &FileSystemDirectoryHandle,
+    file_name: &str,
+) -> Result<(String, f64), JsValue> {
+    let file_handle: FileSystemFileHandle = JsFuture::from(dir.get_file_handle(file_name))
+        .await?
+        .dyn_into()?;
+    let file: File = JsFuture::from(file_handle.get_file()).await?.dyn_into()?;
+    let modified = file.last_modified();
+    let text = JsFuture::from(file.text()).await?;
+    let text = text
+        .as_string()
+        .ok_or_else(|| JsValue::from_str("failed to read text file"))?;
+    Ok((text, modified))
+}
+
 /// 配布アセット（URL）を取得し、ディレクトリ配下へバイナリのまま書き込む
 async fn copy_url_to_file(
     url: &str,
@@ -1342,6 +1361,8 @@ fn start_game() {
     // クラスのコンパイルはファイル読み込みを伴うため非同期に行い、
     // 完了してから起点オブジェクトを生成してループを回し始める
     spawn_local(async move {
+        // 保存し忘れたまま実行しても、見ているコードがそのまま動くようにする（4.11節）
+        flush_drafts().await;
         if !build_game_classes().await {
             stop_game();
             return;
@@ -3121,11 +3142,75 @@ async fn open_object_in_editor(name: &str) -> Result<(), JsValue> {
         .ok_or_else(|| JsValue::from_str("code/ directory is unavailable"))?;
 
     let file_name = class_file_name(name);
-    let content = read_text_file(&code_dir, &file_name).await?;
+    let (content, modified) = read_text_file_with_modified(&code_dir, &file_name).await?;
 
     CURRENT_FILE.with(|f| *f.borrow_mut() = Some(file_name.clone()));
     highlight_open_object(name);
-    call_editor_open(&file_name, &content)
+    call_editor_open(&file_name, &content, &project.name(), modified)
+}
+
+/// いま開いているプロジェクトの識別子（ディレクトリ名）
+fn current_project_id() -> String {
+    CURRENT_PROJECT
+        .with(|c| c.borrow().clone())
+        .map(|p| p.name())
+        .unwrap_or_default()
+}
+
+/// 保存されていない下書きを、すべてファイルへ書き出す（仕様書4.11節）
+///
+/// ゲームを実行する前に呼ぶ。エンジンはファイルを読むため、
+/// **書き出さないと編集した内容が実行に反映されない**。
+async fn flush_drafts() {
+    let Some(window) = window() else { return };
+    let project = current_project_id();
+    if project.is_empty() {
+        return;
+    }
+
+    let Ok(func) = js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("arcadeerDraftsOf"))
+    else {
+        return;
+    };
+    let Ok(func) = func.dyn_into::<js_sys::Function>() else {
+        return;
+    };
+    let Ok(promise) = func.call1(&JsValue::NULL, &JsValue::from_str(&project)) else {
+        return;
+    };
+    let Ok(promise) = promise.dyn_into::<js_sys::Promise>() else {
+        return;
+    };
+    let Ok(list) = JsFuture::from(promise).await else {
+        return;
+    };
+    let Ok(list) = list.dyn_into::<js_sys::Array>() else {
+        return;
+    };
+
+    for item in list.iter() {
+        let get = |key: &str| {
+            js_sys::Reflect::get(&item, &JsValue::from_str(key))
+                .ok()
+                .and_then(|v| v.as_string())
+        };
+        let (Some(file_name), Some(content), Some(key)) =
+            (get("fileName"), get("content"), get("key"))
+        else {
+            continue;
+        };
+        match save_class_file(&file_name, &content).await {
+            Ok(()) => {
+                log(&t_with("msg.fileSaved", &[("name", &file_name)]));
+                // 書けたので下書きは用済み。開いているファイルなら未保存マークも消す
+                call_global_with_str("arcadeerClearDraft", &key);
+                if CURRENT_FILE.with(|f| f.borrow().as_deref() == Some(file_name.as_str())) {
+                    notify_editor_saved(&content);
+                }
+            }
+            Err(err) => log_err(&t("msg.fileSaveFailed"), &err),
+        }
+    }
 }
 
 /// 一覧で開いているオブジェクトを強調表示する
@@ -3154,16 +3239,22 @@ fn highlight_open_object(name: &str) {
 }
 
 /// editor.js の openEditor を呼び出す
-fn call_editor_open(file_name: &str, content: &str) -> Result<(), JsValue> {
+fn call_editor_open(
+    file_name: &str,
+    content: &str,
+    project_id: &str,
+    modified: f64,
+) -> Result<(), JsValue> {
     let window = window().ok_or_else(|| JsValue::from_str("no window"))?;
     let func: js_sys::Function =
         js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("arcadeerOpenEditor"))?
             .dyn_into()?;
-    func.call2(
-        &JsValue::NULL,
-        &JsValue::from_str(file_name),
-        &JsValue::from_str(content),
-    )?;
+    let args = js_sys::Array::new();
+    args.push(&JsValue::from_str(file_name));
+    args.push(&JsValue::from_str(content));
+    args.push(&JsValue::from_str(project_id));
+    args.push(&JsValue::from_f64(modified));
+    func.apply(&JsValue::NULL, &args)?;
     Ok(())
 }
 

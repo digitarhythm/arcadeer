@@ -146,5 +146,8 @@
   "padconf.hint": "按下後會自動進入下一項。若手把沒有該部件，請選擇「略過此項」。",
   "padconf.restart": "從頭開始",
   "padconf.hatFound": "你的方向鍵把四個方向合併在一個軸上，因此其餘三個方向已自動設定並一併略過。",
-  "sw.updated": "有新版本。重新載入即可切換。"
+  "sw.updated": "有新版本。重新載入即可切換。",
+  "message.ok": "確定",
+  "message.cancel": "取消",
+  "editor.fileChanged": "檔案已更新。\n要讀取嗎？"
 }

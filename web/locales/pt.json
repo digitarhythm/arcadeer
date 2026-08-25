@@ -146,5 +146,8 @@
   "padconf.hint": "Ao carregar, avança sozinho para o seguinte. Se o seu comando não o tiver, escolha «Saltar».",
   "padconf.restart": "Recomeçar",
   "padconf.hatFound": "O seu direcional envia as quatro direções num só eixo, por isso as outras três foram definidas sozinhas.",
-  "sw.updated": "Está disponível uma nova versão. Recarrega para mudar para ela."
+  "sw.updated": "Está disponível uma nova versão. Recarrega para mudar para ela.",
+  "message.ok": "OK",
+  "message.cancel": "Cancelar",
+  "editor.fileChanged": "O ficheiro foi atualizado.\nCarregar?"
 }
