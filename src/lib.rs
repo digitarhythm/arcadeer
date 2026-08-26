@@ -2375,7 +2375,6 @@ async fn render_project_pane(project: &FileSystemDirectoryHandle) -> Result<(), 
                 }
             }
             SELECTED_TAB.with(|k| *k.borrow_mut() = label_key.clone());
-            update_action_label(&label_key);
 
             // 描画時点ではなく、現在の内容（並べ替え後）を読み直す
             let current = PANE_TABS.with(|tabs| {
@@ -2402,15 +2401,10 @@ async fn render_project_pane(project: &FileSystemDirectoryHandle) -> Result<(), 
         CURRENT_OBJECTS.with(|o| *o.borrow_mut() = object_tab.items.clone());
     }
 
-    // タブバー右端に「＋」ボタンを置く（タブの右側が空くため）
-    let action = build_pane_action_button(&document)?;
-    tab_bar.append_child(&action)?;
-
     PANE_TABS.with(|t| *t.borrow_mut() = tabs.clone());
 
     if let Some(tab) = tabs.get(active) {
         SELECTED_TAB.with(|k| *k.borrow_mut() = tab.label_key.clone());
-        update_action_label(&tab.label_key);
         fill_pane_body(&body, tab)?;
     }
 
@@ -3333,51 +3327,6 @@ fn notify_editor_saved(content: &str) {
     };
     if let Ok(func) = func.dyn_into::<js_sys::Function>() {
         let _ = func.call1(&JsValue::NULL, &JsValue::from_str(content));
-    }
-}
-
-/// タブバー右端に置く「＋」ボタンを組み立てる
-fn build_pane_action_button(document: &Document) -> Result<Element, JsValue> {
-    let button = document.create_element("button")?;
-    button.set_attribute("type", "button")?;
-    button.set_id("btn-new-object");
-    button.set_class_name("header-icon-btn pane-icon-btn");
-    set_action_label(&button, OBJECT_TAB_KEY)?;
-    // ＋アイコン
-    button.set_inner_html(
-        r#"<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14" /><path d="M5 12h14" /></svg>"#,
-    );
-    // 選択中のタブによって動作を変える
-    //   オブジェクト: 新規クラスファイル作成
-    //   画像／音声／3Dモデル: ファイル選択画面から assets/ へ追加
-    let on_click = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
-        trigger_pane_action();
-    });
-    button.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref())?;
-    on_click.forget();
-
-    Ok(button)
-}
-
-/// 最下段ボタンのツールチップを、選択中タブに応じた文言に設定する
-fn set_action_label(button: &Element, tab_key: &str) -> Result<(), JsValue> {
-    let label = if tab_key == OBJECT_TAB_KEY {
-        t("pane.newObject")
-    } else {
-        t("pane.addAsset")
-    };
-    button.set_attribute("data-tooltip", &label)?;
-    button.set_attribute("aria-label", &label)?;
-    Ok(())
-}
-
-/// 表示済みの最下段ボタンのツールチップを更新する
-fn update_action_label(tab_key: &str) {
-    let Some(document) = window().and_then(|w| w.document()) else {
-        return;
-    };
-    if let Some(button) = document.get_element_by_id("btn-new-object") {
-        let _ = set_action_label(&button, tab_key);
     }
 }
 

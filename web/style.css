@@ -739,20 +739,6 @@ body.footer-expanded {
   color: #fff;
 }
 
-/* 「＋」ボタンは縮まずに右端へ残す */
-.pane-icon-btn {
-  flex-shrink: 0;
-}
-
-/* 右端にあるため、ツールチップは下側かつ右揃えでペイン内へ収める */
-.pane-icon-btn::after {
-  top: calc(100% + 8px);
-  bottom: auto;
-  left: auto;
-  right: 0;
-  transform: none;
-}
-
 /* 設定ダイアログのセレクトボックス */
 .dialog-select {
   padding: 8px 10px;
