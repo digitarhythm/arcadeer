@@ -4,6 +4,7 @@
 
 import { t } from "./i18n.js";
 import { getKeybinding, aceHandlerFor } from "./keybinding.js";
+import { getFontSize, aceFontSize } from "./font-size.js";
 import { showConfirm } from "./message-dialog.js";
 import { draftKey, decideOpen, saveDraft, loadDraft, clearDraft } from "./draft-store.js";
 
@@ -18,6 +19,15 @@ let currentFile = null;
 let savedContent = "";
 /** いま編集しているファイルの下書きの鍵 */
 let currentKey = null;
+
+/**
+ * ファイルごとの編集セッション（鍵 → Ace の EditSession）
+ *
+ * **やり直し（UNDO）の履歴はセッションが持つ。**開き直すたびに作り直すと
+ * 履歴が消えてしまうため、一度作ったものを覚えておいて使い回す。
+ * セッションはエディタ本体から独立しているので、画面を組み直しても残る。
+ */
+const sessions = new Map();
 
 /**
  * 下書きを書くまでの待ち時間（ミリ秒）
@@ -54,6 +64,12 @@ function loadAce() {
     document.head.appendChild(script);
   });
   return acePromise;
+}
+
+/** 現在の設定に応じて文字の大きさをエディタへ適用する */
+function applyFontSize() {
+  if (!editor) return;
+  editor.setOption("fontSize", aceFontSize(getFontSize()));
 }
 
 /** 現在の設定に応じてキーバインドをエディタへ適用する */
@@ -131,7 +147,12 @@ export async function openEditor(fileName, content, projectId, modified) {
     開く内容 = draft.content;
   } else if (判断 === "ask") {
     // OK なら読み込み直す。やめる なら編集の続きを守る
-    if (await showConfirm(t("editor.fileChanged"))) await clearDraft(key);
+    const 読み込む = await showConfirm(
+      t("editor.fileChanged"),
+      "warning",
+      t("editor.fileChangedTitle"),
+    );
+    if (読み込む) await clearDraft(key);
     else 開く内容 = draft.content;
   } else {
     await clearDraft(key);
@@ -169,11 +190,21 @@ export async function openEditor(fileName, content, projectId, modified) {
 
   editor = ace.edit("editor-body");
   editor.setTheme("ace/theme/tomorrow_night");
-  editor.session.setMode("ace/mode/coffee");
-  editor.session.setTabSize(2);
-  editor.session.setUseSoftTabs(true);
-  editor.setOptions({ fontSize: "13px", showPrintMargin: false });
-  editor.setValue(開く内容, -1);
+  editor.setOptions({ fontSize: aceFontSize(getFontSize()), showPrintMargin: false });
+
+  let session = sessions.get(key);
+  if (!session) {
+    session = ace.createEditSession(開く内容, "ace/mode/coffee");
+    session.setTabSize(2);
+    session.setUseSoftTabs(true);
+    sessions.set(key, session);
+  } else if (判断 !== "draft" && session.getValue() !== 開く内容) {
+    // ファイルを読み直した場合だけ、覚えていた内容を入れ替える
+    session.setValue(開く内容);
+  }
+  editor.setSession(session);
+  // 開いた直後は行頭へ。前の位置は Ace が覚えている
+  editor.clearSelection();
 
   applyKeybinding();
 
@@ -181,7 +212,8 @@ export async function openEditor(fileName, content, projectId, modified) {
   currentKey = key;
   // 未保存かどうかは**ファイルの内容**と比べて決める
   savedContent = content;
-  editor.session.on("change", () => {
+  // セッションを付け替えても効くよう、本体側で受け取る
+  editor.on("change", () => {
     updateDirtyMark();
     scheduleDraft();
   });
@@ -196,6 +228,20 @@ export async function openEditor(fileName, content, projectId, modified) {
 
   window.arcadeerFadeInElement?.(main);
   editor.focus();
+}
+
+/**
+ * 待ちを打ち切って、いまの内容を下書きへ確定させる（4.11節）
+ *
+ * 入力から1秒経つ前にゲームを実行すると、下書きがまだ書かれていない。
+ * 実行前にこれを呼んでもらい、**打った直後でも取りこぼさない**ようにする。
+ */
+export async function commitDraft() {
+  clearTimeout(draftTimer);
+  if (!editor || !currentKey) return;
+  const 内容 = editor.getValue();
+  if (内容 === savedContent) return;
+  await saveDraft(currentKey, 内容);
 }
 
 /**
@@ -229,8 +275,10 @@ if (typeof window !== "undefined") {
   window.arcadeerOpenEditor = openEditor;
   window.arcadeerEditorSaved = markSaved;
   window.arcadeerFocusEditor = focusEditor;
+  window.arcadeerCommitDraft = commitDraft;
   window.addEventListener("arcadeer:languagechange", applyTexts);
   window.addEventListener("arcadeer:keybindingchange", applyKeybinding);
+  window.addEventListener("arcadeer:fontsizechange", applyFontSize);
   // ブラウザ標準の保存ダイアログを抑止し、エディタの保存に割り当てる
   // ゲーム表示エリアにフォーカスがある間は、そちらの操作を優先する
   window.addEventListener("keydown", (e) => {

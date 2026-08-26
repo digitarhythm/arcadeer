@@ -28,6 +28,7 @@
   "settings.title": "시스템 설정",
   "settings.language": "표시 언어",
   "settings.keybinding": "키 바인딩",
+  "settings.fontSize": "글자 크기",
   "keybinding.default": "기본",
   "keybinding.vim": "Vim",
   "settings.close": "닫기",
@@ -149,5 +150,6 @@
   "sw.updated": "새 버전이 있습니다. 새로 고치면 전환됩니다.",
   "message.ok": "확인",
   "message.cancel": "취소",
-  "editor.fileChanged": "파일이 갱신되었습니다.\n읽어들일까요?"
+  "editor.fileChanged": "파일이 갱신되었습니다.\n읽어들일까요?",
+  "editor.fileChangedTitle": "파일이 변경되었습니다"
 }

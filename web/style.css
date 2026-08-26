@@ -769,6 +769,32 @@ body.footer-expanded {
   border-color: var(--accent);
 }
 
+/* 設定ダイアログのスライダー（文字サイズ） */
+.dialog-range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dialog-range {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.dialog-range:focus {
+  outline: none;
+}
+
+/* 数字が変わっても幅が動かないよう、桁数ぶんの場所を空けておく */
+.dialog-range-value {
+  min-width: 5ch;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted, var(--fg));
+}
+
 .ide-main {
   grid-area: main;
   background: var(--bg);

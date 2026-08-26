@@ -28,6 +28,7 @@
   "settings.title": "System settings",
   "settings.language": "Display language",
   "settings.keybinding": "Key bindings",
+  "settings.fontSize": "Font size",
   "keybinding.default": "Default",
   "keybinding.vim": "Vim",
   "settings.close": "Close",
@@ -149,5 +150,6 @@
   "sw.updated": "A new version is available. Reload to switch to it.",
   "message.ok": "OK",
   "message.cancel": "Cancel",
-  "editor.fileChanged": "The file has been updated.\nLoad it?"
+  "editor.fileChanged": "The file has been updated.\nLoad it?",
+  "editor.fileChangedTitle": "The file has changed"
 }

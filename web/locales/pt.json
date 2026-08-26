@@ -28,6 +28,7 @@
   "settings.title": "Definições do sistema",
   "settings.language": "Idioma de exibição",
   "settings.keybinding": "Atalhos de teclado",
+  "settings.fontSize": "Tamanho do texto",
   "keybinding.default": "Predefinidos",
   "keybinding.vim": "Vim",
   "settings.close": "Fechar",
@@ -149,5 +150,6 @@
   "sw.updated": "Está disponível uma nova versão. Recarrega para mudar para ela.",
   "message.ok": "OK",
   "message.cancel": "Cancelar",
-  "editor.fileChanged": "O ficheiro foi atualizado.\nCarregar?"
+  "editor.fileChanged": "O ficheiro foi atualizado.\nCarregar?",
+  "editor.fileChangedTitle": "O ficheiro foi alterado"
 }

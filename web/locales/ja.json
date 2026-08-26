@@ -28,6 +28,7 @@
   "settings.title": "システム設定",
   "settings.language": "表示言語",
   "settings.keybinding": "キーバインド",
+  "settings.fontSize": "文字サイズ",
   "keybinding.default": "通常",
   "keybinding.vim": "Vim",
   "settings.close": "閉じる",
@@ -149,5 +150,6 @@
   "sw.updated": "新しい版があります。再読み込みすると切り替わります。",
   "message.ok": "OK",
   "message.cancel": "やめる",
-  "editor.fileChanged": "ファイルが更新されています。\n読み込みますか？"
+  "editor.fileChanged": "ファイルが更新されています。\n読み込みますか？",
+  "editor.fileChangedTitle": "ファイルが変更されています"
 }

@@ -28,6 +28,7 @@
   "settings.title": "系統設定",
   "settings.language": "顯示語言",
   "settings.keybinding": "快速鍵",
+  "settings.fontSize": "字級",
   "keybinding.default": "預設",
   "keybinding.vim": "Vim",
   "settings.close": "關閉",
@@ -149,5 +150,6 @@
   "sw.updated": "有新版本。重新載入即可切換。",
   "message.ok": "確定",
   "message.cancel": "取消",
-  "editor.fileChanged": "檔案已更新。\n要讀取嗎？"
+  "editor.fileChanged": "檔案已更新。\n要讀取嗎？",
+  "editor.fileChangedTitle": "檔案已變更"
 }

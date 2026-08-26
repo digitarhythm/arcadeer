@@ -28,6 +28,7 @@
   "settings.title": "Systemeinstellungen",
   "settings.language": "Anzeigesprache",
   "settings.keybinding": "Tastenbelegung",
+  "settings.fontSize": "Schriftgröße",
   "keybinding.default": "Standard",
   "keybinding.vim": "Vim",
   "settings.close": "Schließen",
@@ -149,5 +150,6 @@
   "sw.updated": "Eine neue Version ist verfügbar. Neu laden, um zu wechseln.",
   "message.ok": "OK",
   "message.cancel": "Abbrechen",
-  "editor.fileChanged": "Die Datei wurde aktualisiert.\nLaden?"
+  "editor.fileChanged": "Die Datei wurde aktualisiert.\nLaden?",
+  "editor.fileChangedTitle": "Die Datei wurde geändert"
 }

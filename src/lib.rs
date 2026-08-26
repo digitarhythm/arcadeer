@@ -3168,6 +3168,20 @@ async fn flush_drafts() {
         return;
     }
 
+    // 打った直後に実行された場合、下書きはまだ書かれていない。
+    // 待ちを打ち切って確定させてから読む
+    if let Ok(commit) =
+        js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("arcadeerCommitDraft"))
+    {
+        if let Ok(commit) = commit.dyn_into::<js_sys::Function>() {
+            if let Ok(promise) = commit.call0(&JsValue::NULL) {
+                if let Ok(promise) = promise.dyn_into::<js_sys::Promise>() {
+                    let _ = JsFuture::from(promise).await;
+                }
+            }
+        }
+    }
+
     let Ok(func) = js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("arcadeerDraftsOf"))
     else {
         return;

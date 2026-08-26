@@ -28,6 +28,7 @@
   "settings.title": "Systeeminstellingen",
   "settings.language": "Weergavetaal",
   "settings.keybinding": "Sneltoetsen",
+  "settings.fontSize": "Tekstgrootte",
   "keybinding.default": "Standaard",
   "keybinding.vim": "Vim",
   "settings.close": "Sluiten",
@@ -149,5 +150,6 @@
   "sw.updated": "Er is een nieuwe versie. Herlaad om over te schakelen.",
   "message.ok": "OK",
   "message.cancel": "Annuleren",
-  "editor.fileChanged": "Het bestand is bijgewerkt.\nLaden?"
+  "editor.fileChanged": "Het bestand is bijgewerkt.\nLaden?",
+  "editor.fileChangedTitle": "Het bestand is gewijzigd"
 }
