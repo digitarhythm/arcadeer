@@ -1214,8 +1214,7 @@ fn wire_game_api() -> Result<(), JsValue> {
 
     // オブジェクトを一次元配列の末尾へ追加し、識別子を返す
     let add = Closure::<dyn FnMut(JsValue) -> f64>::new(move |object: JsValue| {
-        let id = GAME_OBJECTS.with(|o| o.borrow_mut().add(object));
-        f64::from(id.0)
+        f64::from(register_object(object).0)
     });
     js_sys::Reflect::set(
         &window,
@@ -1521,7 +1520,7 @@ fn spawn_entry_object() {
         Ok(instance) if !instance.is_null() && !instance.is_undefined() => {
             // 起点オブジェクトは、コンストラクタで作られたものより後ろに置く。
             // 走査順は追加順のため、先に作られた子が先に動く。
-            GAME_OBJECTS.with(|o| o.borrow_mut().add(instance));
+            register_object(instance);
         }
         // 生成できなかった理由を添える。
         // 理由が分からないと、書き間違いなのかコンストラクタの不具合なのか切り分けられない
@@ -1913,12 +1912,42 @@ fn install_object_registrar() {
     let Ok(setter) = setter.dyn_into::<js_sys::Function>() else {
         return;
     };
-    let registrar = Closure::<dyn FnMut(JsValue)>::new(move |created: JsValue| {
-        GAME_OBJECTS.with(|o| o.borrow_mut().add(created));
+    let registrar = Closure::<dyn FnMut(JsValue) -> f64>::new(move |created: JsValue| {
+        // 消す時に使えるよう、識別子を返す
+        f64::from(register_object(created).0)
     });
     let _ = setter.call1(&JsValue::NULL, registrar.as_ref());
     // ゲーム実行中は生き続ける必要があるため、寿命をJS側へ委ねる
     registrar.forget();
+
+    // 削除の予約先も差し込む
+    let Ok(setter) = js_sys::Reflect::get(&window, &JsValue::from_str("arcadeerSetObjectRemover"))
+    else {
+        return;
+    };
+    let Ok(setter) = setter.dyn_into::<js_sys::Function>() else {
+        return;
+    };
+    let remover = Closure::<dyn FnMut(f64)>::new(move |id: f64| {
+        if id >= 0.0 {
+            GAME_OBJECTS.with(|o| o.borrow_mut().remove(objects::ObjectId(id as u32)));
+        }
+    });
+    let _ = setter.call1(&JsValue::NULL, remover.as_ref());
+    remover.forget();
+}
+
+/// オブジェクトを一覧へ加え、**識別子を実体へ書き込む**
+///
+/// `removeObject()` は、この識別子を頼りに削除を予約する（6.2節）。
+fn register_object(object: JsValue) -> objects::ObjectId {
+    let id = GAME_OBJECTS.with(|o| o.borrow_mut().add(object.clone()));
+    let _ = js_sys::Reflect::set(
+        &object,
+        &JsValue::from_str("_objectId"),
+        &JsValue::from_f64(f64::from(id.0)),
+    );
+    id
 }
 
 /// 次のフレームを予約する
@@ -2029,9 +2058,24 @@ fn run_behaviors(event: &JsValue) {
         let Some(object) = object else { continue };
         call_behavior(&object, event);
     }
-    GAME_OBJECTS.with(|o| {
-        o.borrow_mut().apply_removals();
-    });
+    // 消すものは、走査が終わってからまとめて片付ける。
+    // **取り除く前に `destructor(e)` を呼ぶ**（6.2節）
+    let removed = GAME_OBJECTS.with(|o| o.borrow_mut().apply_removals());
+    for object in removed {
+        call_destructor(&object, event);
+    }
+}
+
+/// オブジェクトの `destructor()` を呼ぶ
+///
+/// 持っていないオブジェクトも多いため、無ければ何もしない。
+fn call_destructor(object: &JsValue, event: &JsValue) {
+    let Ok(method) = js_sys::Reflect::get(object, &JsValue::from_str("destructor")) else {
+        return;
+    };
+    if let Ok(func) = method.dyn_into::<js_sys::Function>() {
+        let _ = func.call1(object, event);
+    }
 }
 
 /// オブジェクトの `behavior()` を呼ぶ

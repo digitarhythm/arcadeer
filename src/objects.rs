@@ -51,15 +51,26 @@ impl<T> ObjectList<T> {
         }
     }
 
-    /// 予約された削除をまとめて反映し、削除された数を返す
-    pub fn apply_removals(&mut self) -> usize {
+    /// 予約された削除をまとめて反映し、**取り除いた実体を追加順で返す**
+    ///
+    /// 返すのは、呼び出し側が `destructor()` を呼べるようにするため（6.2節）。
+    /// 受け取った側が捨てれば、あとは JavaScript の後始末に任せられる。
+    pub fn apply_removals(&mut self) -> Vec<T> {
         if self.pending_removal.is_empty() {
-            return 0;
+            return Vec::new();
         }
         let pending = std::mem::take(&mut self.pending_removal);
-        let before = self.entries.len();
-        self.entries.retain(|(id, _)| !pending.contains(id));
-        before - self.entries.len()
+        let mut removed = Vec::new();
+        let mut kept = Vec::with_capacity(self.entries.len());
+        for (id, object) in std::mem::take(&mut self.entries) {
+            if pending.contains(&id) {
+                removed.push(object);
+            } else {
+                kept.push((id, object));
+            }
+        }
+        self.entries = kept;
+        removed
     }
 
     /// 削除が予約されているか
@@ -150,6 +161,27 @@ mod tests {
     }
 
     #[test]
+    fn 反映すると取り除いた実体が追加順で返る() {
+        let mut objects = list();
+        objects.add("Player");
+        let a = objects.add("Enemy");
+        let b = objects.add("Bullet");
+        objects.remove(b);
+        objects.remove(a);
+        // 消した順ではなく、**追加順**で返す（destructor の呼び出し順をそろえるため）
+        assert_eq!(objects.apply_removals(), vec!["Enemy", "Bullet"]);
+        assert_eq!(objects.len(), 1);
+    }
+
+    #[test]
+    fn 消すものが無ければ空が返る() {
+        let mut objects = list();
+        objects.add("Player");
+        assert!(objects.apply_removals().is_empty());
+        assert_eq!(objects.len(), 1);
+    }
+
+    #[test]
     fn 削除は予約された時点では反映されない() {
         let mut objects = list();
         let id = objects.add("Player");
@@ -169,7 +201,7 @@ mod tests {
         objects.remove(a);
         objects.remove(c);
 
-        assert_eq!(objects.apply_removals(), 2);
+        assert_eq!(objects.apply_removals(), vec!["Player", "Bullet"]);
         let names: Vec<&str> = objects.iter().map(|(_, name)| *name).collect();
         assert_eq!(names, vec!["Enemy"]);
         assert!(!objects.is_removing(a));
@@ -192,7 +224,7 @@ mod tests {
         let id = objects.add("Player");
         objects.remove(id);
         objects.remove(id);
-        assert_eq!(objects.apply_removals(), 1);
+        assert_eq!(objects.apply_removals(), vec!["Player"]);
         assert!(objects.is_empty());
     }
 
@@ -201,7 +233,7 @@ mod tests {
         let mut objects = list();
         objects.add("Player");
         objects.remove(ObjectId(9999));
-        assert_eq!(objects.apply_removals(), 0);
+        assert!(objects.apply_removals().is_empty());
         assert_eq!(objects.len(), 1);
     }
 

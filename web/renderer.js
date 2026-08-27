@@ -7,7 +7,7 @@
 
 import { parseGlb, collectPrimitives, collectClips, collectSkin, computeBox } from "./glb.js";
 import { sampleClip, jointMatrices, stripRootMotion } from "./animation.js";
-import { stepAnimation } from "./runtime.js";
+import { stepObjectAnimation, removeFromList } from "./runtime.js";
 import { multiply, lightViewProjection, transformPoint } from "./matrix.js";
 import { viewMatrix, projectionMatrix } from "./camera.js";
 import { lights, shadowLight, ambient, lightVector, MAX_LIGHTS as LIGHT_LIMIT } from "./light.js";
@@ -813,9 +813,8 @@ export function advanceAnimations(objects, deltaSec) {
     const clip = models.get(object.MODEL)?.clips.get(anim.name);
     if (!clip) continue;
 
-    const result = stepAnimation(anim, deltaSec, clip.duration);
-    anim.time = result.time;
-    object.animationFinished = result.finished;
+    // 指定回数を再生し終えたものは、ここで消す合図が返る（6.2節）
+    if (stepObjectAnimation(object, deltaSec, clip.duration)) removeFromList(object);
   }
 }
 

@@ -18,6 +18,7 @@ import { resetKindWarnings } from "./kind.js";
 import { GLOBAL, clearGlobals } from "./globals.js";
 import { GAMEPAD, clearGamepads, setGamepadOption } from "./gamepad.js";
 import { setDebug, DEFAULT_OPACITY } from "./debug-draw.js";
+import { random } from "./random.js";
 import { openGamePadConfig, applySavedConfig } from "./gamepad-config-ui.js";
 import {
   addLight,
@@ -111,6 +112,7 @@ function compileClass(compiler, className, source) {
       "setGamepadOption",
       "openGamePadConfig",
       "setDebug",
+      "random",
       `${js}\nreturn typeof ${className} !== "undefined" ? ${className} : null;`,
     );
     const klass = factory(
@@ -134,6 +136,7 @@ function compileClass(compiler, className, source) {
       setGamepadOption,
       openGamePadConfig,
       setDebug,
+      random,
     );
     if (typeof klass !== "function") {
       return `${className}.coffee: class ${className} not found`;

@@ -1,5 +1,5 @@
 // ゲーム実行基盤（arcadeermain とクラス登録）のテスト
-import { describe, expect, test, beforeEach } from "bun:test";
+import { afterEach, describe, expect, test, beforeEach } from "bun:test";
 import {
   ArcadeerMain,
   defineClass,
@@ -20,7 +20,10 @@ import {
   pressedKeys,
   setObjectRegistrar,
   clearObjectRegistrar,
+  setObjectRemover,
+  clearObjectRemover,
   stepAnimation,
+  stepObjectAnimation,
   normalizeAngle,
 } from "../web/runtime.js";
 
@@ -776,5 +779,199 @@ describe("当たり判定のメソッド", () => {
     expect(自分.collision()).toBeNull();
     expect(自分.intersect(null)).toBeNull();
     expect(自分.collision([])).toBeNull();
+  });
+});
+
+describe("removeObject", () => {
+  class Ship extends ArcadeerMain {}
+
+  /** 削除の予約先を差し込んで、渡された識別子を集める */
+  function 削除の記録() {
+    const 消した = [];
+    setObjectRemover((id) => 消した.push(id));
+    return 消した;
+  }
+
+  beforeEach(() => {
+    setObjectRegistrar((obj) => {
+      // エンジンは登録した順に識別子を振り、それを返す
+      obj._registered = true;
+      return 削除用の識別子++;
+    });
+  });
+
+  let 削除用の識別子 = 100;
+
+  afterEach(() => {
+    clearObjectRegistrar();
+    clearObjectRemover();
+  });
+
+  test("登録した時に受け取った識別子で、削除を予約する", () => {
+    defineClass("myship", Ship);
+    const 消した = 削除の記録();
+    const parent = new ArcadeerMain({});
+    const ship = parent.addObject({ name: "myship" });
+    parent.removeObject(ship);
+    expect(消した).toEqual([ship._objectId]);
+  });
+
+  test("自分を渡せば、自分自身を消せる", () => {
+    const 消した = 削除の記録();
+    const parent = new ArcadeerMain({});
+    const 子 = parent.addObject({ name: "box" });
+    // 消される側が自分で呼ぶ形（ゲームコードでは @removeObject @）
+    子.removeObject(子);
+    expect(消した).toEqual([子._objectId]);
+  });
+
+  test("どのオブジェクトから呼んでも、渡した相手が消える", () => {
+    const 消した = 削除の記録();
+    const parent = new ArcadeerMain({});
+    const 子 = parent.addObject({ name: "box" });
+    // 呼び出し元ではなく、引数のほうが消える
+    parent.removeObject(子);
+    expect(消した).toEqual([子._objectId]);
+  });
+
+  test("同じものを二度渡しても、二度予約する（重複はエンジン側で束ねる）", () => {
+    const 消した = 削除の記録();
+    const parent = new ArcadeerMain({});
+    const 子 = parent.addObject({ name: "box" });
+    parent.removeObject(子);
+    parent.removeObject(子);
+    expect(消した).toHaveLength(2);
+  });
+
+  test("登録されていないものを渡しても落ちない", () => {
+    const 消した = 削除の記録();
+    const parent = new ArcadeerMain({});
+    parent.removeObject(new ArcadeerMain({}));
+    parent.removeObject(null);
+    parent.removeObject();
+    parent.removeObject("box");
+    expect(消した).toHaveLength(0);
+  });
+
+  test("予約先が無くても落ちない", () => {
+    clearObjectRemover();
+    const parent = new ArcadeerMain({});
+    const 子 = parent.addObject({ name: "box" });
+    parent.removeObject(子);
+  });
+});
+
+describe("再生した回数", () => {
+  const anim = (over = {}) => ({ name: "Jump", time: 0, loop: false, speed: 1, ...over });
+
+  test("末尾に届かなければ 0 回", () => {
+    expect(stepAnimation(anim(), 0.25, 1.0).plays).toBe(0);
+  });
+
+  test("末尾まで再生したら 1 回", () => {
+    expect(stepAnimation(anim({ time: 0.9 }), 0.2, 1.0).plays).toBe(1);
+  });
+
+  test("ループなら、またいだ周の数だけ数える", () => {
+    // 1周の長さ 1.0 を 2.5 進めれば 2周ぶん
+    expect(stepAnimation(anim({ loop: true }), 2.5, 1.0).plays).toBe(2);
+  });
+
+  test("長さの無いクリップは 1 回として扱う", () => {
+    // 進めようがないので、待たせ続けない
+    expect(stepAnimation(anim(), 0.1, 0).plays).toBe(1);
+  });
+});
+
+describe("removeAfterAnimation", () => {
+  /** クリップの長さ 1.0 のオブジェクトを、指定回数ぶん進める */
+  function 進める(object, 回数, 刻み = 0.5) {
+    let 消す = false;
+    for (let i = 0; i < 回数; i += 1) {
+      消す = stepObjectAnimation(object, 刻み, 1.0) || 消す;
+    }
+    return 消す;
+  }
+
+  test("アニメーションを設定し、回数を覚える", () => {
+    const o = new ArcadeerMain({});
+    o.removeAfterAnimation({ name: "Die", times: 3 });
+    expect(o.animation.name).toBe("Die");
+    expect(o.animation.times).toBe(3);
+    expect(o.animation.removeAtEnd).toBe(true);
+    // 2回以上ならループさせないと、2周目が再生されない
+    expect(o.animation.loop).toBe(true);
+  });
+
+  test("1回だけならループしない", () => {
+    const o = new ArcadeerMain({});
+    o.removeAfterAnimation({ name: "Die" });
+    expect(o.animation.times).toBe(1);
+    expect(o.animation.loop).toBe(false);
+  });
+
+  test("回数の指定が無ければ 1 回", () => {
+    const o = new ArcadeerMain({});
+    o.removeAfterAnimation({ name: "Die" });
+    expect(o.animation.times).toBe(1);
+  });
+
+  test("扱えない回数は 1 回にする", () => {
+    for (const times of [0, -3, 1.5, "たくさん", null]) {
+      const o = new ArcadeerMain({});
+      o.removeAfterAnimation({ name: "Die", times });
+      expect(o.animation.times).toBe(1);
+    }
+  });
+
+  test("速さや rootMotion も setAnimation と同じように渡せる", () => {
+    const o = new ArcadeerMain({});
+    o.removeAfterAnimation({ name: "Die", speed: 2, rootMotion: false });
+    expect(o.animation.speed).toBe(2);
+    expect(o.animation.rootMotion).toBe(false);
+  });
+
+  test("名前が無ければ例外にする", () => {
+    const o = new ArcadeerMain({});
+    expect(() => o.removeAfterAnimation({})).toThrow();
+    expect(() => o.removeAfterAnimation()).toThrow();
+  });
+
+  test("指定した回数を再生し終えたら、消す合図を返す", () => {
+    const o = new ArcadeerMain({});
+    o.removeAfterAnimation({ name: "Die", times: 2 });
+    // 1周目の途中
+    expect(進める(o, 3)).toBe(false);
+    // 2周目の末尾を越える
+    expect(進める(o, 2)).toBe(true);
+  });
+
+  test("1回の指定なら、末尾まで再生した時点で合図を返す", () => {
+    const o = new ArcadeerMain({});
+    o.removeAfterAnimation({ name: "Die" });
+    expect(進める(o, 1)).toBe(false);
+    expect(進める(o, 1)).toBe(true);
+  });
+
+  test("普通の setAnimation では合図を返さない", () => {
+    const o = new ArcadeerMain({});
+    o.setAnimation({ name: "Jump" });
+    expect(進める(o, 10)).toBe(false);
+  });
+
+  test("アニメーションを設定していなければ何もしない", () => {
+    const o = new ArcadeerMain({});
+    expect(stepObjectAnimation(o, 0.5, 1.0)).toBe(false);
+    expect(stepObjectAnimation(null, 0.5, 1.0)).toBe(false);
+  });
+
+  test("進めた結果は、これまでどおりオブジェクトへ書き戻る", () => {
+    const o = new ArcadeerMain({});
+    o.setAnimation({ name: "Jump" });
+    stepObjectAnimation(o, 0.25, 1.0);
+    expect(o.animation.time).toBeCloseTo(0.25, 6);
+    expect(o.animationFinished).toBe(false);
+    stepObjectAnimation(o, 1.0, 1.0);
+    expect(o.animationFinished).toBe(true);
   });
 });

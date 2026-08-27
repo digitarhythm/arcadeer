@@ -151,7 +151,9 @@ export const SECTIONS = [
         head: [t("ref.col.method"), t("ref.col.what")],
         rows: [
           ["@addObject", t("ref.m.addObject")],
+          ["@removeObject", t("ref.m.removeObject")],
           ["@setAnimation", t("ref.m.setAnimation")],
+          ["@removeAfterAnimation", t("ref.m.removeAfterAnimation")],
           ["@waitjob", t("ref.m.waitjob")],
         ],
       },
@@ -160,6 +162,16 @@ export const SECTIONS = [
   X: 5
   Y: 0` },
       { type: "text", k: "ref.api.d.addObject" },
+      { type: "code", code: `@removeObject 弾
+@removeObject @
+
+destructor: (e) ->
+  GLOBAL.SCORE += 100` },
+      { type: "text", k: "ref.api.d.removeObject" },
+      { type: "code", code: `@removeAfterAnimation
+  name: "Die"
+  times: 1` },
+      { type: "text", k: "ref.api.d.removeAfterAnimation" },
       { type: "code", code: `@setAnimation
   name: "Jump"
   loop: false
@@ -196,6 +208,7 @@ export const SECTIONS = [
           ["setScreenSize", t("ref.m.setScreenSize")],
           ["isKeyDown", t("ref.m.isKeyDown")],
           ["echo", t("ref.m.echo")],
+          ["random", t("ref.m.random")],
           ["logClear", t("ref.m.logClear")],
           ["GLOBAL", t("ref.m.GLOBAL")],
         ],
@@ -211,6 +224,9 @@ GLOBAL.SCORE = 0
 GLOBAL.SCORE += 100` },
 
       { type: "text", k: "ref.m.echo.format" },
+      { type: "code", code: `@X = random 640
+@fire() if random(10) is 0` },
+      { type: "text", k: "ref.m.random.d" },
 
       { type: "heading", k: "ref.api.h.camera" },
       {

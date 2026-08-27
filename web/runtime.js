@@ -101,6 +101,38 @@ export function clearObjectRegistrar() {
 }
 
 /**
+ * 削除の予約先（エンジンが差し込む）
+ *
+ * 実際に取り除くのはフレーム末。走査の途中で配列が変わると、
+ * 呼び出し順が崩れてしまうため。
+ */
+let remover = null;
+
+/** 削除の予約先を差し込む（エンジンが実行開始時に設定する） */
+export function setObjectRemover(fn) {
+  remover = fn;
+}
+
+/** 削除の予約先を外す（ゲーム停止時） */
+export function clearObjectRemover() {
+  remover = null;
+}
+
+/**
+ * オブジェクトの削除を予約する（仕様書6.2節）
+ *
+ * ゲームコードからは `@removeObject` を使う。こちらはエンジンの内部用で、
+ * アニメーションを再生し終えたものを消す時にも通る。
+ *
+ * 登録されていないものを渡した場合は何もしない。
+ */
+export function removeFromList(object) {
+  const id = object?._objectId;
+  if (typeof id !== "number") return;
+  remover?.(id);
+}
+
+/**
  * アニメーションの再生位置を進める
  *
  * @param anim `{ time, loop, speed }`
@@ -109,21 +141,43 @@ export function clearObjectRegistrar() {
  * @returns `{ time, finished }`
  */
 export function stepAnimation(anim, deltaSec, duration) {
-  // 長さが無いクリップは、進めずに終了扱いにする
+  // 長さが無いクリップは、進めずに終了扱いにする。
+  // 回数を数える側を待たせ続けないよう、1回ぶん再生したものとして返す
   if (!(duration > 0)) {
-    return { time: 0, finished: true };
+    return { time: 0, finished: true, plays: 1 };
   }
 
   const time = anim.time + deltaSec * anim.speed;
   if (time < duration) {
-    return { time, finished: false };
+    return { time, finished: false, plays: 0 };
   }
   if (anim.loop) {
     // 何周ぶん過ぎていても正しい位置に戻す
-    return { time: time % duration, finished: false };
+    return { time: time % duration, finished: false, plays: Math.floor(time / duration) };
   }
   // ループしない場合は末尾で止める
-  return { time: duration, finished: true };
+  return { time: duration, finished: true, plays: 1 };
+}
+
+/**
+ * オブジェクトのアニメーションを1フレームぶん進める
+ *
+ * 進めた結果をオブジェクトへ書き戻し、**消す頃合いかどうか**を返す。
+ * 回数を数える場所を1か所にまとめてあるため、描画側に依存せず試せる。
+ *
+ * @returns `removeAfterAnimation` で指定した回数を再生し終えたら true
+ */
+export function stepObjectAnimation(object, deltaSec, duration) {
+  const anim = object?.animation;
+  if (!anim) return false;
+
+  const result = stepAnimation(anim, deltaSec, duration);
+  anim.time = result.time;
+  object.animationFinished = result.finished;
+
+  if (!anim.removeAtEnd) return false;
+  anim.played += result.plays;
+  return anim.played >= anim.times;
 }
 
 /** 1周ぶんの角度 */
@@ -304,6 +358,51 @@ export class ArcadeerMain {
   }
 
   /**
+   * オブジェクトを消す（仕様書6.2節）
+   *
+   * ```coffee
+   * @removeObject 弾      # 別のオブジェクトを消す
+   * @removeObject @       # 自分自身を消す
+   * ```
+   *
+   * **消えるのは渡した相手**で、呼び出し元ではない。
+   * 自分を消したい場合は自分を渡す。
+   *
+   * このフレームの走査が終わった時点で、**`destructor(e)` が呼ばれてから**
+   * 一覧から外れる。以後は描画もされず、参照が切れれば後始末に回る。
+   *
+   * 登録されていないものを渡した場合は何もしない。
+   */
+  removeObject(target) {
+    removeFromList(target);
+  }
+
+  /**
+   * アニメーションを指定した回数だけ再生し、そのあと自分自身を消す
+   *
+   * ```coffee
+   * @removeAfterAnimation
+   *   name: "Die"
+   *   times: 1        # 省略すると1回
+   * ```
+   *
+   * 弾の着弾や敵の撃破のように、**演出を見せてから消したい**場面で使う。
+   * 引数は `setAnimation` と同じものを受け取る。
+   *
+   * 再生し終えると `removeObject` と同じ流れに入り、`destructor(e)` が
+   * 呼ばれてから一覧を外れる（6.2節）。
+   */
+  removeAfterAnimation(param) {
+    const times = param?.times;
+    // 2回以上ならループさせないと、2周目が再生されない
+    const 回数 = Number.isInteger(times) && times > 0 ? times : 1;
+    this.setAnimation({ ...param, loop: 回数 > 1 });
+    this.animation.times = 回数;
+    this.animation.played = 0;
+    this.animation.removeAtEnd = true;
+  }
+
+  /**
    * 相手と重なっているかを調べる（**奥行きを見ない**）
    *
    * 見下ろし型や横スクロールのように、Z方向を気にしない遊びで使う。
@@ -413,7 +512,9 @@ export class ArcadeerMain {
       throw new Error("addObject: name is required");
     }
     const object = createObject(name, param);
-    registrar?.(object);
+    // 受け取った識別子は、消す時に使う
+    const id = registrar?.(object);
+    if (typeof id === "number") object._objectId = id;
     return object;
   }
 }
@@ -428,4 +529,6 @@ if (typeof window !== "undefined") {
   window.arcadeerStepAnimation = stepAnimation;
   window.arcadeerSetObjectRegistrar = setObjectRegistrar;
   window.arcadeerClearObjectRegistrar = clearObjectRegistrar;
+  window.arcadeerSetObjectRemover = setObjectRemover;
+  window.arcadeerClearObjectRemover = clearObjectRemover;
 }
