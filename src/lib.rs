@@ -3424,6 +3424,7 @@ async fn flush_drafts() {
         return;
     };
 
+    let mut saved = Vec::new();
     for item in list.iter() {
         let get = |key: &str| {
             js_sys::Reflect::get(&item, &JsValue::from_str(key))
@@ -3443,9 +3444,20 @@ async fn flush_drafts() {
                 if CURRENT_FILE.with(|f| f.borrow().as_deref() == Some(file_name.as_str())) {
                     notify_editor_saved(&content);
                 }
+                if let Some(object) = listing::object_name(&file_name) {
+                    saved.push(object);
+                }
             }
             Err(err) => log_err(&t("msg.fileSaveFailed"), &err),
         }
+    }
+
+    // ⌘S と同じように、書けたぶんのサムネイルを作り直す。
+    // まとめて1回にするのは、`load_object_thumbnails` が先頭で
+    // **全カードぶんの object URL を捨てる**ため。1件ずつ呼ぶと、
+    // そのたびに他のカードの URL が無効になり、ホバー回転が効かなくなる
+    if !saved.is_empty() {
+        load_object_thumbnails(saved).await;
     }
 }
 
