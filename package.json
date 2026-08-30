@@ -1,6 +1,6 @@
 {
   "name": "arcadeer",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "ローカル環境で動作するWebゲーム作成IDE",
   "private": true,
   "type": "module",
