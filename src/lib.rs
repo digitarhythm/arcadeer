@@ -20,6 +20,7 @@ use shortcut::{
 };
 use listing::{
     active_tab_index, build_pane_tabs, class_file_name, classify_resource, compare_display_names,
+    is_primitive_name,
     is_entry_object,
     kind_from_tab_key, PaneTab, ENTRY_OBJECT_NAME,
     ResourceKind, ASSETS_DIR, CODE_DIR, PROJECT_DIRS, RESOURCE_ORDER,
@@ -2871,6 +2872,43 @@ async fn build_model_thumbnail(url: &str) -> Option<String> {
     JsFuture::from(promise).await.ok()?.as_string()
 }
 
+/// model-preview.js に、組み込みプリミティブのサムネイル生成を依頼する
+async fn build_primitive_thumbnail(shape: &str) -> Option<String> {
+    let window = window()?;
+    let func: js_sys::Function = js_sys::Reflect::get(
+        window.as_ref(),
+        &JsValue::from_str("arcadeerBuildPrimitiveThumbnail"),
+    )
+    .ok()?
+    .dyn_into()
+    .ok()?;
+    func.call1(&JsValue::NULL, &JsValue::from_str(shape)).ok()?.as_string()
+}
+
+/// プリミティブのカードを、ホバーで回せるようにする
+///
+/// 3Dモデルと違って読み込むファイルが無いため、形状名だけを持たせる。
+fn enable_object_primitive_hover(object_name: &str, shape: &str) {
+    let Some(document) = window().and_then(|w| w.document()) else {
+        return;
+    };
+    let Ok(cards) = document.query_selector_all(".object-card[data-object]") else {
+        return;
+    };
+    for i in 0..cards.length() {
+        let Some(node) = cards.item(i) else { continue };
+        let Ok(card) = node.dyn_into::<Element>() else {
+            continue;
+        };
+        if card.get_attribute("data-object").as_deref() != Some(object_name) {
+            continue;
+        }
+        let _ = card.class_list().add_1("model-card");
+        let _ = card.set_attribute("data-primitive", shape);
+        return;
+    }
+}
+
 /// アセット1件分の正方形カードを組み立てる（サムネイルは後から差し込む）
 fn build_asset_card(document: &Document, file_name: &str) -> Result<Element, JsValue> {
     let card = document.create_element("li")?;
@@ -3029,6 +3067,39 @@ fn stop_audio_preview() {
     call_global("arcadeerStopAudio");
 }
 
+/// オブジェクトカードのサムネイル枠に置く、既定の絵（立方体アイコン）
+const OBJECT_THUMB_PLACEHOLDER: &str = r#"<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2.5 21 7v10l-9 4.5L3 17V7z" /><path d="M3 7l9 4.5L21 7" /><path d="M12 11.5V21.5" /></svg>"#;
+
+/// サムネイルを作り直す前に、カードを既定の状態へ戻す
+///
+/// `@MODEL` を書き替えた時に、**前の絵やホバー指定が残らない**ようにする。
+/// 例えば `"sphere"` から `.glb` へ変えた場合、`data-primitive` が残っていると
+/// ホバーで前の形が回ってしまう。
+fn reset_object_thumbnail(object_name: &str) {
+    let Some(document) = window().and_then(|w| w.document()) else {
+        return;
+    };
+    let Ok(cards) = document.query_selector_all(".object-card[data-object]") else {
+        return;
+    };
+    for i in 0..cards.length() {
+        let Some(node) = cards.item(i) else { continue };
+        let Ok(card) = node.dyn_into::<Element>() else {
+            continue;
+        };
+        if card.get_attribute("data-object").as_deref() != Some(object_name) {
+            continue;
+        }
+        let _ = card.class_list().remove_1("model-card");
+        let _ = card.remove_attribute("data-primitive");
+        let _ = card.remove_attribute("data-url");
+        if let Some(thumb) = card.first_element_child() {
+            thumb.set_inner_html(OBJECT_THUMB_PLACEHOLDER);
+        }
+        return;
+    }
+}
+
 /// 各オブジェクトが `@MODEL` で指定したアセットを読み、サムネイルへ差し込む（仕様書6.3節）
 ///
 /// 指定が無い・読めない・文字列で書かれていない場合はプレースホルダーのままにする。
@@ -3043,13 +3114,25 @@ async fn load_object_thumbnails(object_names: Vec<String>) {
     };
 
     for name in object_names {
+        // 前の絵とホバー指定を落としてから作り直す
+        reset_object_thumbnail(&name);
+
         let Ok(source) = read_text_file(&code_dir, &class_file_name(&name)).await else {
             continue;
         };
         let Some(asset) = parse_model_ref(&source) else {
             continue;
         };
-        // 拡張子で画像か3Dモデルかを判断する（"primitive" などの組み込み名はここで除かれる）
+        // 組み込みプリミティブ（box / sphere など）は、その形を白く描いて出す。
+        // ファイルが無いので、ここで済ませてしまう
+        if is_primitive_name(&asset) {
+            if let Some(data_url) = build_primitive_thumbnail(&asset).await {
+                set_object_thumbnail(&name, &data_url);
+                enable_object_primitive_hover(&name, &asset);
+            }
+            continue;
+        }
+        // 拡張子で画像か3Dモデルかを判断する（既定値の "primitive" はここで除かれる）
         let Some(kind) = classify_resource(&asset) else {
             continue;
         };
@@ -3216,9 +3299,7 @@ fn build_object_card(document: &Document, name: &str) -> Result<Element, JsValue
     let thumb = document.create_element("div")?;
     thumb.set_class_name("object-card-thumb");
     // プレースホルダー（立方体）
-    thumb.set_inner_html(
-        r#"<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 2.5 21 7v10l-9 4.5L3 17V7z" /><path d="M3 7l9 4.5L21 7" /><path d="M12 11.5V21.5" /></svg>"#,
-    );
+    thumb.set_inner_html(OBJECT_THUMB_PLACEHOLDER);
     card.append_child(&thumb)?;
 
     let label = document.create_element("div")?;

@@ -88,6 +88,9 @@ uniform float uShadowBias;
 uniform float uShadowTexel;
 // 半透明のものが、光をどれだけ通したか（1で素通し）
 uniform sampler2D uTransmitMap;
+// この面が、半透明ごしの影を受けるか。
+// 半透明そのものを描く時は false にする。**自分が自分を暗くしてしまう**ため
+uniform bool uReceiveTransmit;
 
 // 深度を RGBA へ詰めた値から元へ戻す（WebGL1 では深度テクスチャが使えない環境があるため）
 float unpackDepth(vec4 rgba) {
@@ -117,7 +120,7 @@ float shadowRatio() {
 
 // 半透明ごしに届く光の割合（0:さえぎられた 〜 1:素通し）
 float transmitRatio() {
-  if (!uShadowOn) return 1.0;
+  if (!uShadowOn || !uReceiveTransmit) return 1.0;
   vec3 coord = vShadowPos.xyz / vShadowPos.w;
   coord = coord * 0.5 + 0.5;
   if (coord.x < 0.0 || coord.x > 1.0 || coord.y < 0.0 || coord.y > 1.0 || coord.z > 1.0) {
@@ -709,6 +712,11 @@ function drawTransmitMap(matrix, translucent, castGroup) {
   gl.enable(gl.BLEND);
   // 掛け算で塗り重ねる（新しい値 = いまの値 × 描いた色）
   gl.blendFunc(gl.ZERO, gl.SRC_COLOR);
+  // **光を向いている面だけを数える。**
+  // 両面を数えると `1 - @ALPHA` が2回かかり、`@ALPHA = 0.9` の箱でも
+  // 影がほぼ真っ黒になって、見た目の薄さと釣り合わなくなる
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
   // 深度は不透明のものと共有している。その陰に隠れた半透明は数えない。
   // 書き込みはしない（半透明どうしが打ち消し合わないように）
   gl.depthMask(false);
@@ -718,6 +726,7 @@ function drawTransmitMap(matrix, translucent, castGroup) {
   });
 
   gl.depthMask(true);
+  gl.disable(gl.CULL_FACE);
   gl.disable(gl.BLEND);
 }
 
@@ -791,8 +800,38 @@ export function drawScene(objects, camera) {
   applyLights(view);
   applyShadowMap(shadowMatrix !== null);
 
-  /** まとめて1組ぶん描く */
-  const drawGroup = (list) => {
+  const receiveTransmitLocation = gl.getUniformLocation(sceneProgram, "uReceiveTransmit");
+
+  /** 1つのオブジェクトの面を実際に描く */
+  const drawMeshes = (meshes, placement, shadowPlacement) => {
+    for (const primitive of meshes) {
+      if (shadowPlacement) {
+        gl.uniformMatrix4fv(
+          shadowMatrixLocation, false, multiply(shadowPlacement, primitive.matrix),
+        );
+      }
+      bindAttribute(sceneProgram, "aPosition", primitive.position, 3);
+      bindAttribute(sceneProgram, "aNormal", primitive.normal, 3);
+      bindAttribute(sceneProgram, "aColor", primitive.color, 4);
+      bindAttribute(sceneProgram, "aJoints", primitive.joints, 4);
+      bindAttribute(sceneProgram, "aWeights", primitive.weights, 4);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.index);
+      gl.uniformMatrix4fv(modelViewLocation, false, multiply(placement, primitive.matrix));
+      gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
+    }
+  };
+
+  /**
+   * まとめて1組ぶん描く
+   *
+   * `singleLayer` を立てると、**カメラにいちばん近い面だけ**を塗る。
+   * 半透明に使う。そうしないと、球の裏側（暗い内側）が手前の面へ塗り重なり、
+   * 半透明にした途端に暗く沈んでしまう。
+   *
+   * 面の巻き方（表裏）に頼らず、**深度で選ぶ**。プリミティブと3Dモデルで
+   * 巻き方が揃っている保証が無いため、間引きでは当てにならない。
+   */
+  const drawGroup = (list, singleLayer = false) => {
     for (const object of list) {
       const { meshes, model } = meshesFor(object);
 
@@ -803,26 +842,29 @@ export function drawScene(objects, camera) {
       const model4 = modelMatrix(object);
       const placement = multiply(view, model4);
       const shadowPlacement = shadowMatrix ? multiply(shadowMatrix, model4) : null;
-      for (const primitive of meshes) {
-        if (shadowPlacement) {
-          gl.uniformMatrix4fv(
-            shadowMatrixLocation, false, multiply(shadowPlacement, primitive.matrix),
-          );
-        }
-        bindAttribute(sceneProgram, "aPosition", primitive.position, 3);
-        bindAttribute(sceneProgram, "aNormal", primitive.normal, 3);
-        bindAttribute(sceneProgram, "aColor", primitive.color, 4);
-        bindAttribute(sceneProgram, "aJoints", primitive.joints, 4);
-        bindAttribute(sceneProgram, "aWeights", primitive.weights, 4);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.index);
-        gl.uniformMatrix4fv(modelViewLocation, false, multiply(placement, primitive.matrix));
-        gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
+
+      if (!singleLayer) {
+        drawMeshes(meshes, placement, shadowPlacement);
+        continue;
       }
+
+      // ① 色は書かずに、深度だけを入れる（いちばん近い面が残る）
+      gl.colorMask(false, false, false, false);
+      gl.depthMask(true);
+      drawMeshes(meshes, placement, shadowPlacement);
+
+      // ② その深度と一致する面だけを塗る
+      gl.colorMask(true, true, true, true);
+      gl.depthMask(false);
+      gl.depthFunc(gl.LEQUAL);
+      drawMeshes(meshes, placement, shadowPlacement);
+      gl.depthFunc(gl.LESS);
     }
   };
 
   // 不透明を先に描き、そのあと半透明を奥から手前へ重ねる（6.2.5節）
   const { opaque, transparent } = splitByAlpha(drawables, camera);
+  gl.uniform1i(receiveTransmitLocation, 1);
   drawGroup(opaque);
 
   if (transparent.length > 0) {
@@ -831,7 +873,13 @@ export function drawScene(objects, camera) {
     // 深度は読むが書かない。書いてしまうと、手前の半透明が
     // 奥の半透明を深度テストで消してしまう
     gl.depthMask(false);
-    drawGroup(transparent);
+    // 半透明そのものは、半透明ごしの影を受けない。
+    // 自分が透過率マップへ書いた値で、自分を暗くしてしまうため
+    gl.uniform1i(receiveTransmitLocation, 0);
+
+    // いちばん近い面だけを塗る（内側が透けて手前を暗くするのを防ぐ）
+    drawGroup(transparent, true);
+
     gl.depthMask(true);
     gl.disable(gl.BLEND);
   }

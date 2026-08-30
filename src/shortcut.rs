@@ -1,7 +1,7 @@
 //! ゲーム実行のキーボードショートカットの判定（仕様書6.5節）。
 //!
 //! - **ESC** は必ず「停止」（トグルではない）
-//! - **⌘/Ctrl + Enter** は必ず「実行」（トグルではない）
+//! - **⌘/Ctrl + Enter** は「実行」と「停止」のトグル
 //!
 //! ただしエディタにフォーカスがある間は ESC を横取りしない。
 //! vimキーバインドでは ESC で入力モードを抜けるため、そのたびに
@@ -118,9 +118,10 @@ pub fn resolve(press: &KeyPress, ctx: &KeyContext) -> Shortcut {
         return Shortcut::None;
     }
 
-    // ⌘/Ctrl+Enter は必ず実行。エディタの編集中でも効かせる
-    if press.key == "Enter" && press.command && !ctx.running && ctx.project_open {
-        return Shortcut::Start;
+    // ⌘/Ctrl+Enter は実行と停止のトグル。エディタの編集中でも効かせる。
+    // ESCと違って横取りしてよい。vimの入力モードには関わらないため
+    if press.key == "Enter" && press.command && ctx.project_open {
+        return if ctx.running { Shortcut::Stop } else { Shortcut::Start };
     }
 
     Shortcut::None
@@ -212,10 +213,38 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_does_nothing_while_running() {
+    fn command_enter_stops_while_running() {
+        // トグル。実行中に押したら止める
         assert_eq!(resolve(
             &press("Enter", true),
             &ctx(true, false, true, false),
+        ), Shortcut::Stop);
+    }
+
+    #[test]
+    fn command_enter_stops_even_while_editing() {
+        // ESCと違い、編集中でも横取りする（vimの入力モードには関わらないため）
+        assert_eq!(resolve(
+            &press("Enter", true),
+            &ctx(true, true, true, false),
+        ), Shortcut::Stop);
+    }
+
+    #[test]
+    fn command_enter_stop_moves_focus_to_editor() {
+        let action = resolve(
+            &press("Enter", true),
+            &ctx(true, false, true, false),
+        );
+        assert_eq!(focus_after(action), FocusTarget::Editor);
+    }
+
+    #[test]
+    fn command_enter_does_nothing_without_project() {
+        // プロジェクトが無ければ、実行も停止もしない
+        assert_eq!(resolve(
+            &press("Enter", true),
+            &ctx(false, false, false, false),
         ), Shortcut::None);
     }
 

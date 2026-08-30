@@ -14,6 +14,19 @@ const SOUND_EXTS: &[&str] = &["ogg", "wav", "mp3", "m4a", "aac", "flac"];
 /// 3Dモデルとして扱う拡張子（小文字）
 const MODEL_EXTS: &[&str] = &["glb", "gltf"];
 
+/// 組み込みプリミティブの形状名（仕様書6.2.5節）
+///
+/// `web/primitive.js` の `PRIMITIVE_NAMES` と揃える。
+const PRIMITIVE_NAMES: &[&str] = &["box", "sphere", "plane", "cylinder", "cone"];
+
+/// `@MODEL` に書かれた値が、組み込みプリミティブの形状名かどうか
+///
+/// 大文字小文字は区別しない。既定値の `"primitive"` は形状が決まらないため**含めない**。
+pub fn is_primitive_name(model: &str) -> bool {
+    let name = model.trim().to_lowercase();
+    PRIMITIVE_NAMES.contains(&name.as_str())
+}
+
 /// ゲームの起点となるオブジェクト名
 ///
 /// プロジェクト作成時に `code/gameMain.coffee` として配置し、
@@ -361,6 +374,34 @@ mod tests {
         for name in ["Player", "main", "My.Player", "敵キャラ"] {
             let file = class_file_name(name);
             assert_eq!(object_name(&file), Some(name.to_string()), "{name}");
+        }
+    }
+
+    // --- is_primitive_name ---
+
+    #[test]
+    fn recognises_primitive_shapes() {
+        for name in ["box", "sphere", "plane", "cylinder", "cone"] {
+            assert!(is_primitive_name(name), "{name}");
+        }
+    }
+
+    #[test]
+    fn primitive_name_ignores_case_and_spaces() {
+        assert!(is_primitive_name("Box"));
+        assert!(is_primitive_name("  SPHERE  "));
+    }
+
+    #[test]
+    fn primitive_default_is_not_a_shape() {
+        // @MODEL の既定値。形が決まらないので、これまでどおりのアイコンにする
+        assert!(!is_primitive_name("primitive"));
+    }
+
+    #[test]
+    fn asset_files_are_not_primitives() {
+        for name in ["cat.glb", "player.png", "box.glb", "", "sphere.png"] {
+            assert!(!is_primitive_name(name), "{name}");
         }
     }
 

@@ -4,7 +4,8 @@
 // アニメーション・テクスチャ・PBRは扱わない（一覧のアイコン用途のため）。
 
 import { parseGlb, collectPrimitives, computeBounds } from "./glb.js";
-import { multiply, translation, rotationY, perspective, lookAt } from "./matrix.js";
+import { buildPrimitive } from "./primitive.js";
+import { identity, multiply, translation, rotationY, perspective, lookAt } from "./matrix.js";
 
 /** 生成するサムネイルの一辺（表示は約130pxなので2倍で用意する） */
 const SIZE = 256;
@@ -191,6 +192,49 @@ export function renderModelThumbnail(arrayBuffer) {
 }
 
 /**
+ * 組み込みプリミティブ（box / sphere など）を、モデルと同じ形へ包む
+ *
+ * `buildPrimitive` が返す頂点色はすべて白のため、そのまま白い形として描ける。
+ * 知らない形状名なら null。
+ */
+function primitiveModel(shape) {
+  const built = buildPrimitive(shape);
+  if (!built) return null;
+  const primitives = [{ ...built, matrix: identity() }];
+  const bounds = computeBounds(primitives);
+  if (bounds.radius <= 0) return null;
+  return { primitives, bounds };
+}
+
+/**
+ * 組み込みプリミティブのサムネイル画像（PNGのdata URL）を作る
+ *
+ * `@MODEL = "sphere"` のように形状名を書いたクラスへ、その形のサムネイルを出す。
+ * 知らない形状名なら null を返し、呼び出し側はアイコンのままにする。
+ */
+export function buildPrimitiveThumbnail(shape) {
+  const model = primitiveModel(shape);
+  if (!model) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const gl = canvas.getContext("webgl", {
+    alpha: true,
+    antialias: true,
+    preserveDrawingBuffer: true,
+  });
+  if (!gl) return null;
+
+  const program = createProgram(gl);
+  drawModel(gl, program, model, uploadPrimitives(gl, model), 0);
+
+  const dataUrl = canvas.toDataURL("image/png");
+  gl.getExtension("WEBGL_lose_context")?.loseContext();
+  return dataUrl;
+}
+
+/**
  * object URL から読み込んでサムネイルを作る
  * 失敗した場合は null を返し、呼び出し側はプレースホルダーのままにする。
  */
@@ -230,6 +274,17 @@ function ensureHoverContext() {
   return true;
 }
 
+/** プリミティブをGPUへ載せる（形状ごとに1度だけ） */
+function getPrimitive(shape) {
+  const key = `primitive:${shape}`;
+  if (modelCache.has(key)) return modelCache.get(key);
+  const model = primitiveModel(shape);
+  if (!model) return null;
+  model.gpu = uploadPrimitives(hoverGl, model);
+  modelCache.set(key, model);
+  return model;
+}
+
 /** モデルを解析してGPUへ載せる（一度読んだものは使い回す） */
 async function getModel(url) {
   if (modelCache.has(url)) return modelCache.get(url);
@@ -261,11 +316,13 @@ export function stopModelHover() {
 
 /** ホバーしたカードのモデルをY軸回転させる */
 async function startModelHover(card) {
+  const shape = card.getAttribute("data-primitive");
   const url = card.getAttribute("data-url");
-  if (!url || !ensureHoverContext()) return;
+  if ((!shape && !url) || !ensureHoverContext()) return;
 
   hoverCard = card;
-  const model = await getModel(url);
+  // プリミティブは読み込みが要らないので、その場で組み立てる
+  const model = shape ? getPrimitive(shape) : await getModel(url);
   // 読み込み中にホバーが外れていたら描かない
   if (!model || hoverCard !== card) return;
 
@@ -292,6 +349,7 @@ export function clearModelCache() {
 
 if (typeof window !== "undefined") {
   window.arcadeerBuildModelThumbnail = buildModelThumbnail;
+  window.arcadeerBuildPrimitiveThumbnail = buildPrimitiveThumbnail;
   window.arcadeerStopModelHover = stopModelHover;
   window.arcadeerClearModelCache = clearModelCache;
 
@@ -299,7 +357,7 @@ if (typeof window !== "undefined") {
   document.addEventListener(
     "mouseover",
     (e) => {
-      const card = e.target.closest?.(".model-card[data-url]");
+      const card = e.target.closest?.(".model-card[data-url], .model-card[data-primitive]");
       if (card && card !== hoverCard) {
         stopModelHover();
         startModelHover(card);
