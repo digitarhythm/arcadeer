@@ -152,18 +152,18 @@ mod tests {
     }
 
     #[test]
-    fn ダイアログを開いている間のescはゲームを止めない() {
+    fn esc_does_not_stop_game_while_dialog_is_open() {
         // 先にゲームが止まると、ダイアログを閉じるのに2回押すことになる
         assert_eq!(resolve(&press("Escape", false), &ctx_dialog(true, false)), Shortcut::None);
     }
 
     #[test]
-    fn ダイアログはリファレンスよりも先に閉じる() {
+    fn dialog_closes_before_reference() {
         assert_eq!(resolve(&press("Escape", false), &ctx_dialog(true, true)), Shortcut::None);
     }
 
     #[test]
-    fn ダイアログを閉じたあとのescはゲームを止める() {
+    fn esc_stops_game_after_dialog_closed() {
         assert_eq!(
             resolve(&press("Escape", false), &ctx(true, false, true, false)),
             Shortcut::Stop,
@@ -171,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    fn escキーは実行中なら停止する() {
+    fn esc_stops_while_running() {
         assert_eq!(resolve(
             &press("Escape", false),
             &ctx(true, false, true, false),
@@ -179,7 +179,7 @@ mod tests {
     }
 
     #[test]
-    fn escキーは停止中ならなにもしない() {
+    fn esc_does_nothing_when_stopped() {
         assert_eq!(resolve(
             &press("Escape", false),
             &ctx(false, false, true, false),
@@ -187,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    fn escキーはエディタにフォーカスがあれば停止しない() {
+    fn esc_is_ignored_while_editing() {
         // vimキーバインドで入力モードを抜けるたびに止まらないようにする
         assert_eq!(resolve(
             &press("Escape", false),
@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn コマンドとenterで実行する() {
+    fn command_enter_starts_game() {
         assert_eq!(resolve(
             &press("Enter", true),
             &ctx(false, false, true, false),
@@ -204,7 +204,7 @@ mod tests {
     }
 
     #[test]
-    fn コマンドとenterはエディタにフォーカスがあっても実行する() {
+    fn command_enter_works_while_editing() {
         assert_eq!(resolve(
             &press("Enter", true),
             &ctx(false, true, true, false),
@@ -212,7 +212,7 @@ mod tests {
     }
 
     #[test]
-    fn コマンドとenterは実行中ならなにもしない() {
+    fn command_enter_does_nothing_while_running() {
         assert_eq!(resolve(
             &press("Enter", true),
             &ctx(true, false, true, false),
@@ -220,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    fn コマンドなしのenterはなにもしない() {
+    fn plain_enter_does_nothing() {
         assert_eq!(resolve(
             &press("Enter", false),
             &ctx(false, false, true, false),
@@ -228,7 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn プロジェクトを開いていなければ実行しない() {
+    fn does_not_start_without_project() {
         assert_eq!(resolve(
             &press("Enter", true),
             &ctx(false, false, false, false),
@@ -236,22 +236,22 @@ mod tests {
     }
 
     #[test]
-    fn 停止したらエディタへフォーカスを移す() {
+    fn stop_moves_focus_to_editor() {
         assert_eq!(focus_after(Shortcut::Stop), FocusTarget::Editor);
     }
 
     #[test]
-    fn 実行したらゲーム表示エリアへフォーカスを移す() {
+    fn start_moves_focus_to_game() {
         assert_eq!(focus_after(Shortcut::Start), FocusTarget::Game);
     }
 
     #[test]
-    fn なにもしない場合はフォーカスを移さない() {
+    fn no_focus_change_when_idle() {
         assert_eq!(focus_after(Shortcut::None), FocusTarget::None);
     }
 
     #[test]
-    fn escでの停止はエディタへ戻る() {
+    fn esc_stop_returns_to_editor() {
         // vimで編集中は止まらないので、止まった時点でエディタ以外にフォーカスがある
         let action = resolve(
             &press("Escape", false),
@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn コマンドとenterでの実行はゲームへ移る() {
+    fn command_enter_moves_to_game() {
         let action = resolve(
             &press("Enter", true),
             &ctx(false, true, true, false),
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn escキーはリファレンスが開いていれば閉じる() {
+    fn esc_closes_reference() {
         // 読んでいるものを閉じるほうが先。ゲームは止めない
         assert_eq!(
             resolve(
@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn 停止中でもリファレンスは閉じる() {
+    fn reference_closes_even_when_stopped() {
         assert_eq!(
             resolve(
             &press("Escape", false),
@@ -293,7 +293,7 @@ mod tests {
     }
 
     #[test]
-    fn リファレンスが開いていてもエディタ編集中はなにもしない() {
+    fn editing_wins_over_reference() {
         assert_eq!(
             resolve(
             &press("Escape", false),
@@ -304,12 +304,12 @@ mod tests {
     }
 
     #[test]
-    fn リファレンスを閉じてもフォーカスは動かさない() {
+    fn closing_reference_keeps_focus() {
         assert_eq!(focus_after(Shortcut::CloseReference), FocusTarget::None);
     }
 
     #[test]
-    fn リファレンスが開いていても実行のショートカットは効く() {
+    fn start_shortcut_works_with_reference_open() {
         assert_eq!(
             resolve(
             &press("Enter", true),
@@ -320,50 +320,50 @@ mod tests {
     }
 
     #[test]
-    fn altとshiftとnでログの開閉を切り替える() {
+    fn alt_shift_n_toggles_log() {
         let p = KeyPress { key: "n", code: "KeyN", command: false, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::ToggleLog);
     }
 
     #[test]
-    fn ログの開閉はエディタ編集中でも効く() {
+    fn log_toggle_works_while_editing() {
         let p = KeyPress { key: "n", code: "KeyN", command: false, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(true, true, true, true)), Shortcut::ToggleLog);
     }
 
     #[test]
-    fn altを押していない場合は切り替えない() {
+    fn no_toggle_without_alt() {
         let p = KeyPress { key: "n", code: "KeyN", command: false, alt: false, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::None);
     }
 
     #[test]
-    fn shiftを押していない場合は切り替えない() {
+    fn no_toggle_without_shift() {
         let p = KeyPress { key: "n", code: "KeyN", command: false, alt: true, shift: false };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::None);
     }
 
     #[test]
-    fn コマンドを伴う場合は切り替えない() {
+    fn no_toggle_with_command() {
         // ⌘やCtrlとの組み合わせは別の操作に使われうるため、横取りしない
         let p = KeyPress { key: "n", code: "KeyN", command: true, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::None);
     }
 
     #[test]
-    fn 文字が変わってもcodeで見分ける() {
+    fn detects_by_code_when_key_changes() {
         // macOSでは Alt+N が「˜」になるため、key ではなく code で判定する
         let p = KeyPress { key: "˜", code: "KeyN", command: false, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::ToggleLog);
     }
 
     #[test]
-    fn ログの開閉ではフォーカスを動かさない() {
+    fn log_toggle_keeps_focus() {
         assert_eq!(focus_after(Shortcut::ToggleLog), FocusTarget::None);
     }
 
     #[test]
-    fn 関係のないキーはなにもしない() {
+    fn unrelated_keys_do_nothing() {
         assert_eq!(resolve(
             &press("a", false),
             &ctx(true, false, true, false),

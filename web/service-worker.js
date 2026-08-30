@@ -1,4 +1,4 @@
-const CACHE_NAME = "arcadeer-v171";
+const CACHE_NAME = "arcadeer-v176";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -17,6 +17,8 @@ const PRECACHE = [
   "./keybinding.js",
   "./font-size.js",
   "./asset-picker.js",
+  "./asset-map.js",
+  "./asset-map-ui.js",
   "./audio-preview.js",
   "./model-preview.js",
   "./reorder.js",
@@ -30,6 +32,8 @@ const PRECACHE = [
   "./random.js",
   "./collision.js",
   "./debug-draw.js",
+  "./draw-order.js",
+  "./shadow-cast.js",
   "./gamepad.js",
   "./gamepad-config.js",
   "./gamepad-config-ui.js",
@@ -107,9 +111,9 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   // `fetch(req, {...})` は、画面遷移の要求から作り直せずに落ちる。
   // URL から組み直して、確実に確認付きの取得にする
-  const 要求 = new Request(req.url, { cache: "no-cache", credentials: "same-origin" });
+  const request = new Request(req.url, { cache: "no-cache", credentials: "same-origin" });
   event.respondWith(
-    fetch(要求)
+    fetch(request)
       .then((res) => {
         if (res && res.status === 200 && res.type === "basic") {
           const clone = res.clone();

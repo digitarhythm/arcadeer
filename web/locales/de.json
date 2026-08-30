@@ -151,5 +151,16 @@
   "message.ok": "OK",
   "message.cancel": "Abbrechen",
   "editor.fileChanged": "Die Datei wurde aktualisiert.\nLaden?",
-  "editor.fileChangedTitle": "Die Datei wurde geändert"
+  "editor.fileChangedTitle": "Die Datei wurde geändert",
+  "pane.assetMap": "Assets",
+  "assetMap.title": "Asset-Schlüssel",
+  "assetMap.note": "Im Spielcode werden Assets über den Schlüsselnamen angesprochen",
+  "assetMap.file": "Datei",
+  "assetMap.key": "Schlüssel",
+  "assetMap.noFiles": "Keine Dateien",
+  "assetMap.duplicate": "Dieser Schlüssel wird bereits verwendet",
+  "assetMap.invalid": "Nur Buchstaben, Ziffern und Unterstriche, nicht mit einer Ziffer beginnen",
+  "assetMap.empty": "Gib einen Schlüsselnamen ein",
+  "assetMap.saved": "Gespeichert",
+  "msg.assetMapFailed": "Die Asset-Schlüssel konnten nicht gelesen oder geschrieben werden"
 }

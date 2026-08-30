@@ -160,7 +160,7 @@ mod tests {
     // --- order_key_for_tab ---
 
     #[test]
-    fn タブごとの保存キーを得られる() {
+    fn returns_storage_key_per_tab() {
         assert_eq!(order_key_for_tab("pane.tab.object"), Some("objects"));
         assert_eq!(order_key_for_tab("pane.tab.image"), Some("images"));
         assert_eq!(order_key_for_tab("pane.tab.sound"), Some("sounds"));
@@ -171,7 +171,7 @@ mod tests {
     // --- parse_order ---
 
     #[test]
-    fn 並び順セクションを読み取れる() {
+    fn reads_order_section() {
         let text = concat!(
             "project_name = \"my-game\"\n",
             "\n",
@@ -185,18 +185,18 @@ mod tests {
     }
 
     #[test]
-    fn 空の配列も読み取れる() {
+    fn reads_empty_array() {
         let order = parse_order("[order]\nobjects = []\n");
         assert_eq!(order.get("objects"), Some(&Vec::<String>::new()));
     }
 
     #[test]
-    fn 並び順セクションが無ければ空になる() {
+    fn empty_without_order_section() {
         assert!(parse_order("project_name = \"my-game\"\n").is_empty());
     }
 
     #[test]
-    fn セクション外の配列は読み取らない() {
+    fn ignores_arrays_outside_section() {
         // [order] の前に書かれた配列は対象外
         let text = "objects = [\"A\"]\n[order]\nimages = [\"b.png\"]\n";
         let order = parse_order(text);
@@ -205,7 +205,7 @@ mod tests {
     }
 
     #[test]
-    fn 別セクションが始まったら読み取りを止める() {
+    fn stops_at_next_section() {
         let text = "[order]\nobjects = [\"A\"]\n[other]\nimages = [\"b.png\"]\n";
         let order = parse_order(text);
         assert_eq!(order.get("objects"), Some(&names(&["A"])));
@@ -213,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn 引用符やバックスラッシュを含む名前も読み取れる() {
+    fn reads_names_with_quotes_and_backslashes() {
         // TOML上は objects = ["a\"b", "c\\d"] という記述になる
         let text = "[order]\nobjects = [\"a\\\"b\", \"c\\\\d\"]\n";
         let order = parse_order(text);
@@ -223,7 +223,7 @@ mod tests {
     // --- format_order ---
 
     #[test]
-    fn 並び順セクションを書き出せる() {
+    fn writes_order_section() {
         let mut order = HashMap::new();
         order.insert("objects".to_string(), names(&["gameMain", "Player"]));
         let text = format_order(&order);
@@ -232,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    fn 書き出す順序は安定している() {
+    fn write_order_is_stable() {
         let mut order = HashMap::new();
         order.insert("models".to_string(), names(&["c.glb"]));
         order.insert("objects".to_string(), names(&["A"]));
@@ -245,7 +245,7 @@ mod tests {
     }
 
     #[test]
-    fn 中身が空のキーは書き出さない() {
+    fn skips_empty_keys() {
         let mut order = HashMap::new();
         order.insert("objects".to_string(), names(&["A"]));
         order.insert("images".to_string(), Vec::new());
@@ -255,12 +255,12 @@ mod tests {
     }
 
     #[test]
-    fn すべて空ならセクションごと書き出さない() {
+    fn omits_section_when_all_empty() {
         assert_eq!(format_order(&HashMap::new()), "");
     }
 
     #[test]
-    fn 書き出した内容は読み戻せる() {
+    fn written_content_round_trips() {
         let mut order = HashMap::new();
         order.insert("objects".to_string(), names(&["a\"b", "Player"]));
         let text = format_order(&order);
@@ -270,14 +270,14 @@ mod tests {
     // --- apply_order ---
 
     #[test]
-    fn 保存済みの順序どおりに並べる() {
+    fn applies_saved_order() {
         let items = names(&["Enemy", "Player", "Boss"]);
         let saved = names(&["Boss", "Player", "Enemy"]);
         assert_eq!(apply_order(&items, &saved), names(&["Boss", "Player", "Enemy"]));
     }
 
     #[test]
-    fn 保存後に増えた項目は末尾へ名前順で並べる() {
+    fn new_items_go_last_by_name() {
         let items = names(&["Enemy", "Player", "Zombie", "Angel"]);
         let saved = names(&["Player", "Enemy"]);
         assert_eq!(
@@ -287,20 +287,20 @@ mod tests {
     }
 
     #[test]
-    fn 保存済みだが実在しない項目は無視する() {
+    fn ignores_saved_items_that_vanished() {
         let items = names(&["Player"]);
         let saved = names(&["Boss", "Player", "Enemy"]);
         assert_eq!(apply_order(&items, &saved), names(&["Player"]));
     }
 
     #[test]
-    fn 保存が空なら名前順になる() {
+    fn falls_back_to_name_order() {
         let items = names(&["Player", "Boss", "enemy"]);
         assert_eq!(apply_order(&items, &[]), names(&["Boss", "enemy", "Player"]));
     }
 
     #[test]
-    fn 起点オブジェクトは保存内容に関わらず先頭になる() {
+    fn entry_object_stays_first() {
         let items = names(&["Player", "gameMain", "Boss"]);
         let saved = names(&["Player", "Boss", "gameMain"]);
         assert_eq!(
@@ -310,14 +310,14 @@ mod tests {
     }
 
     #[test]
-    fn 起点オブジェクトが保存に無くても先頭になる() {
+    fn entry_object_first_even_if_unsaved() {
         let items = names(&["Player", "gameMain"]);
         let saved = names(&["Player"]);
         assert_eq!(apply_order(&items, &saved), names(&["gameMain", "Player"]));
     }
 
     #[test]
-    fn 空の一覧でも適用できる() {
+    fn applies_to_empty_list() {
         assert_eq!(apply_order(&[], &names(&["A"])), Vec::<String>::new());
     }
 }

@@ -318,27 +318,27 @@ mod tests {
     // --- RunState ---
 
     #[test]
-    fn 実行中だけループを回す() {
+    fn runs_loop_only_while_running() {
         assert!(!RunState::Stopped.is_running());
         assert!(RunState::Running.is_running());
         assert!(!RunState::Paused.is_running());
     }
 
     #[test]
-    fn 開始と停止で状態が変わる() {
+    fn start_and_stop_change_state() {
         assert_eq!(RunState::Stopped.start(), RunState::Running);
         assert_eq!(RunState::Running.stop(), RunState::Stopped);
         assert_eq!(RunState::Paused.stop(), RunState::Stopped);
     }
 
     #[test]
-    fn 一時停止と再開ができる() {
+    fn can_pause_and_resume() {
         assert_eq!(RunState::Running.pause(), RunState::Paused);
         assert_eq!(RunState::Paused.resume(), RunState::Running);
     }
 
     #[test]
-    fn 停止中は一時停止も再開もしない() {
+    fn stopped_ignores_pause_and_resume() {
         assert_eq!(RunState::Stopped.pause(), RunState::Stopped);
         assert_eq!(RunState::Stopped.resume(), RunState::Stopped);
     }
@@ -346,7 +346,7 @@ mod tests {
     // --- clamp_fps ---
 
     #[test]
-    fn 指定したfpsはそのまま使う() {
+    fn keeps_given_fps() {
         // 作成者が設定した値を勝手に丸めない
         assert_eq!(clamp_fps(60), 60);
         assert_eq!(clamp_fps(57), 57);
@@ -356,7 +356,7 @@ mod tests {
     }
 
     #[test]
-    fn 扱えない値だけ範囲に収める() {
+    fn clamps_only_invalid_values() {
         // 0 はゼロ除算になるため下限へ寄せる
         assert_eq!(clamp_fps(0), MIN_FPS);
         assert_eq!(clamp_fps(MIN_FPS), MIN_FPS);
@@ -367,13 +367,13 @@ mod tests {
     // --- 目標FPSと表示時間 ---
 
     #[test]
-    fn 目標fpsから1フレームの表示時間を求める() {
+    fn frame_interval_from_target_fps() {
         assert!((FramePacer::new(60).frame_interval_ms() - FRAME60).abs() < 1e-9);
         assert!((FramePacer::new(30).frame_interval_ms() - 1000.0 / 30.0).abs() < 1e-9);
     }
 
     #[test]
-    fn 目標fpsは指定どおり保持する() {
+    fn target_fps_is_kept() {
         assert_eq!(FramePacer::new(57).target_fps(), 57);
         assert_eq!(FramePacer::new(24).target_fps(), 24);
         // 扱えない値のときだけ範囲へ収める
@@ -381,7 +381,7 @@ mod tests {
     }
 
     #[test]
-    fn 目標fpsを変えると表示時間も変わる() {
+    fn changing_fps_changes_interval() {
         let mut pacer = FramePacer::new(60);
         pacer.set_target_fps(30);
         assert_eq!(pacer.target_fps(), 30);
@@ -391,13 +391,13 @@ mod tests {
     // --- 1フレームの流れ ---
 
     #[test]
-    fn 開始直後は更新が必要() {
+    fn update_needed_right_after_start() {
         let mut pacer = FramePacer::new(60);
         assert!(pacer.should_update(0.0));
     }
 
     #[test]
-    fn 更新前は入れ替えない() {
+    fn no_present_before_update() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         // 描画が済んでいなければ、表示時間が過ぎても入れ替えない
@@ -405,7 +405,7 @@ mod tests {
     }
 
     #[test]
-    fn 描画が済んでも表示時間までは入れ替えない() {
+    fn waits_interval_before_present() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -415,7 +415,7 @@ mod tests {
     }
 
     #[test]
-    fn 表示時間が経過したら入れ替える() {
+    fn presents_after_interval() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -423,7 +423,7 @@ mod tests {
     }
 
     #[test]
-    fn 入れ替えた後は次フレームの更新が必要になる() {
+    fn update_needed_after_present() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -432,7 +432,7 @@ mod tests {
     }
 
     #[test]
-    fn 同じフレーム内で更新を二重に行わない() {
+    fn no_double_update_in_one_frame() {
         let mut pacer = FramePacer::new(60);
         assert!(pacer.should_update(0.0));
         pacer.mark_drawn();
@@ -444,7 +444,7 @@ mod tests {
     // --- 表示時間を超えた場合 ---
 
     #[test]
-    fn 表示時間を超えて描き終わったら待たずに入れ替える() {
+    fn presents_without_wait_when_late() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         // 表示時間（約16.7ms）を超える 40ms かかった
@@ -453,7 +453,7 @@ mod tests {
     }
 
     #[test]
-    fn 処理落ちしても更新を多重に回さない() {
+    fn no_catch_up_updates_when_slow() {
         // 追いつくための巻き戻し・多重更新は行わない（1フレーム1回だけ）
         let mut pacer = FramePacer::new(60);
         let end = run_frame(&mut pacer, 0.0, 100.0);
@@ -464,7 +464,7 @@ mod tests {
     }
 
     #[test]
-    fn 長く止まっていても取り戻そうとしない() {
+    fn no_catch_up_after_long_pause() {
         // タブ非表示から復帰した想定
         let mut pacer = FramePacer::new(60);
         run_frame(&mut pacer, 0.0, 1.0);
@@ -477,12 +477,12 @@ mod tests {
     // --- 実測FPS ---
 
     #[test]
-    fn 計測前の実測fpsはゼロ() {
+    fn measured_fps_is_zero_before_sampling() {
         assert_eq!(FramePacer::new(60).measured_fps(), 0.0);
     }
 
     #[test]
-    fn 余裕がある場合は目標fpsどおりになる() {
+    fn measured_fps_matches_target_when_idle() {
         let mut pacer = FramePacer::new(60);
         let mut now = 0.0;
         for _ in 0..20 {
@@ -497,7 +497,7 @@ mod tests {
     }
 
     #[test]
-    fn 処理落ちすると実測fpsが下がる() {
+    fn measured_fps_drops_when_slow() {
         let mut pacer = FramePacer::new(60);
         let mut now = 0.0;
         for _ in 0..20 {
@@ -513,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    fn リセットで計測とフレーム状態をやり直す() {
+    fn reset_clears_measurement_and_state() {
         let mut pacer = FramePacer::new(60);
         let mut now = 0.0;
         for _ in 0..5 {
@@ -551,40 +551,40 @@ mod fit_tests {
     }
 
     #[test]
-    fn 表示領域が横長なら高さを合わせる() {
+    fn fits_height_when_area_is_wide() {
         // 800x400 の領域に 640x480（縦長寄り）を入れる → 高さいっぱい
         close(fit_size(800.0, 400.0, 640, 480), (533.33, 400.0));
     }
 
     #[test]
-    fn 表示領域が縦長なら幅を合わせる() {
+    fn fits_width_when_area_is_tall() {
         // 400x800 の領域に 640x480 を入れる → 幅いっぱい
         close(fit_size(400.0, 800.0, 640, 480), (400.0, 300.0));
     }
 
     #[test]
-    fn 縦横比が同じならぴったり収まる() {
+    fn fits_exactly_with_same_ratio() {
         close(fit_size(1280.0, 960.0, 640, 480), (1280.0, 960.0));
     }
 
     #[test]
-    fn 表示領域が小さければ縮小する() {
+    fn shrinks_for_small_area() {
         close(fit_size(320.0, 240.0, 640, 480), (320.0, 240.0));
     }
 
     #[test]
-    fn 表示領域が大きければ拡大する() {
+    fn grows_for_large_area() {
         close(fit_size(1920.0, 1440.0, 640, 480), (1920.0, 1440.0));
     }
 
     #[test]
-    fn 縦横比は必ず保たれる() {
+    fn keeps_aspect_ratio() {
         let (w, h) = fit_size(1000.0, 333.0, 640, 480);
         assert!(((w / h) - (640.0 / 480.0)).abs() < 0.001);
     }
 
     #[test]
-    fn 不正な値ではゼロを返す() {
+    fn returns_zero_for_invalid_size() {
         assert_eq!(fit_size(0.0, 400.0, 640, 480), (0.0, 0.0));
         assert_eq!(fit_size(800.0, 0.0, 640, 480), (0.0, 0.0));
         assert_eq!(fit_size(800.0, 400.0, 0, 480), (0.0, 0.0));
@@ -613,7 +613,7 @@ mod pacing_tests {
     }
 
     #[test]
-    fn 締切までの残り時間を返す() {
+    fn returns_time_left_until_deadline() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -623,7 +623,7 @@ mod pacing_tests {
     }
 
     #[test]
-    fn 描き終えていなければ待たない() {
+    fn no_wait_before_drawing() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         // 描画がまだなら、すぐ次の処理へ進む
@@ -631,7 +631,7 @@ mod pacing_tests {
     }
 
     #[test]
-    fn 締切を過ぎていれば待たない() {
+    fn no_wait_past_deadline() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -639,7 +639,7 @@ mod pacing_tests {
     }
 
     #[test]
-    fn 入れ替えが遅れても締切は理想の時刻を保つ() {
+    fn deadline_keeps_ideal_time_when_late() {
         let mut pacer = FramePacer::new(60);
         // 毎回 0.5ms ずつ遅れて発火しても、締切はずれていかない
         let mut at = advance(&mut pacer, 0.0, 2.0, 0.5);
@@ -652,7 +652,7 @@ mod pacing_tests {
     }
 
     #[test]
-    fn 遅れが積み上がらないので実測fpsは目標どおりになる() {
+    fn measured_fps_stays_on_target() {
         let mut pacer = FramePacer::new(60);
         let mut at = 0.0;
         for _ in 0..60 {
@@ -666,7 +666,7 @@ mod pacing_tests {
     }
 
     #[test]
-    fn 大きく遅れた場合は締切を置き直す() {
+    fn resets_deadline_when_far_behind() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -681,7 +681,7 @@ mod pacing_tests {
     }
 
     #[test]
-    fn 目標fpsを変えると待ち時間も変わる() {
+    fn changing_fps_changes_wait() {
         let mut pacer = FramePacer::new(30);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -697,7 +697,7 @@ mod visibility_tests {
     const FRAME60: f64 = 1000.0 / 60.0;
 
     #[test]
-    fn 実行中に隠れたら一時停止する() {
+    fn pauses_when_hidden_while_running() {
         assert_eq!(
             on_visibility_change(true, RunState::Running, false),
             VisibilityAction::Pause
@@ -705,7 +705,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 停止中に隠れてもなにもしない() {
+    fn hiding_does_nothing_when_stopped() {
         assert_eq!(
             on_visibility_change(true, RunState::Stopped, false),
             VisibilityAction::None
@@ -713,7 +713,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 既に一時停止中なら重ねて止めない() {
+    fn no_double_pause() {
         assert_eq!(
             on_visibility_change(true, RunState::Paused, true),
             VisibilityAction::None
@@ -721,7 +721,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 隠れて止めた場合は表示へ戻ると再開する() {
+    fn resumes_when_shown_again() {
         assert_eq!(
             on_visibility_change(false, RunState::Paused, true),
             VisibilityAction::Resume
@@ -729,7 +729,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 別の理由で止まっている場合は勝手に再開しない() {
+    fn no_resume_when_paused_for_other_reason() {
         // エラー捕捉などで止めた一時停止を、表示へ戻っただけで動かさない
         assert_eq!(
             on_visibility_change(false, RunState::Paused, false),
@@ -738,7 +738,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 実行中に表示へ戻ってもなにもしない() {
+    fn showing_does_nothing_while_running() {
         assert_eq!(
             on_visibility_change(false, RunState::Running, false),
             VisibilityAction::None
@@ -746,7 +746,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 停止中に表示へ戻ってもなにもしない() {
+    fn showing_does_nothing_when_stopped() {
         assert_eq!(
             on_visibility_change(false, RunState::Stopped, true),
             VisibilityAction::None
@@ -754,7 +754,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 再開時はフレームの区切りを取り直す() {
+    fn resume_resyncs_frame() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -767,7 +767,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 再開しても実測fpsの記録は残る() {
+    fn resume_keeps_fps_samples() {
         let mut pacer = FramePacer::new(60);
         let mut at = 0.0;
         for _ in 0..5 {
@@ -782,7 +782,7 @@ mod visibility_tests {
     }
 
     #[test]
-    fn 止まっていた間の空白はfpsに数えない() {
+    fn paused_gap_is_not_counted() {
         let mut pacer = FramePacer::new(60);
         pacer.should_update(0.0);
         pacer.mark_drawn();
@@ -821,14 +821,14 @@ mod event_tests {
     }
 
     #[test]
-    fn 最初のフレームはゼロ番() {
+    fn first_frame_is_zero() {
         let pacer = FramePacer::new(60);
         assert_eq!(pacer.frame_index(), 0);
         assert!(pacer.elapsed_sec().abs() < 1e-9);
     }
 
     #[test]
-    fn behaviorを回すたびに番号が進む() {
+    fn frame_index_advances_per_pass() {
         let mut pacer = FramePacer::new(60);
         let mut at = 0.0;
         for expected in 1..=5 {
@@ -838,7 +838,7 @@ mod event_tests {
     }
 
     #[test]
-    fn 経過秒数はフレーム数から求める() {
+    fn elapsed_from_frame_count() {
         let mut pacer = FramePacer::new(60);
         let mut at = 0.0;
         for _ in 0..60 {
@@ -849,7 +849,7 @@ mod event_tests {
     }
 
     #[test]
-    fn 目標fpsが違えば経過秒数も変わる() {
+    fn elapsed_depends_on_target_fps() {
         let mut pacer = FramePacer::new(30);
         let mut at = 0.0;
         for _ in 0..30 {
@@ -859,7 +859,7 @@ mod event_tests {
     }
 
     #[test]
-    fn 一時停止をはさんでも時間が飛ばない() {
+    fn pause_does_not_skip_time() {
         let mut pacer = FramePacer::new(60);
         let mut at = 0.0;
         for _ in 0..30 {
@@ -880,7 +880,7 @@ mod event_tests {
     }
 
     #[test]
-    fn 実行をやり直すと番号も戻る() {
+    fn restart_resets_frame_index() {
         let mut pacer = FramePacer::new(60);
         step(&mut pacer, 0.0);
         pacer.reset();

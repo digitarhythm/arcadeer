@@ -101,10 +101,10 @@ describe("バウンディングの計算", () => {
   test("外接直方体は、外接球より小さいか同じ", () => {
     // 球は角までの距離、直方体は各軸の半分なので、各辺は半径を超えない
     const { json, bin } = parseGlb(loadGlb());
-    const 頂点 = collectPrimitives(json, bin);
-    const 球 = computeBounds(頂点);
-    const 箱 = computeBox(頂点);
-    for (const v of 箱.half) expect(v).toBeLessThanOrEqual(球.radius + 1e-6);
+    const vertices = collectPrimitives(json, bin);
+    const sphere = computeBounds(vertices);
+    const box = computeBox(vertices);
+    for (const v of box.half) expect(v).toBeLessThanOrEqual(sphere.radius + 1e-6);
   });
 
   test("対象が無ければ大きさ0になる", () => {

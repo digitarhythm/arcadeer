@@ -81,7 +81,7 @@ mod tests {
     }
 
     #[test]
-    fn 単引用符の指定を読み取れる() {
+    fn reads_single_quoted_value() {
         assert_eq!(
             parse_model_ref("    @MODEL = 'cat.glb'\n"),
             Some("cat.glb".to_string())
@@ -89,7 +89,7 @@ mod tests {
     }
 
     #[test]
-    fn 既定値の書き方でも読み取れる() {
+    fn reads_default_style_value() {
         // param 経由の指定に既定値を添える書き方
         assert_eq!(
             parse_model_ref("    @MODEL = param.MODEL ?? \"player.png\"\n"),
@@ -98,7 +98,7 @@ mod tests {
     }
 
     #[test]
-    fn 行末のコメントがあっても読み取れる() {
+    fn reads_with_trailing_comment() {
         assert_eq!(
             parse_model_ref("    @MODEL = \"player.png\"  # 主人公\n"),
             Some("player.png".to_string())
@@ -106,7 +106,7 @@ mod tests {
     }
 
     #[test]
-    fn 前後の空白があっても読み取れる() {
+    fn reads_with_surrounding_spaces() {
         assert_eq!(
             parse_model_ref("        @MODEL   =   \"player.png\"\n"),
             Some("player.png".to_string())
@@ -114,43 +114,43 @@ mod tests {
     }
 
     #[test]
-    fn 複数回の指定は最後を採る() {
+    fn takes_last_of_repeated_values() {
         let source = "    @MODEL = \"first.png\"\n    @MODEL = \"last.png\"\n";
         assert_eq!(parse_model_ref(source), Some("last.png".to_string()));
     }
 
     #[test]
-    fn コメント行の指定は無視する() {
+    fn ignores_commented_out_value() {
         let source = "    # @MODEL = \"commented.png\"\n    @MODEL = \"real.png\"\n";
         assert_eq!(parse_model_ref(source), Some("real.png".to_string()));
     }
 
     #[test]
-    fn コメント行しかなければ読み取らない() {
+    fn reads_nothing_when_only_comments() {
         assert_eq!(parse_model_ref("    # @MODEL = \"only.png\"\n"), None);
     }
 
     #[test]
-    fn 指定が無ければ読み取らない() {
+    fn reads_nothing_without_value() {
         let source = "class Player extends arcadeermain\n  behavior: (e) ->\n    super(e)\n";
         assert_eq!(parse_model_ref(source), None);
     }
 
     #[test]
-    fn 似た名前の変数は対象にしない() {
+    fn ignores_similarly_named_variables() {
         assert_eq!(parse_model_ref("    @MODELNAME = \"x.png\"\n"), None);
         assert_eq!(parse_model_ref("    @MYMODEL = \"x.png\"\n"), None);
     }
 
     #[test]
-    fn 文字列でない指定は読み取らない() {
+    fn ignores_non_string_value() {
         // 変数や連結で組み立てている場合は実行しないと決まらない
         assert_eq!(parse_model_ref("    @MODEL = assetName\n"), None);
         assert_eq!(parse_model_ref("    @MODEL = prefix + \".png\"\n"), Some(".png".to_string()));
     }
 
     #[test]
-    fn 空文字の指定は読み取らない() {
+    fn ignores_empty_string_value() {
         assert_eq!(parse_model_ref("    @MODEL = \"\"\n"), None);
     }
 }

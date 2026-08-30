@@ -54,23 +54,23 @@ function build() {
   titleEl = dialog.querySelector('[data-role="title"]');
   bodyEl = dialog.querySelector('[data-role="body"]');
   const okBtn = dialog.querySelector('[data-role="ok"]');
-  okBtn.addEventListener("click", () => 閉じる(true));
+  okBtn.addEventListener("click", () => settle(true));
   okBtnEl = okBtn;
 
   cancelBtnEl = dialog.querySelector('[data-role="cancel"]');
-  cancelBtnEl.addEventListener("click", () => 閉じる(false));
+  cancelBtnEl.addEventListener("click", () => settle(false));
   // ESCや画面外クリックで閉じた場合も「やめる」として扱う
-  dialog.addEventListener("close", () => 閉じる(false));
+  dialog.addEventListener("close", () => settle(false));
 
   dialogEl = dialog;
 }
 
 /** 開いている問い合わせに答えて閉じる */
-function 閉じる(答え) {
-  const 返す = answer;
+function settle(value) {
+  const reply = answer;
   answer = null;
   if (dialogEl?.open) fadeOutDialog(dialogEl);
-  返す?.(答え);
+  reply?.(value);
 }
 
 // メッセージを表示する

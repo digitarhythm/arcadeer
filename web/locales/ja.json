@@ -151,5 +151,16 @@
   "message.ok": "OK",
   "message.cancel": "やめる",
   "editor.fileChanged": "ファイルが更新されています。\n読み込みますか？",
-  "editor.fileChangedTitle": "ファイルが変更されています"
+  "editor.fileChangedTitle": "ファイルが変更されています",
+  "pane.assetMap": "アセット管理",
+  "assetMap.title": "アセット管理",
+  "assetMap.note": "ゲームコードからは、キー名でアセットを指定します",
+  "assetMap.file": "ファイル名",
+  "assetMap.key": "キー名",
+  "assetMap.noFiles": "ファイルがありません",
+  "assetMap.duplicate": "そのキー名は既に使われています",
+  "assetMap.invalid": "キー名は英数字とアンダースコアで、数字以外から始めてください",
+  "assetMap.empty": "キー名を入力してください",
+  "assetMap.saved": "保存しました",
+  "msg.assetMapFailed": "アセット管理の読み書きに失敗しました"
 }

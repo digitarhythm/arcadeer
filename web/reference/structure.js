@@ -140,6 +140,7 @@ export const SECTIONS = [
           ["@MODEL", t("ref.p.model"), '""'],
           ["@KIND", t("ref.p.kind"), t("ref.p.auto")],
           ["@COLOR", t("ref.p.color"), '""'],
+          ["@ALPHA", t("ref.p.alpha"), "1"],
           ["@SHADOW", t("ref.p.shadow"), "true"],
           ["@proc", t("ref.p.proc"), "0"],
           ["@animationFinished", t("ref.p.animfin"), "false"],
@@ -162,7 +163,7 @@ export const SECTIONS = [
   X: 5
   Y: 0` },
       { type: "text", k: "ref.api.d.addObject" },
-      { type: "code", code: `@removeObject 弾
+      { type: "code", code: `@removeObject bullet
 @removeObject @
 
 destructor: (e) ->
@@ -188,6 +189,20 @@ destructor: (e) ->
           ["rootMotion", t("ref.anim.rootMotion"), "true"],
         ],
       },
+      { type: "code", code: `switch @proc
+  when 0
+    @waitjob(1000)
+  when 1
+    @XS = 2` },
+      { type: "text", k: "ref.api.d.waitjob" },
+      { type: "code", code: `@COLOR = "#ff8800"
+@ALPHA = 0.3
+
+behavior: (e) ->
+  super(e)
+  @ALPHA -= 0.02
+  @removeObject @ if @ALPHA <= 0` },
+      { type: "text", k: "ref.api.d.alpha" },
 
       { type: "heading", k: "ref.api.h.event" },
       { type: "text", k: "ref.api.d.event" },
@@ -328,8 +343,8 @@ GLOBAL.SCORE += 100` },
     @Y = 0.5
     @YS = 0
 
-  敵 = @collision(@enemies)
-  @damage() if 敵` },
+  enemy = @collision(@enemies)
+  @damage() if enemy` },
       { type: "text", k: "ref.hit.ret" },
       { type: "text", k: "ref.hit.debug" },
       { type: "code", code: `setDebug debug: true, opacity: 0.3` },

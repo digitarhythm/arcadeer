@@ -43,10 +43,10 @@ function scheduleDraft() {
   clearTimeout(draftTimer);
   draftTimer = setTimeout(() => {
     if (!editor || !currentKey) return;
-    const 内容 = editor.getValue();
+    const text = editor.getValue();
     // ファイルと同じに戻っていれば、下書きは要らない
-    if (内容 === savedContent) clearDraft(currentKey);
-    else saveDraft(currentKey, 内容);
+    if (text === savedContent) clearDraft(currentKey);
+    else saveDraft(currentKey, text);
   }, DRAFT_DELAY);
 }
 
@@ -109,11 +109,11 @@ function updateDirtyMark() {
 function requestSave() {
   if (!editor || !currentFile) return;
   clearTimeout(draftTimer);
-  const 内容 = editor.getValue();
-  if (currentKey) saveDraft(currentKey, 内容);
+  const text = editor.getValue();
+  if (currentKey) saveDraft(currentKey, text);
   window.dispatchEvent(
     new CustomEvent("arcadeer:save", {
-      detail: { fileName: currentFile, content: 内容 },
+      detail: { fileName: currentFile, content: text },
     }),
   );
 }
@@ -141,19 +141,19 @@ export async function openEditor(fileName, content, projectId, modified) {
 
   const key = draftKey(projectId, fileName);
   const draft = await loadDraft(key);
-  let 開く内容 = content;
-  const 判断 = decideOpen(draft, content, modified);
-  if (判断 === "draft") {
-    開く内容 = draft.content;
-  } else if (判断 === "ask") {
+  let opening = content;
+  const choice = decideOpen(draft, content, modified);
+  if (choice === "draft") {
+    opening = draft.content;
+  } else if (choice === "ask") {
     // OK なら読み込み直す。やめる なら編集の続きを守る
-    const 読み込む = await showConfirm(
+    const load = await showConfirm(
       t("editor.fileChanged"),
       "warning",
       t("editor.fileChangedTitle"),
     );
-    if (読み込む) await clearDraft(key);
-    else 開く内容 = draft.content;
+    if (load) await clearDraft(key);
+    else opening = draft.content;
   } else {
     await clearDraft(key);
   }
@@ -194,13 +194,13 @@ export async function openEditor(fileName, content, projectId, modified) {
 
   let session = sessions.get(key);
   if (!session) {
-    session = ace.createEditSession(開く内容, "ace/mode/coffee");
+    session = ace.createEditSession(opening, "ace/mode/coffee");
     session.setTabSize(2);
     session.setUseSoftTabs(true);
     sessions.set(key, session);
-  } else if (判断 !== "draft" && session.getValue() !== 開く内容) {
+  } else if (choice !== "draft" && session.getValue() !== opening) {
     // ファイルを読み直した場合だけ、覚えていた内容を入れ替える
-    session.setValue(開く内容);
+    session.setValue(opening);
   }
   editor.setSession(session);
   // 開いた直後は行頭へ。前の位置は Ace が覚えている
@@ -239,9 +239,9 @@ export async function openEditor(fileName, content, projectId, modified) {
 export async function commitDraft() {
   clearTimeout(draftTimer);
   if (!editor || !currentKey) return;
-  const 内容 = editor.getValue();
-  if (内容 === savedContent) return;
-  await saveDraft(currentKey, 内容);
+  const text = editor.getValue();
+  if (text === savedContent) return;
+  await saveDraft(currentKey, text);
 }
 
 /**

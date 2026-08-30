@@ -119,50 +119,50 @@ mod tests {
     }
 
     #[test]
-    fn 一般的なクラス名を受け入れる() {
+    fn accepts_ordinary_class_names() {
         assert_eq!(ok("Player"), Ok("Player".to_string()));
         assert_eq!(ok("Enemy2"), Ok("Enemy2".to_string()));
         assert_eq!(ok("A"), Ok("A".to_string()));
     }
 
     #[test]
-    fn アンダースコアとドル記号で始められる() {
+    fn allows_leading_underscore_and_dollar() {
         assert_eq!(ok("_private"), Ok("_private".to_string()));
         assert_eq!(ok("$dollar"), Ok("$dollar".to_string()));
     }
 
     #[test]
-    fn 非アスキーの識別子も使える() {
+    fn allows_non_ascii_identifiers() {
         // CoffeeScript は \x7f-￿ を識別子に使えるため
         assert_eq!(ok("敵キャラ"), Ok("敵キャラ".to_string()));
     }
 
     #[test]
-    fn 前後の空白は取り除く() {
+    fn trims_surrounding_spaces() {
         assert_eq!(ok("  Player  "), Ok("Player".to_string()));
     }
 
     #[test]
-    fn 未入力は空エラーになる() {
+    fn empty_input_reports_empty_error() {
         assert_eq!(ok(""), Err(ClassNameError::Empty));
         assert_eq!(ok("   "), Err(ClassNameError::Empty));
     }
 
     #[test]
-    fn 数字で始まる名前は拒否する() {
+    fn rejects_names_starting_with_digit() {
         assert_eq!(ok("2Player"), Err(ClassNameError::InvalidStart));
         assert_eq!(ok("9"), Err(ClassNameError::InvalidStart));
     }
 
     #[test]
-    fn 使えない文字を含む名前は拒否する() {
+    fn rejects_invalid_characters() {
         for name in ["Player-1", "Player Name", "Player.X", "Player!", "Player/X", "Player#"] {
             assert_eq!(ok(name), Err(ClassNameError::InvalidChar), "{name}");
         }
     }
 
     #[test]
-    fn 予約語は拒否する() {
+    fn rejects_reserved_words() {
         for name in [
             "class", "if", "then", "unless", "yes", "no", "arguments", "eval", "static", "true",
             "null", "Infinity", "NaN", "super", "extends",
@@ -172,13 +172,13 @@ mod tests {
     }
 
     #[test]
-    fn 予約語に似ているだけの名前は受け入れる() {
+    fn accepts_names_merely_similar_to_reserved() {
         assert_eq!(ok("Class"), Ok("Class".to_string()));
         assert_eq!(ok("ifBlock"), Ok("ifBlock".to_string()));
     }
 
     #[test]
-    fn 長すぎる名前は拒否する() {
+    fn rejects_too_long_names() {
         let long = "A".repeat(MAX_CLASS_NAME_LEN + 1);
         assert_eq!(ok(&long), Err(ClassNameError::TooLong));
         let limit = "A".repeat(MAX_CLASS_NAME_LEN);
@@ -186,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn 起点オブジェクト名は使えない() {
+    fn rejects_entry_object_name() {
         // gameMain はゲームの起点として予約されており、作り直せない
         assert_eq!(ok("gameMain"), Err(ClassNameError::EntryReserved));
         assert_eq!(ok("gamemain"), Err(ClassNameError::EntryReserved));
@@ -194,13 +194,13 @@ mod tests {
     }
 
     #[test]
-    fn 起点オブジェクトに似た名前は使える() {
+    fn accepts_names_similar_to_entry_object() {
         assert_eq!(ok("gameMainSub"), Ok("gameMainSub".to_string()));
         assert_eq!(ok("myGameMain"), Ok("myGameMain".to_string()));
     }
 
     #[test]
-    fn 既存と同名は拒否する() {
+    fn rejects_duplicate_names() {
         let existing = vec!["Player".to_string(), "Enemy".to_string()];
         assert_eq!(
             validate_class_name("Player", &existing),
@@ -209,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    fn 重複判定は大文字小文字を区別しない() {
+    fn duplicate_check_ignores_case() {
         // ファイルシステムが大文字小文字を区別しない環境で衝突するため
         let existing = vec!["Player".to_string()];
         assert_eq!(
@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    fn 既存に無い名前は受け入れる() {
+    fn accepts_unused_names() {
         let existing = vec!["Player".to_string()];
         assert_eq!(
             validate_class_name("Enemy", &existing),
@@ -232,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    fn 理由ごとに翻訳キーを返す() {
+    fn returns_translation_key_per_reason() {
         assert_eq!(ClassNameError::Empty.message_key(), "validate.class.empty");
         assert_eq!(
             ClassNameError::InvalidStart.message_key(),

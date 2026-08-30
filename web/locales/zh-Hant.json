@@ -151,5 +151,16 @@
   "message.ok": "確定",
   "message.cancel": "取消",
   "editor.fileChanged": "檔案已更新。\n要讀取嗎？",
-  "editor.fileChangedTitle": "檔案已變更"
+  "editor.fileChangedTitle": "檔案已變更",
+  "pane.assetMap": "資源管理",
+  "assetMap.title": "資源鍵名",
+  "assetMap.note": "遊戲程式透過鍵名來指定資源",
+  "assetMap.file": "檔案名稱",
+  "assetMap.key": "鍵名",
+  "assetMap.noFiles": "沒有檔案",
+  "assetMap.duplicate": "該鍵名已被使用",
+  "assetMap.invalid": "只能使用英文字母、數字與底線，且不能以數字開頭",
+  "assetMap.empty": "請輸入鍵名",
+  "assetMap.saved": "已儲存",
+  "msg.assetMapFailed": "讀取或寫入資源鍵名失敗"
 }

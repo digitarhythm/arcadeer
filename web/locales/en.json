@@ -151,5 +151,16 @@
   "message.ok": "OK",
   "message.cancel": "Cancel",
   "editor.fileChanged": "The file has been updated.\nLoad it?",
-  "editor.fileChangedTitle": "The file has changed"
+  "editor.fileChangedTitle": "The file has changed",
+  "pane.assetMap": "Assets",
+  "assetMap.title": "Asset keys",
+  "assetMap.note": "Game code refers to assets by key name",
+  "assetMap.file": "File",
+  "assetMap.key": "Key",
+  "assetMap.noFiles": "No files",
+  "assetMap.duplicate": "That key is already in use",
+  "assetMap.invalid": "Use letters, digits and underscores, and do not start with a digit",
+  "assetMap.empty": "Enter a key name",
+  "assetMap.saved": "Saved",
+  "msg.assetMapFailed": "Could not read or write the asset keys"
 }

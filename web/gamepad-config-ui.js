@@ -93,7 +93,7 @@ function showArrow(svg, marker, dir) {
   const box = target.getBBox();
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
-  const 半径 = Math.max(box.width, box.height) / 2;
+  const radius = Math.max(box.width, box.height) / 2;
 
   const NS = "http://www.w3.org/2000/svg";
   const g = document.createElementNS(NS, "g");
@@ -104,7 +104,7 @@ function showArrow(svg, marker, dir) {
   const inner = document.createElementNS(NS, "g");
   inner.setAttribute("class", "padconf-arrow-inner");
   const path = document.createElementNS(NS, "path");
-  const 始点 = 半径 + 2;
+  const start = radius + 2;
   path.setAttribute("d", `M ${始点} 0 L ${始点 + 10} 0 M ${始点 + 6} -4 L ${始点 + 10} 0 L ${始点 + 6} 4`);
   inner.appendChild(path);
   g.appendChild(inner);
@@ -175,10 +175,10 @@ export async function openGamePadConfig() {
 
   const { vendor, product } = parseGamepadId(raw.id);
   const key = vendor && product ? `${vendor}:${product}` : raw.id;
-  const 名前 = raw.id.replace(/\s*\(Vendor.*$/, "");
+  const deviceName = raw.id.replace(/\s*\(Vendor.*$/, "");
   // 尋ねない項目の割り当てを失わないよう、保存済みを引き継ぐ
-  const 保存済み = loadGamepadConfig(key, location.href);
-  let config = startConfig(名前, key, 保存済み, steps);
+  const saved = loadGamepadConfig(key, location.href);
+  let config = startConfig(deviceName, key, saved, steps);
 
   /**
    * 何もしていない時の値
@@ -186,11 +186,11 @@ export async function openGamePadConfig() {
    * **項目ごとに取り直す。**触るまで嘘の値を返す軸を持つ機種があり、
    * 最初に一度だけ取ると、その後ずっと「倒している」と誤認してしまう。
    */
-  let 基準 = [...raw.axes];
+  let rest = [...raw.axes];
 
   let index = 0;
   // 手を離した状態を確かめてから受け付ける（押しっぱなしで進まないように）
-  let 離すのを待つ = true;
+  let waitRelease = true;
 
   return new Promise((resolve) => {
     /**
@@ -216,7 +216,7 @@ export async function openGamePadConfig() {
       skip: () => {
         // 飛ばした項目は「使わない」として覚える（自動判定にも任せない）
         recordStep(config, steps[index], UNASSIGNED);
-        離すのを待つ = true;
+        waitRelease = true;
         index += 1;
         if (index >= steps.length) {
           saveGamepadConfig(config, location.href);
@@ -227,9 +227,9 @@ export async function openGamePadConfig() {
       },
       restart: () => {
         // 押し間違えた時のために、最初からやり直せるようにする
-        config = startConfig(名前, key, 保存済み, steps);
+        config = startConfig(deviceName, key, saved, steps);
         index = 0;
-        離すのを待つ = true;
+        waitRelease = true;
         showStep(steps, 0, config.name);
       },
       cancel: () => finish(null),
@@ -239,14 +239,14 @@ export async function openGamePadConfig() {
       const now = firstPad();
       if (!now) return;
 
-      const input = detectInput({ axes: 基準, buttons: [] }, now);
+      const input = detectInput({ axes: rest, buttons: [] }, now);
 
       // 何も押されていない状態を見てから、次の入力を受け付ける。
       // その時点の値を新しい基準にする（落ち着いた後の値を拾うため）
-      if (WAIT_RELEASE && 離すのを待つ) {
+      if (WAIT_RELEASE && waitRelease) {
         if (!input) {
-          基準 = [...now.axes];
-          離すのを待つ = false;
+          rest = [...now.axes];
+          waitRelease = false;
         }
         return;
       }
@@ -254,16 +254,16 @@ export async function openGamePadConfig() {
 
       const step = steps[index];
       // 4方向で、静止位置が範囲外の軸なら「ハットスイッチ」として1度に決める
-      const 実際 = step.kind === "cursor" && isHatBinding(input, 基準)
+      const actual = step.kind === "cursor" && isHatBinding(input, rest)
         ? { kind: "hat", index: input.index }
         : input;
 
-      const 自動 = recordStep(config, step, 実際);
+      const filled = recordStep(config, step, actual);
       // まとめて決まった方向は、この先の手順からも取り除く
-      index += 1 + (自動 > 0 ? steps.filter((s, i) => i > index && s.kind === "cursor").length : 0);
-      離すのを待つ = true;
+      index += 1 + (filled > 0 ? steps.filter((s, i) => i > index && s.kind === "cursor").length : 0);
+      waitRelease = true;
       // まとめて決まった場合は、なぜ飛んだのかを知らせる
-      if (自動 > 0) notify("padconf.hatFound");
+      if (filled > 0) notify("padconf.hatFound");
 
       if (index >= steps.length) {
         saveGamepadConfig(config, location.href);

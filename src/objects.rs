@@ -128,14 +128,14 @@ mod tests {
     }
 
     #[test]
-    fn 作りたては空() {
+    fn starts_empty() {
         let objects = list();
         assert!(objects.is_empty());
         assert_eq!(objects.len(), 0);
     }
 
     #[test]
-    fn 追加した順に並ぶ() {
+    fn keeps_insertion_order() {
         let mut objects = list();
         objects.add("Player");
         objects.add("Enemy");
@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn 識別子は重複しない() {
+    fn ids_are_unique() {
         let mut objects = list();
         let a = objects.add("Player");
         let b = objects.add("Enemy");
@@ -153,7 +153,7 @@ mod tests {
     }
 
     #[test]
-    fn 識別子から実体を取り出せる() {
+    fn gets_object_by_id() {
         let mut objects = list();
         let id = objects.add("Player");
         assert_eq!(objects.get(id), Some(&"Player"));
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn 反映すると取り除いた実体が追加順で返る() {
+    fn apply_returns_removed_in_insertion_order() {
         let mut objects = list();
         objects.add("Player");
         let a = objects.add("Enemy");
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn 消すものが無ければ空が返る() {
+    fn apply_returns_empty_without_removals() {
         let mut objects = list();
         objects.add("Player");
         assert!(objects.apply_removals().is_empty());
@@ -182,7 +182,7 @@ mod tests {
     }
 
     #[test]
-    fn 削除は予約された時点では反映されない() {
+    fn removal_is_deferred() {
         let mut objects = list();
         let id = objects.add("Player");
         objects.add("Enemy");
@@ -193,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn 予約した削除をまとめて反映する() {
+    fn applies_pending_removals() {
         let mut objects = list();
         let a = objects.add("Player");
         objects.add("Enemy");
@@ -208,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn 削除後も識別子は再利用しない() {
+    fn ids_are_not_reused() {
         let mut objects = list();
         let a = objects.add("Player");
         objects.remove(a);
@@ -219,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn 同じ識別子を二重に削除しても1件として扱う() {
+    fn double_removal_counts_once() {
         let mut objects = list();
         let id = objects.add("Player");
         objects.remove(id);
@@ -229,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn 存在しない識別子の削除は何も起きない() {
+    fn removing_unknown_id_does_nothing() {
         let mut objects = list();
         objects.add("Player");
         objects.remove(ObjectId(9999));
@@ -238,7 +238,7 @@ mod tests {
     }
 
     #[test]
-    fn 走査用の識別子一覧は追加順で取り出せる() {
+    fn ids_are_listed_in_insertion_order() {
         let mut objects = list();
         let a = objects.add("Player");
         let b = objects.add("Enemy");
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn 走査中に追加しても今回の走査対象は増えない() {
+    fn adding_during_pass_does_not_extend_it() {
         // ids() で先に固定しておけば、behavior 内で addObject しても
         // そのフレームでは呼ばれない（次フレームから対象になる）
         let mut objects = list();
@@ -258,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn 停止時はすべて取り除く() {
+    fn clear_removes_everything() {
         let mut objects = list();
         let id = objects.add("Player");
         objects.add("Enemy");

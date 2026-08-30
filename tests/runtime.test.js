@@ -25,6 +25,7 @@ import {
   stepAnimation,
   stepObjectAnimation,
   normalizeAngle,
+  runBehavior,
 } from "../web/runtime.js";
 
 /** テスト用の時計 */
@@ -713,72 +714,72 @@ describe("回転角は自動でそろう", () => {
 
 describe("当たり判定のメソッド", () => {
   /** 判定を持つオブジェクトを作る */
-  const 置く = (X, Y, Z, param = {}) =>
+  const place = (X, Y, Z, param = {}) =>
     new ArcadeerMain({ X, Y, Z, MODEL: "box", ...param });
 
   test("collision は、当たった相手を返す", () => {
-    const 自分 = 置く(0, 0, 0);
-    const 相手 = 置く(0.5, 0, 0);
-    expect(自分.collision(相手)).toBe(相手);
+    const mine = place(0, 0, 0);
+    const other = place(0.5, 0, 0);
+    expect(mine.collision(other)).toBe(other);
   });
 
   test("collision は、当たっていなければ null", () => {
-    expect(置く(0, 0, 0).collision(置く(9, 0, 0))).toBeNull();
+    expect(place(0, 0, 0).collision(place(9, 0, 0))).toBeNull();
   });
 
   test("if でそのまま書ける", () => {
-    const 自分 = 置く(0, 0, 0);
-    expect(自分.collision(置く(0.5, 0, 0)) ? "当たり" : "外れ").toBe("当たり");
-    expect(自分.collision(置く(9, 0, 0)) ? "当たり" : "外れ").toBe("外れ");
+    const mine = place(0, 0, 0);
+    expect(mine.collision(place(0.5, 0, 0)) ? "当たり" : "外れ").toBe("当たり");
+    expect(mine.collision(place(9, 0, 0)) ? "当たり" : "外れ").toBe("外れ");
   });
 
   test("配列を渡せる", () => {
-    const 自分 = 置く(0, 0, 0);
-    const 外れ = 置く(9, 0, 0);
-    const 当たり = 置く(0.5, 0, 0);
-    expect(自分.collision([外れ, 当たり])).toBe(当たり);
+    const mine = place(0, 0, 0);
+    const miss = place(9, 0, 0);
+    const hit = place(0.5, 0, 0);
+    expect(mine.collision([miss, hit])).toBe(hit);
   });
 
   test("intersect は奥行きを見ない", () => {
-    const 自分 = 置く(0, 0, 0);
-    const 奥 = 置く(0.5, 0, 100);
-    expect(自分.collision(奥)).toBeNull();
-    expect(自分.intersect(奥)).toBe(奥);
+    const mine = place(0, 0, 0);
+    const far = place(0.5, 0, 100);
+    expect(mine.collision(far)).toBeNull();
+    expect(mine.intersect(far)).toBe(far);
   });
 
   test("動かした直後の位置で判断できる", () => {
     // 1フレーム遅れないことを確かめる
-    const 自分 = 置く(0, 0, 0);
-    const 相手 = 置く(3, 0, 0);
-    expect(自分.collision(相手)).toBeNull();
-    自分.X = 2.6;
-    expect(自分.collision(相手)).toBe(相手);
+    const mine = place(0, 0, 0);
+    const other = place(3, 0, 0);
+    expect(mine.collision(other)).toBeNull();
+    mine.X = 2.6;
+    expect(mine.collision(other)).toBe(other);
   });
 
   test("自分自身は当たらない", () => {
-    const 自分 = 置く(0, 0, 0);
-    expect(自分.collision(自分)).toBeNull();
-    expect(自分.intersect(自分)).toBeNull();
+    const mine = place(0, 0, 0);
+    expect(mine.collision(mine)).toBeNull();
+    expect(mine.intersect(mine)).toBeNull();
   });
 
   test("BOUNDARY を書けば、その形で判断する", () => {
-    const 自分 = 置く(0, 0, 0, { BOUNDARY: { width: 0.1, height: 0.1, depth: 0.1 } });
-    const 相手 = 置く(0.9, 0, 0);
+    const mine = place(0, 0, 0, { BOUNDARY: { width: 0.1, height: 0.1, depth: 0.1 } });
+    const other = place(0.9, 0, 0);
     // 見た目どうしなら当たるが、判定を小さくしたので当たらない
-    expect(置く(0, 0, 0).collision(相手)).toBe(相手);
-    expect(自分.collision(相手)).toBeNull();
+    expect(place(0, 0, 0).collision(other)).toBe(other);
+    expect(mine.collision(other)).toBeNull();
   });
 
   test("BOUNDARY に null を入れると、何とも当たらない", () => {
-    const 自分 = 置く(0, 0, 0, { BOUNDARY: null });
-    expect(自分.collision(置く(0, 0, 0))).toBeNull();
+    const mine = place(0, 0, 0, { BOUNDARY: null });
+    expect(mine.collision(place(0, 0, 0))).toBeNull();
   });
 
   test("相手を渡さなくても落ちない", () => {
-    const 自分 = 置く(0, 0, 0);
-    expect(自分.collision()).toBeNull();
-    expect(自分.intersect(null)).toBeNull();
-    expect(自分.collision([])).toBeNull();
+    const mine = place(0, 0, 0);
+    expect(mine.collision()).toBeNull();
+    expect(mine.intersect(null)).toBeNull();
+    expect(mine.collision([])).toBeNull();
   });
 });
 
@@ -786,21 +787,21 @@ describe("removeObject", () => {
   class Ship extends ArcadeerMain {}
 
   /** 削除の予約先を差し込んで、渡された識別子を集める */
-  function 削除の記録() {
-    const 消した = [];
-    setObjectRemover((id) => 消した.push(id));
-    return 消した;
+  function trackRemovals() {
+    const removed = [];
+    setObjectRemover((id) => removed.push(id));
+    return removed;
   }
 
   beforeEach(() => {
     setObjectRegistrar((obj) => {
       // エンジンは登録した順に識別子を振り、それを返す
       obj._registered = true;
-      return 削除用の識別子++;
+      return nextRemovalId++;
     });
   });
 
-  let 削除用の識別子 = 100;
+  let nextRemovalId = 100;
 
   afterEach(() => {
     clearObjectRegistrar();
@@ -809,55 +810,55 @@ describe("removeObject", () => {
 
   test("登録した時に受け取った識別子で、削除を予約する", () => {
     defineClass("myship", Ship);
-    const 消した = 削除の記録();
+    const removed = trackRemovals();
     const parent = new ArcadeerMain({});
     const ship = parent.addObject({ name: "myship" });
     parent.removeObject(ship);
-    expect(消した).toEqual([ship._objectId]);
+    expect(removed).toEqual([ship._objectId]);
   });
 
   test("自分を渡せば、自分自身を消せる", () => {
-    const 消した = 削除の記録();
+    const removed = trackRemovals();
     const parent = new ArcadeerMain({});
-    const 子 = parent.addObject({ name: "box" });
+    const child = parent.addObject({ name: "box" });
     // 消される側が自分で呼ぶ形（ゲームコードでは @removeObject @）
-    子.removeObject(子);
-    expect(消した).toEqual([子._objectId]);
+    child.removeObject(child);
+    expect(removed).toEqual([child._objectId]);
   });
 
   test("どのオブジェクトから呼んでも、渡した相手が消える", () => {
-    const 消した = 削除の記録();
+    const removed = trackRemovals();
     const parent = new ArcadeerMain({});
-    const 子 = parent.addObject({ name: "box" });
+    const child = parent.addObject({ name: "box" });
     // 呼び出し元ではなく、引数のほうが消える
-    parent.removeObject(子);
-    expect(消した).toEqual([子._objectId]);
+    parent.removeObject(child);
+    expect(removed).toEqual([child._objectId]);
   });
 
   test("同じものを二度渡しても、二度予約する（重複はエンジン側で束ねる）", () => {
-    const 消した = 削除の記録();
+    const removed = trackRemovals();
     const parent = new ArcadeerMain({});
-    const 子 = parent.addObject({ name: "box" });
-    parent.removeObject(子);
-    parent.removeObject(子);
-    expect(消した).toHaveLength(2);
+    const child = parent.addObject({ name: "box" });
+    parent.removeObject(child);
+    parent.removeObject(child);
+    expect(removed).toHaveLength(2);
   });
 
   test("登録されていないものを渡しても落ちない", () => {
-    const 消した = 削除の記録();
+    const removed = trackRemovals();
     const parent = new ArcadeerMain({});
     parent.removeObject(new ArcadeerMain({}));
     parent.removeObject(null);
     parent.removeObject();
     parent.removeObject("box");
-    expect(消した).toHaveLength(0);
+    expect(removed).toHaveLength(0);
   });
 
   test("予約先が無くても落ちない", () => {
     clearObjectRemover();
     const parent = new ArcadeerMain({});
-    const 子 = parent.addObject({ name: "box" });
-    parent.removeObject(子);
+    const child = parent.addObject({ name: "box" });
+    parent.removeObject(child);
   });
 });
 
@@ -885,12 +886,12 @@ describe("再生した回数", () => {
 
 describe("removeAfterAnimation", () => {
   /** クリップの長さ 1.0 のオブジェクトを、指定回数ぶん進める */
-  function 進める(object, 回数, 刻み = 0.5) {
-    let 消す = false;
-    for (let i = 0; i < 回数; i += 1) {
-      消す = stepObjectAnimation(object, 刻み, 1.0) || 消す;
+  function advance(object, times, step = 0.5) {
+    let shouldRemove = false;
+    for (let i = 0; i < times; i += 1) {
+      shouldRemove = stepObjectAnimation(object, step, 1.0) || shouldRemove;
     }
-    return 消す;
+    return shouldRemove;
   }
 
   test("アニメーションを設定し、回数を覚える", () => {
@@ -941,22 +942,22 @@ describe("removeAfterAnimation", () => {
     const o = new ArcadeerMain({});
     o.removeAfterAnimation({ name: "Die", times: 2 });
     // 1周目の途中
-    expect(進める(o, 3)).toBe(false);
+    expect(advance(o, 3)).toBe(false);
     // 2周目の末尾を越える
-    expect(進める(o, 2)).toBe(true);
+    expect(advance(o, 2)).toBe(true);
   });
 
   test("1回の指定なら、末尾まで再生した時点で合図を返す", () => {
     const o = new ArcadeerMain({});
     o.removeAfterAnimation({ name: "Die" });
-    expect(進める(o, 1)).toBe(false);
-    expect(進める(o, 1)).toBe(true);
+    expect(advance(o, 1)).toBe(false);
+    expect(advance(o, 1)).toBe(true);
   });
 
   test("普通の setAnimation では合図を返さない", () => {
     const o = new ArcadeerMain({});
     o.setAnimation({ name: "Jump" });
-    expect(進める(o, 10)).toBe(false);
+    expect(advance(o, 10)).toBe(false);
   });
 
   test("アニメーションを設定していなければ何もしない", () => {
@@ -973,5 +974,130 @@ describe("removeAfterAnimation", () => {
     expect(o.animationFinished).toBe(false);
     stepObjectAnimation(o, 1.0, 1.0);
     expect(o.animationFinished).toBe(true);
+  });
+});
+
+describe("待機中の behavior の呼び分け", () => {
+  /** 自前の behavior を持つクラス。呼ばれた回数を数える */
+  class Counter extends ArcadeerMain {
+    constructor(param) {
+      super(param);
+      this.calls = 0;
+      this.seen = [];
+    }
+
+    behavior(e) {
+      super.behavior(e);
+      this.calls += 1;
+      this.seen.push(this.proc);
+    }
+  }
+
+  test("待機していないときは、自前の behavior が呼ばれる", () => {
+    const o = new Counter({});
+    runBehavior(o, {});
+    expect(o.calls).toBe(1);
+  });
+
+  test("待機中は、自前の behavior が呼ばれない", () => {
+    const o = new Counter({});
+    o.waitjob(1000);
+    now = 500;
+    runBehavior(o, {});
+    expect(o.calls).toBe(0);
+  });
+
+  test("待機中も、スーパークラスの共通処理は動く", () => {
+    // 重力と座標の更新は止めない
+    const o = new Counter({ GRAVITY: 1 });
+    o.XS = 2;
+    o.waitjob(1000);
+    now = 500;
+    runBehavior(o, {});
+    expect(o.X).toBe(2);
+    expect(o.YS).toBe(-1);
+    expect(o.Y).toBe(-1);
+  });
+
+  test("待機が明けたフレームで、進んだ番号のまま自前の behavior が呼ばれる", () => {
+    const o = new Counter({});
+    o.waitjob(1000);
+    now = 1000;
+    runBehavior(o, {});
+    expect(o.proc).toBe(1);
+    expect(o.seen).toEqual([1]);
+  });
+
+  test("共通処理が二重に走らない", () => {
+    // 待機明けのフレームで、重力が2回かからないこと
+    const o = new Counter({ GRAVITY: 1 });
+    o.waitjob(1000);
+    now = 1000;
+    runBehavior(o, {});
+    expect(o.YS).toBe(-1);
+  });
+
+  test("テンプレートどおりに書いても、待機はきちんと明ける", () => {
+    // switch @proc の中で waitjob を呼ぶ書き方。
+    // 待機中に自前の behavior が呼ばれないため、解除時刻が上書きされない
+    class Template extends ArcadeerMain {
+      behavior(e) {
+        super.behavior(e);
+        switch (this.proc) {
+          case 0:
+            this.waitjob(1000);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+    const o = new Template({});
+    for (let frame = 0; frame <= 63; frame += 1) {
+      now = frame * 16;
+      runBehavior(o, {});
+    }
+    expect(o.proc).toBe(1);
+    expect(o.isWaiting()).toBe(false);
+  });
+
+  test("フレーム情報はどちらの経路でも渡る", () => {
+    const seen = [];
+    class Watcher extends ArcadeerMain {
+      behavior(e) {
+        super.behavior(e);
+        seen.push(e.frame);
+      }
+    }
+    const o = new Watcher({});
+    runBehavior(o, { frame: 1 });
+    o.waitjob(100);
+    now = 50;
+    runBehavior(o, { frame: 2 });
+    now = 100;
+    runBehavior(o, { frame: 3 });
+    expect(seen).toEqual([1, 3]);
+  });
+
+  test("arcadeermain を継承していないものは、そのまま behavior を呼ぶ", () => {
+    let called = 0;
+    const plain = { behavior: () => { called += 1; } };
+    runBehavior(plain, {});
+    expect(called).toBe(1);
+  });
+
+  test("behavior を持たないものを渡しても落ちない", () => {
+    expect(() => runBehavior({}, {})).not.toThrow();
+    expect(() => runBehavior(null, {})).not.toThrow();
+  });
+});
+
+describe("透明度（@ALPHA）", () => {
+  test("既定は1（不透明）", () => {
+    expect(new ArcadeerMain({}).ALPHA).toBe(1);
+  });
+
+  test("生成時に指定できる", () => {
+    expect(new ArcadeerMain({ ALPHA: 0.5 }).ALPHA).toBe(0.5);
   });
 });

@@ -39,12 +39,12 @@ const DEFAULT_SIZE = 1;
 const DEFAULT_RADIUS = 0.5;
 
 /** 正の数として読む。読めなければ既定値 */
-function 正の数(value, 既定) {
-  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 既定;
+function toPositive(value, fallback) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 /** 数として読む。読めなければ 0 */
-function 数(value) {
+function toNumber(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
@@ -70,7 +70,7 @@ export function setModelBoxLookup(fn) {
  *
  * 画面に出さないもの（管理用）は、当たるものが無いので判定を持たない。
  */
-function 見た目の判定(object) {
+function lookBounds(object) {
   const kind = resolveKind(object);
 
   // どの形も原点中心の 1×1×1 に正規化されている（6.2.5節）
@@ -107,45 +107,45 @@ export function boundsOf(object) {
 
   // 書かなかった場合は、見えているものをそのまま判定にする
   if (c === undefined) {
-    const 見た目 = 見た目の判定(object);
-    if (!見た目) return null;
-    const sx = 正の数(object.SCALEX, 1);
-    const sy = 正の数(object.SCALEY, 1);
-    const sz = 正の数(object.SCALEZ, 1);
+    const look = lookBounds(object);
+    if (!look) return null;
+    const sx = toPositive(object.SCALEX, 1);
+    const sy = toPositive(object.SCALEY, 1);
+    const sz = toPositive(object.SCALEZ, 1);
     return {
       shape: "box",
-      X: 数(object.X) + 見た目.center[0] * sx,
-      Y: 数(object.Y) + 見た目.center[1] * sy,
-      Z: 数(object.Z) + 見た目.center[2] * sz,
-      hw: 見た目.half[0] * sx,
-      hh: 見た目.half[1] * sy,
-      hd: 見た目.half[2] * sz,
-      r: Math.max(見た目.half[0] * sx, 見た目.half[1] * sy, 見た目.half[2] * sz),
+      X: toNumber(object.X) + look.center[0] * sx,
+      Y: toNumber(object.Y) + look.center[1] * sy,
+      Z: toNumber(object.Z) + look.center[2] * sz,
+      hw: look.half[0] * sx,
+      hh: look.half[1] * sy,
+      hd: look.half[2] * sz,
+      r: Math.max(look.half[0] * sx, look.half[1] * sy, look.half[2] * sz),
     };
   }
 
   if (!c || typeof c !== "object") return null;
 
   const shape = SHAPES.includes(c.shape) ? c.shape : "box";
-  const r = 正の数(c.radius, DEFAULT_RADIUS);
-  const 円柱 = shape === "cylinder";
+  const r = toPositive(c.radius, DEFAULT_RADIUS);
+  const isCylinder = shape === "cylinder";
   return {
     shape,
     // 位置はオブジェクトの座標にずれを足したもの
-    X: 数(object.X) + 数(c.offsetX),
-    Y: 数(object.Y) + 数(c.offsetY),
-    Z: 数(object.Z) + 数(c.offsetZ),
+    X: toNumber(object.X) + toNumber(c.offsetX),
+    Y: toNumber(object.Y) + toNumber(c.offsetY),
+    Z: toNumber(object.Z) + toNumber(c.offsetZ),
     // 直方体は「中心から端まで」で持つ。当たりを見る時に扱いやすい。
     // 円柱の横幅は半径にそろえ、外接する直方体としても使えるようにする
-    hw: 円柱 ? r : 正の数(c.width, DEFAULT_SIZE) / 2,
-    hh: 正の数(c.height, DEFAULT_SIZE) / 2,
-    hd: 円柱 ? r : 正の数(c.depth, DEFAULT_SIZE) / 2,
+    hw: isCylinder ? r : toPositive(c.width, DEFAULT_SIZE) / 2,
+    hh: toPositive(c.height, DEFAULT_SIZE) / 2,
+    hd: isCylinder ? r : toPositive(c.depth, DEFAULT_SIZE) / 2,
     r,
   };
 }
 
 /** 直方体どうし。**接している場合も当たり**とみなす */
-function 箱と箱(a, b) {
+function boxVsBox(a, b) {
   return (
     Math.abs(a.X - b.X) <= a.hw + b.hw &&
     Math.abs(a.Y - b.Y) <= a.hh + b.hh &&
@@ -154,25 +154,25 @@ function 箱と箱(a, b) {
 }
 
 /** 球どうし。中心の距離で見る */
-function 球と球(a, b) {
+function sphereVsSphere(a, b) {
   const dx = a.X - b.X;
   const dy = a.Y - b.Y;
   const dz = a.Z - b.Z;
-  const 和 = a.r + b.r;
-  return dx * dx + dy * dy + dz * dz <= 和 * 和;
+  const sum = a.r + b.r;
+  return dx * dx + dy * dy + dz * dz <= sum * sum;
 }
 
 /** その範囲の中で、いちばん近い値へ寄せる */
-function 寄せる(値, 中心, 半分) {
-  return Math.min(Math.max(値, 中心 - 半分), 中心 + 半分);
+function clampTo(value, center, half) {
+  return Math.min(Math.max(value, center - half), center + half);
 }
 
 /** 球と直方体。直方体の中でいちばん近い点までの距離で見る */
-function 球と箱(球, 箱) {
-  const dx = 球.X - 寄せる(球.X, 箱.X, 箱.hw);
-  const dy = 球.Y - 寄せる(球.Y, 箱.Y, 箱.hh);
-  const dz = 球.Z - 寄せる(球.Z, 箱.Z, 箱.hd);
-  return dx * dx + dy * dy + dz * dz <= 球.r * 球.r;
+function sphereVsBox(sphere, box) {
+  const dx = sphere.X - clampTo(sphere.X, box.X, box.hw);
+  const dy = sphere.Y - clampTo(sphere.Y, box.Y, box.hh);
+  const dz = sphere.Z - clampTo(sphere.Z, box.Z, box.hd);
+  return dx * dx + dy * dy + dz * dz <= sphere.r * sphere.r;
 }
 
 /**
@@ -181,25 +181,25 @@ function 球と箱(球, 箱) {
  * 直方体も円柱も「XZ平面の形を、Y方向へ押し出したもの」なので、
  * **XZの重なり × Yの重なり**に分けて考えられる。
  */
-function 高さが重なる(a, b) {
+function heightOverlaps(a, b) {
   return Math.abs(a.Y - b.Y) <= a.hh + b.hh;
 }
 
 /** 円柱どうし。XZは円と円で見る */
-function 柱と柱(a, b) {
-  if (!高さが重なる(a, b)) return false;
+function cylVsCyl(a, b) {
+  if (!heightOverlaps(a, b)) return false;
   const dx = a.X - b.X;
   const dz = a.Z - b.Z;
-  const 和 = a.r + b.r;
-  return dx * dx + dz * dz <= 和 * 和;
+  const sum = a.r + b.r;
+  return dx * dx + dz * dz <= sum * sum;
 }
 
 /** 円柱と直方体。XZは円と矩形で見る */
-function 柱と箱(柱, 箱) {
-  if (!高さが重なる(柱, 箱)) return false;
-  const dx = 柱.X - 寄せる(柱.X, 箱.X, 箱.hw);
-  const dz = 柱.Z - 寄せる(柱.Z, 箱.Z, 箱.hd);
-  return dx * dx + dz * dz <= 柱.r * 柱.r;
+function cylVsBox(cylinder, box) {
+  if (!heightOverlaps(cylinder, box)) return false;
+  const dx = cylinder.X - clampTo(cylinder.X, box.X, box.hw);
+  const dz = cylinder.Z - clampTo(cylinder.Z, box.Z, box.hd);
+  return dx * dx + dz * dz <= cylinder.r * cylinder.r;
 }
 
 /**
@@ -208,11 +208,11 @@ function 柱と箱(柱, 箱) {
  * 横のはみ出しと上下のはみ出しを別々に求めて合わせる。
  * 縁（角）に触れている場合も、これで正しく拾える。
  */
-function 柱と球(柱, 球) {
-  const 横 = Math.hypot(球.X - 柱.X, 球.Z - 柱.Z);
-  const dr = Math.max(0, 横 - 柱.r);
-  const dv = Math.max(0, Math.abs(球.Y - 柱.Y) - 柱.hh);
-  return dr * dr + dv * dv <= 球.r * 球.r;
+function cylVsSphere(cylinder, sphere) {
+  const radial = Math.hypot(sphere.X - cylinder.X, sphere.Z - cylinder.Z);
+  const dr = Math.max(0, radial - cylinder.r);
+  const dv = Math.max(0, Math.abs(sphere.Y - cylinder.Y) - cylinder.hh);
+  return dr * dr + dv * dv <= sphere.r * sphere.r;
 }
 
 /**
@@ -223,21 +223,21 @@ function 柱と球(柱, 球) {
 export function hitBetween(a, b) {
   if (!a || !b) return false;
 
-  const 球a = a.shape === "sphere";
-  const 球b = b.shape === "sphere";
-  const 柱a = a.shape === "cylinder";
-  const 柱b = b.shape === "cylinder";
+  const sphereA = a.shape === "sphere";
+  const sphereB = b.shape === "sphere";
+  const cylA = a.shape === "cylinder";
+  const cylB = b.shape === "cylinder";
 
-  if (柱a && 柱b) return 柱と柱(a, b);
-  if (柱a && 球b) return 柱と球(a, b);
-  if (柱b && 球a) return 柱と球(b, a);
-  if (柱a) return 柱と箱(a, b);
-  if (柱b) return 柱と箱(b, a);
+  if (cylA && cylB) return cylVsCyl(a, b);
+  if (cylA && sphereB) return cylVsSphere(a, b);
+  if (cylB && sphereA) return cylVsSphere(b, a);
+  if (cylA) return cylVsBox(a, b);
+  if (cylB) return cylVsBox(b, a);
 
-  if (球a && 球b) return 球と球(a, b);
-  if (球a) return 球と箱(a, b);
-  if (球b) return 球と箱(b, a);
-  return 箱と箱(a, b);
+  if (sphereA && sphereB) return sphereVsSphere(a, b);
+  if (sphereA) return sphereVsBox(a, b);
+  if (sphereB) return sphereVsBox(b, a);
+  return boxVsBox(a, b);
 }
 
 /**
@@ -245,7 +245,7 @@ export function hitBetween(a, b) {
  *
  * 円柱はY方向へ押し出した形なので、**真横から見ると矩形**になる。
  */
-function 平面にする(b) {
+function flatten(b) {
   if (b.shape === "cylinder") return { ...b, shape: "box", hw: b.r, hd: Infinity, Z: 0 };
   return { ...b, Z: 0, hd: Infinity };
 }
@@ -258,7 +258,7 @@ function 平面にする(b) {
  */
 export function hitBetweenXY(a, b) {
   if (!a || !b) return false;
-  return hitBetween(平面にする(a), 平面にする(b));
+  return hitBetween(flatten(a), flatten(b));
 }
 
 /**
@@ -273,15 +273,15 @@ export function hitBetweenXY(a, b) {
  * @returns 当たった相手。当たっていなければ null
  */
 export function findHit(self, target, mode) {
-  const 自分 = boundsOf(self);
-  if (!自分) return null;
+  const mine = boundsOf(self);
+  if (!mine) return null;
 
-  const 当たる = mode === "2d" ? hitBetweenXY : hitBetween;
-  const 相手たち = Array.isArray(target) ? target : [target];
-  for (const 相手 of 相手たち) {
+  const overlaps = mode === "2d" ? hitBetweenXY : hitBetween;
+  const targets = Array.isArray(target) ? target : [target];
+  for (const other of targets) {
     // 自分自身は当たらない。判定を持たない相手は飛ばす
-    if (!相手 || 相手 === self) continue;
-    if (当たる(自分, boundsOf(相手))) return 相手;
+    if (!other || other === self) continue;
+    if (overlaps(mine, boundsOf(other))) return other;
   }
   return null;
 }

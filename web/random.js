@@ -22,10 +22,10 @@
  * @param rng 0以上1未満を返す元。試験用に差し替えられる
  */
 export function random(max, rng = Math.random) {
-  const 通り = typeof max === "number" && Number.isFinite(max) ? Math.floor(max) : 0;
-  if (通り <= 1) return 0;
+  const count = typeof max === "number" && Number.isFinite(max) ? Math.floor(max) : 0;
+  if (count <= 1) return 0;
 
   // 元が 1 ちょうどや負の値を返しても、範囲からはみ出さないようにする
-  const 割合 = Math.min(Math.max(rng(), 0), 0.9999999999);
-  return Math.floor(割合 * 通り);
+  const ratio = Math.min(Math.max(rng(), 0), 0.9999999999);
+  return Math.floor(ratio * count);
 }

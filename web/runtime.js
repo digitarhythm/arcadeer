@@ -282,6 +282,10 @@ export class ArcadeerMain {
     // 描画色。空なら素材そのままの色で描く（`"#ff8800"` のように指定する）
     this.COLOR = param.COLOR ?? "";
 
+    // 透明度。1で不透明、0で見えなくなる（6.2.5節）。
+    // @COLOR を8桁で書いた場合は、その透明度とも掛け合わせる
+    this.ALPHA = param.ALPHA ?? 1;
+
     // 影を落とすか。false にすると、このオブジェクトは影を作らない（6.2.6節）
     this.SHADOW = param.SHADOW ?? true;
 
@@ -339,10 +343,7 @@ export class ArcadeerMain {
    */
   // eslint-disable-next-line no-unused-vars
   behavior(e) {
-    if (this._waitUntil !== null && clock() >= this._waitUntil) {
-      this.proc = this._waitNext;
-      this._waitUntil = null;
-    }
+    releaseWait(this);
 
     // Yは上が正。重力は正の値で「下へ引く力」を表すため、YS からは引く
     this.YS -= this.GRAVITY;
@@ -361,7 +362,7 @@ export class ArcadeerMain {
    * オブジェクトを消す（仕様書6.2節）
    *
    * ```coffee
-   * @removeObject 弾      # 別のオブジェクトを消す
+   * @removeObject bullet  # 別のオブジェクトを消す
    * @removeObject @       # 自分自身を消す
    * ```
    *
@@ -395,9 +396,9 @@ export class ArcadeerMain {
   removeAfterAnimation(param) {
     const times = param?.times;
     // 2回以上ならループさせないと、2周目が再生されない
-    const 回数 = Number.isInteger(times) && times > 0 ? times : 1;
-    this.setAnimation({ ...param, loop: 回数 > 1 });
-    this.animation.times = 回数;
+    const count = Number.isInteger(times) && times > 0 ? times : 1;
+    this.setAnimation({ ...param, loop: count > 1 });
+    this.animation.times = count;
     this.animation.played = 0;
     this.animation.removeAtEnd = true;
   }
@@ -519,8 +520,61 @@ export class ArcadeerMain {
   }
 }
 
+/**
+ * 待機の期限が来ていれば解除し、ステータス番号を次へ進める
+ *
+ * `waitjob` で控えた時刻を過ぎた時だけ働く。過ぎていなければ何もしない。
+ */
+function releaseWait(object) {
+  if (object._waitUntil !== null && clock() >= object._waitUntil) {
+    object.proc = object._waitNext;
+    object._waitUntil = null;
+  }
+}
+
+/**
+ * 1フレームぶんの `behavior()` を呼ぶ（仕様書6.2.1節）
+ *
+ * **待機中（`waitjob`）は、そのオブジェクト自身の `behavior()` を呼ばない。**
+ * かわりに共通処理だけを進める。`switch @proc` の分岐が動かないため、
+ * 待機の解除時刻が毎フレーム上書きされることもない。
+ *
+ * ```coffee
+ * behavior: (e) ->
+ *   super(e)
+ *   switch @proc
+ *     when 0
+ *       @waitjob(1000)    # 1秒のあいだ、この behavior は呼ばれない
+ *     when 1
+ *       ...               # 1秒たったフレームから、ここが動く
+ * ```
+ *
+ * 待機していない時は自前の `behavior()` に任せる。その中の `super(e)` が
+ * 共通処理を行うため、**ここでは共通処理を呼ばない**（重力が二重にかかる）。
+ *
+ * 期限の確認は自前の `behavior()` を呼ぶ前に行う。待機が明けたそのフレームから、
+ * 進んだ番号で動き出せるようにするため。
+ */
+export function runBehavior(object, event) {
+  if (!(object instanceof ArcadeerMain)) {
+    // 継承していないものは、これまでどおりそのまま呼ぶ
+    if (typeof object?.behavior === "function") object.behavior(event);
+    return;
+  }
+
+  releaseWait(object);
+  if (object.isWaiting()) {
+    // 共通処理だけを進める（重力・座標・回転の正規化）
+    ArcadeerMain.prototype.behavior.call(object, event);
+    return;
+  }
+  object.behavior(event);
+}
+
 if (typeof window !== "undefined") {
   window.arcadeermain = ArcadeerMain;
+  // WASM側は毎フレームこれを呼ぶ。待機中の呼び分けをここへ集約する
+  window.arcadeerRunBehavior = runBehavior;
   // WASM側が canvas の内部解像度を設定するために参照する
   window.arcadeerScreenSize = screenSize;
   window.arcadeerKeyDown = keyDown;

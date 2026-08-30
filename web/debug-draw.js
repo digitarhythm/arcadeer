@@ -89,26 +89,26 @@ const EDGES = [
 ];
 
 /** 直方体のワイヤーフレーム */
-function 箱の線(b, out) {
-  const 角 = CORNERS.map(([sx, sy, sz]) => [
+function boxLines(b, out) {
+  const corners = CORNERS.map(([sx, sy, sz]) => [
     b.X + sx * b.hw,
     b.Y + sy * b.hh,
     b.Z + sz * b.hd,
   ]);
-  for (const [a, c] of EDGES) out.push(...角[a], ...角[c]);
+  for (const [a, c] of EDGES) out.push(...corners[a], ...corners[c]);
 }
 
 /** XY平面の矩形（奥行きを持たない） */
-function 矩形の線(b, out) {
-  const 点 = [
+function rectLines(b, out) {
+  const points = [
     [b.X - b.hw, b.Y - b.hh],
     [b.X + b.hw, b.Y - b.hh],
     [b.X + b.hw, b.Y + b.hh],
     [b.X - b.hw, b.Y + b.hh],
   ];
   for (let i = 0; i < 4; i += 1) {
-    const a = 点[i];
-    const c = 点[(i + 1) % 4];
+    const a = points[i];
+    const c = points[(i + 1) % 4];
     out.push(a[0], a[1], b.Z, c[0], c[1], b.Z);
   }
 }
@@ -118,16 +118,16 @@ function 矩形の線(b, out) {
  *
  * @param 軸 どの2軸で回すか（`[0,1]` なら XY平面）
  */
-function 輪の線(b, 軸, out) {
-  const 中心 = [b.X, b.Y, b.Z];
+function ringLines(b, axes, out) {
+  const center = [b.X, b.Y, b.Z];
   for (let i = 0; i < RING_SEGMENTS; i += 1) {
     const a1 = (i / RING_SEGMENTS) * Math.PI * 2;
     const a2 = ((i + 1) / RING_SEGMENTS) * Math.PI * 2;
-    for (const 角度 of [a1, a2]) {
-      const 点 = [...中心];
-      点[軸[0]] += Math.cos(角度) * b.r;
-      点[軸[1]] += Math.sin(角度) * b.r;
-      out.push(...点);
+    for (const angle of [a1, a2]) {
+      const points = [...center];
+      points[axes[0]] += Math.cos(angle) * b.r;
+      points[axes[1]] += Math.sin(angle) * b.r;
+      out.push(...points);
     }
   }
 }
@@ -138,14 +138,14 @@ function 輪の線(b, 軸, out) {
  * 縦の線は4本だけにする。輪だけだと立体に見えず、
  * 多くすると細かい枠が読みにくくなるため。
  */
-function 柱の線(b, out) {
-  for (const 上下 of [b.Y - b.hh, b.Y + b.hh]) {
-    輪の線({ X: b.X, Y: 上下, Z: b.Z, r: b.r }, [0, 2], out);
+function cylinderLines(b, out) {
+  for (const y of [b.Y - b.hh, b.Y + b.hh]) {
+    ringLines({ X: b.X, Y: y, Z: b.Z, r: b.r }, [0, 2], out);
   }
   for (let i = 0; i < 4; i += 1) {
-    const 角度 = (i / 4) * Math.PI * 2;
-    const x = b.X + Math.cos(角度) * b.r;
-    const z = b.Z + Math.sin(角度) * b.r;
+    const angle = (i / 4) * Math.PI * 2;
+    const x = b.X + Math.cos(angle) * b.r;
+    const z = b.Z + Math.sin(angle) * b.r;
     out.push(x, b.Y - b.hh, z, x, b.Y + b.hh, z);
   }
 }
@@ -164,23 +164,23 @@ export function boundaryLines(bounds, kind) {
   if (!bounds) return new Float32Array(0);
 
   const out = [];
-  const 平ら = kind === KIND_2D;
+  const isFlat = kind === KIND_2D;
   if (bounds.shape === "cylinder") {
     // 真横から見ると矩形になるので、2Dでは幅を半径にそろえて描く
-    if (平ら) 矩形の線({ ...bounds, hw: bounds.r }, out);
-    else 柱の線(bounds, out);
+    if (isFlat) rectLines({ ...bounds, hw: bounds.r }, out);
+    else cylinderLines(bounds, out);
   } else if (bounds.shape === "sphere") {
     // 2Dなら、正面から見た輪だけで足りる
-    if (平ら) 輪の線(bounds, [0, 1], out);
+    if (isFlat) ringLines(bounds, [0, 1], out);
     else {
-      輪の線(bounds, [0, 1], out);
-      輪の線(bounds, [1, 2], out);
-      輪の線(bounds, [0, 2], out);
+      ringLines(bounds, [0, 1], out);
+      ringLines(bounds, [1, 2], out);
+      ringLines(bounds, [0, 2], out);
     }
-  } else if (平ら) {
-    矩形の線(bounds, out);
+  } else if (isFlat) {
+    rectLines(bounds, out);
   } else {
-    箱の線(bounds, out);
+    boxLines(bounds, out);
   }
   return new Float32Array(out);
 }

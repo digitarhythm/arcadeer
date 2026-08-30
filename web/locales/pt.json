@@ -151,5 +151,16 @@
   "message.ok": "OK",
   "message.cancel": "Cancelar",
   "editor.fileChanged": "O ficheiro foi atualizado.\nCarregar?",
-  "editor.fileChangedTitle": "O ficheiro foi alterado"
+  "editor.fileChangedTitle": "O ficheiro foi alterado",
+  "pane.assetMap": "Recursos",
+  "assetMap.title": "Chaves de recursos",
+  "assetMap.note": "O código do jogo refere-se aos recursos pela chave",
+  "assetMap.file": "Ficheiro",
+  "assetMap.key": "Chave",
+  "assetMap.noFiles": "Sem ficheiros",
+  "assetMap.duplicate": "Essa chave já está a ser usada",
+  "assetMap.invalid": "Usa letras, dígitos e sublinhados, e não comeces por um dígito",
+  "assetMap.empty": "Escreve uma chave",
+  "assetMap.saved": "Guardado",
+  "msg.assetMapFailed": "Não foi possível ler nem escrever as chaves de recursos"
 }

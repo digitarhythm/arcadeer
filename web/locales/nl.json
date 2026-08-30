@@ -151,5 +151,16 @@
   "message.ok": "OK",
   "message.cancel": "Annuleren",
   "editor.fileChanged": "Het bestand is bijgewerkt.\nLaden?",
-  "editor.fileChangedTitle": "Het bestand is gewijzigd"
+  "editor.fileChangedTitle": "Het bestand is gewijzigd",
+  "pane.assetMap": "Assets",
+  "assetMap.title": "Asset-sleutels",
+  "assetMap.note": "Spelcode verwijst naar assets via de sleutelnaam",
+  "assetMap.file": "Bestand",
+  "assetMap.key": "Sleutel",
+  "assetMap.noFiles": "Geen bestanden",
+  "assetMap.duplicate": "Die sleutel is al in gebruik",
+  "assetMap.invalid": "Gebruik letters, cijfers en liggende streepjes, en begin niet met een cijfer",
+  "assetMap.empty": "Vul een sleutelnaam in",
+  "assetMap.saved": "Opgeslagen",
+  "msg.assetMapFailed": "Kon de asset-sleutels niet lezen of schrijven"
 }

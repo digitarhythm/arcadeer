@@ -155,21 +155,21 @@ function guessLayout(raw) {
 
   // まずは DirectInput で多い並びを当て、使えない軸だけ差し替える。
   // こうすることで、普通の機種はこれまでどおりの割り当てを保てる
-  const 慣例 = axes.length > 5 ? [0, 1, 2, 5] : [0, 1, 2, 3];
-  const 使用済み = new Set();
+  const usual = axes.length > 5 ? [0, 1, 2, 5] : [0, 1, 2, 3];
+  const taken = new Set();
   const pick = (n) => {
-    const 候補 = 慣例[n];
-    if (候補 !== undefined && usable.includes(候補) && !使用済み.has(候補)) {
-      使用済み.add(候補);
-      return 候補;
+    const wanted = usual[n];
+    if (wanted !== undefined && usable.includes(wanted) && !taken.has(wanted)) {
+      taken.add(wanted);
+      return wanted;
     }
     // 使えない軸なら、まだ使っていない軸から順に充てる
-    const 代わり = usable.find((i) => !使用済み.has(i));
-    if (代わり !== undefined) {
-      使用済み.add(代わり);
-      return 代わり;
+    const spare = usable.find((i) => !taken.has(i));
+    if (spare !== undefined) {
+      taken.add(spare);
+      return spare;
     }
-    return 候補 ?? 0;
+    return wanted ?? 0;
   };
 
   return {
@@ -244,7 +244,7 @@ const option = {
  * 書き方を間違えていた場合は、申告そのものを無かったことにする
  * （中途半端に一部だけ効くと、原因が分かりにくいため）。
  */
-function 申告を正す(use) {
+function normalizeUse(use) {
   if (!use || typeof use !== "object" || Array.isArray(use)) return null;
   const out = {};
   if (typeof use.cursor === "boolean") out.cursor = use.cursor;
@@ -270,7 +270,7 @@ export function setGamepadOption(param) {
   if (typeof param?.stickAsCursor === "boolean") {
     option.stickAsCursor = param.stickAsCursor;
   }
-  if (param?.use !== undefined) option.use = 申告を正す(param.use);
+  if (param?.use !== undefined) option.use = normalizeUse(param.use);
   const deadzone = param?.deadzone;
   // 0 だと少しの傾きで反応してしまい、1 を超えると決して反応しなくなる
   if (typeof deadzone === "number" && Number.isFinite(deadzone) && deadzone > 0 && deadzone <= 1) {
@@ -380,12 +380,12 @@ let suspended = false;
  * 変わっている場合、古い見立てのままだと新しい設定が効かない。
  */
 export function setGamepadSuspended(on) {
-  const 次 = on === true;
-  if (suspended && !次) {
+  const nextOn = on === true;
+  if (suspended && !nextOn) {
     centers.clear();
     layouts.clear();
   }
-  suspended = 次;
+  suspended = nextOn;
 }
 
 /** いま止めているか */
@@ -462,20 +462,20 @@ function fillPad(pad, raw, keys, withKeyboard, center, layout) {
   const sticks = [layout.left, layout.right];
   for (let stick = 0; stick < STICK_COUNT; stick += 1) {
     for (let axis = 0; axis < AXIS_COUNT; axis += 1) {
-      const 番号 = sticks[stick][axis];
+      const index = sticks[stick][axis];
       // 遊ぶ人が「使わない」と決めた軸は、常に倒していない扱い
       if (layout.stickNone?.[stick]?.[axis]) {
         pad.axes[stick][axis] = 0;
         continue;
       }
       // まだ値が届いていない軸は、倒していないものとして扱う
-      if (center.pinned[番号]) {
+      if (center.pinned[index]) {
         pad.axes[stick][axis] = 0;
         continue;
       }
       // 設定で「右へ倒すと負になる」と分かっている軸は、符号をそろえて返す
-      const 符号 = layout.stickSigns?.[stick]?.[axis] ?? 1;
-      pad.axes[stick][axis] = clampAxis((raw?.axes?.[番号] ?? 0) * 符号);
+      const sign = layout.stickSigns?.[stick]?.[axis] ?? 1;
+      pad.axes[stick][axis] = clampAxis((raw?.axes?.[index] ?? 0) * sign);
     }
   }
 
@@ -506,13 +506,13 @@ function fillPad(pad, raw, keys, withKeyboard, center, layout) {
       return;
     }
     // 設定があれば、その割り当て先を読む
-    const 割り当て = layout.buttons?.[i] ?? BUTTON_PAD_INDEX[i];
-    let value = padValue(raw, 割り当て);
+    const assigned = layout.buttons?.[i] ?? BUTTON_PAD_INDEX[i];
+    let value = padValue(raw, assigned);
     // トリガーが軸で届く機種向け（設定で軸を割り当てた場合）
-    const 軸 = layout.buttonAxes?.[i];
-    if (軸) {
-      const ぶれ = (raw?.axes?.[軸.index] ?? 0) - (center.rest[軸.index] ?? 0);
-      value = Math.max(value, Math.min(1, Math.max(0, ぶれ * 軸.sign)));
+    const axes = layout.buttonAxes?.[i];
+    if (axes) {
+      const shift = (raw?.axes?.[axes.index] ?? 0) - (center.rest[axes.index] ?? 0);
+      value = Math.max(value, Math.min(1, Math.max(0, shift * axes.sign)));
     }
     mix(slot, value, [BUTTON_KEYS[i]]);
   });

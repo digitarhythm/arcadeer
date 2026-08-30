@@ -46,3 +46,32 @@ export function parseColorOrNull(value) {
   }
   return null;
 }
+
+/**
+ * 透明度（`@ALPHA`）を 0〜1 の値にそろえる
+ *
+ * 範囲の外は端へ寄せ、数値でないものは 1（不透明）にする。
+ * 書き間違いで描画が壊れないようにするため。
+ */
+export function normalizeAlpha(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 1;
+  return Math.min(Math.max(value, 0), 1);
+}
+
+/**
+ * オブジェクトの色を 0〜1 の RGBA にする
+ *
+ * `@COLOR` の色に `@ALPHA` を掛け合わせる。`@COLOR` を8桁で書いた場合は、
+ * そちらの透明度とも掛け合わせる（`#ff880080` と `@ALPHA = 0.5` なら約0.25）。
+ *
+ * ```coffee
+ * @COLOR = "#ff8800"
+ * @ALPHA = 0.3        # 3割の濃さで透ける
+ * ```
+ */
+export function objectColor(object) {
+  const color = object?.COLOR ? parseColor(object.COLOR) : WHITE;
+  const alpha = normalizeAlpha(object?.ALPHA);
+  if (alpha === 1) return color;
+  return [color[0], color[1], color[2], color[3] * alpha];
+}

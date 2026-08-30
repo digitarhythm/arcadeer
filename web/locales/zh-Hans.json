@@ -151,5 +151,16 @@
   "message.ok": "确定",
   "message.cancel": "取消",
   "editor.fileChanged": "文件已更新。\n要读取吗？",
-  "editor.fileChangedTitle": "文件已变更"
+  "editor.fileChangedTitle": "文件已变更",
+  "pane.assetMap": "资源管理",
+  "assetMap.title": "资源键名",
+  "assetMap.note": "游戏代码通过键名来指定资源",
+  "assetMap.file": "文件名",
+  "assetMap.key": "键名",
+  "assetMap.noFiles": "没有文件",
+  "assetMap.duplicate": "该键名已被使用",
+  "assetMap.invalid": "只能使用字母、数字和下划线，且不能以数字开头",
+  "assetMap.empty": "请输入键名",
+  "assetMap.saved": "已保存",
+  "msg.assetMapFailed": "读取或写入资源键名失败"
 }

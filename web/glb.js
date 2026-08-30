@@ -354,7 +354,7 @@ export function collectClips(gltf, bin) {
  * @returns `{ center, half }`。中身が無ければ大きさ0
  */
 export function computeBox(primitives) {
-  const { min, max } = 範囲(primitives);
+  const { min, max } = extent(primitives);
   if (!Number.isFinite(min[0])) return { center: [0, 0, 0], half: [0, 0, 0] };
   return {
     center: [0, 1, 2].map((i) => (min[i] + max[i]) / 2),
@@ -363,7 +363,7 @@ export function computeBox(primitives) {
 }
 
 /** 全頂点を配置行列に通して、各軸の最小と最大を求める */
-function 範囲(primitives) {
+function extent(primitives) {
   let min = [Infinity, Infinity, Infinity];
   let max = [-Infinity, -Infinity, -Infinity];
 
@@ -386,7 +386,7 @@ function 範囲(primitives) {
  * カメラを自動で合わせるために使う。
  */
 export function computeBounds(primitives) {
-  const { min, max } = 範囲(primitives);
+  const { min, max } = extent(primitives);
 
   if (!Number.isFinite(min[0])) return { center: [0, 0, 0], radius: 0 };
 

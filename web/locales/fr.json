@@ -151,5 +151,16 @@
   "message.ok": "OK",
   "message.cancel": "Annuler",
   "editor.fileChanged": "Le fichier a été mis à jour.\nLe charger ?",
-  "editor.fileChangedTitle": "Le fichier a changé"
+  "editor.fileChangedTitle": "Le fichier a changé",
+  "pane.assetMap": "Ressources",
+  "assetMap.title": "Clés des ressources",
+  "assetMap.note": "Le code du jeu désigne les ressources par leur clé",
+  "assetMap.file": "Fichier",
+  "assetMap.key": "Clé",
+  "assetMap.noFiles": "Aucun fichier",
+  "assetMap.duplicate": "Cette clé est déjà utilisée",
+  "assetMap.invalid": "Lettres, chiffres et tirets bas uniquement, sans commencer par un chiffre",
+  "assetMap.empty": "Saisissez une clé",
+  "assetMap.saved": "Enregistré",
+  "msg.assetMapFailed": "Impossible de lire ou d'écrire les clés des ressources"
 }

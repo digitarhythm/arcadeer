@@ -1735,3 +1735,99 @@ body.footer-expanded .footer-log {
   border-color: var(--danger);
   color: var(--danger);
 }
+
+/* アセットの対応表（5.7節） */
+.pane-tab-action {
+  margin-left: auto;
+}
+
+.assetmap-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+  padding: 16px 20px;
+  gap: 12px;
+}
+
+.assetmap-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.assetmap-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.assetmap-note {
+  font-size: 12px;
+  color: var(--fg-muted, #94a3b8);
+}
+
+/* 問題がある入力は赤で知らせる */
+.assetmap-note.assetmap-error {
+  color: #ff6b6b;
+}
+
+.assetmap-section {
+  margin-bottom: 8px;
+}
+
+.assetmap-kind {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 12px 0 6px;
+  color: var(--accent);
+}
+
+.assetmap-empty {
+  font-size: 12px;
+  color: var(--fg-muted, #94a3b8);
+  margin: 0 0 4px;
+}
+
+.assetmap-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 720px;
+  font-size: 13px;
+}
+
+.assetmap-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--fg-muted, #94a3b8);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 8px;
+}
+
+.assetmap-table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+/* ファイル名は等幅にして、拡張子の違いを見分けやすくする */
+.assetmap-file {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--fg);
+}
+
+.assetmap-input {
+  width: 100%;
+  max-width: 240px;
+  padding: 3px 6px;
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.assetmap-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}

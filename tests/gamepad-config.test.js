@@ -53,19 +53,19 @@ describe("設定の手順", () => {
   });
 
   test("4方向 → ボタン12個 → スティック4方向の順", () => {
-    const 種類 = CONFIG_STEPS.map((s) => s.kind);
-    expect(種類.slice(0, 4)).toEqual(["cursor", "cursor", "cursor", "cursor"]);
-    expect(種類.slice(4, 16).every((k) => k === "button")).toBe(true);
-    expect(種類.slice(16).every((k) => k === "stick")).toBe(true);
+    const kinds = CONFIG_STEPS.map((s) => s.kind);
+    expect(kinds.slice(0, 4)).toEqual(["cursor", "cursor", "cursor", "cursor"]);
+    expect(kinds.slice(4, 16).every((k) => k === "button")).toBe(true);
+    expect(kinds.slice(16).every((k) => k === "stick")).toBe(true);
   });
 
   test("XInput の並びでボタンを尋ねる", () => {
-    const ボタン = CONFIG_STEPS.filter((s) => s.kind === "button");
-    expect(ボタン.map((s) => s.name)).toEqual([
+    const buttons = CONFIG_STEPS.filter((s) => s.kind === "button");
+    expect(buttons.map((s) => s.name)).toEqual([
       "A", "B", "X", "Y", "LB", "RB", "LT", "RT", "BACK", "START", "LS", "RS",
     ]);
     // 番号は GAMEPAD[].button[0〜11] に対応する
-    expect(ボタン.map((s) => s.index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(buttons.map((s) => s.index)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 
   test("どの手順にも、絵の中の目印がある", () => {
@@ -95,8 +95,8 @@ describe("押されたものの見分け", () => {
 
   test("静止位置が0でない軸でも、動いたぶんで見分ける", () => {
     // 軸1が静止時 -1 の機種。そこから +1 側へ動いた
-    const 静止 = pad([0, -1, 0, 0]);
-    expect(detectInput(静止, pad([0, 1, 0, 0]))).toEqual({ kind: "axis", index: 1, sign: 1 });
+    const rest = pad([0, -1, 0, 0]);
+    expect(detectInput(rest, pad([0, 1, 0, 0]))).toEqual({ kind: "axis", index: 1, sign: 1 });
   });
 
   test("何も動いていなければ null", () => {
@@ -151,16 +151,16 @@ describe("設定の組み立て", () => {
   test("4方向でハットを選ぶと、残り3方向も自動で埋まる", () => {
     const c = createConfig("x", "k");
     // 上を押したらハット軸だった → 4方向すべてこの軸で決まる
-    const 埋まった = recordStep(c, CONFIG_STEPS[0], { kind: "hat", index: 9 });
-    expect(埋まった).toBe(3);
+    const filled = recordStep(c, CONFIG_STEPS[0], { kind: "hat", index: 9 });
+    expect(filled).toBe(3);
     expect(c.hatAxis).toBe(9);
     for (let i = 0; i < 4; i += 1) expect(c.cursor[i]).toEqual({ kind: "hat", index: 9 });
   });
 
   test("スティックは軸と向きを覚える", () => {
     const c = createConfig("x", "k");
-    const 右 = CONFIG_STEPS.find((s) => s.kind === "stick" && s.stick === 0 && s.axis === 0);
-    recordStep(c, 右, { kind: "axis", index: 3, sign: -1 });
+    const right = CONFIG_STEPS.find((s) => s.kind === "stick" && s.stick === 0 && s.axis === 0);
+    recordStep(c, right, { kind: "axis", index: 3, sign: -1 });
     // 「右へ倒した時に -1 になる軸」なので、向きを反転して覚える
     expect(c.sticks[0][0]).toEqual({ index: 3, sign: -1 });
   });
@@ -250,22 +250,22 @@ describe("保存と読み出し", () => {
 
 describe("ハットスイッチの小さな変化も拾う", () => {
   /** PXN-P20: 中立 -1.286、上を押すと -1（差はわずか0.29） */
-  const 静止 = { axes: [0, -1, 0, 0, 0, 0, 0, 0, 0, -1.286], buttons: [] };
-  const 押した = (v) => ({ axes: [0, -1, 0, 0, 0, 0, 0, 0, 0, v], buttons: [] });
+  const rest = { axes: [0, -1, 0, 0, 0, 0, 0, 0, 0, -1.286], buttons: [] };
+  const pressed = (v) => ({ axes: [0, -1, 0, 0, 0, 0, 0, 0, 0, v], buttons: [] });
 
   test("中立が範囲外の軸は、わずかな変化でも押されたとみなす", () => {
     // 通常の基準（0.5）だと届かないため、専用の低い基準で見る
-    expect(detectInput(静止, 押した(-1))).toEqual({ kind: "axis", index: 9, sign: 1 });
+    expect(detectInput(rest, pressed(-1))).toEqual({ kind: "axis", index: 9, sign: 1 });
   });
 
   test("8方向すべてを拾える", () => {
     for (const v of [-1, -0.714, -0.429, -0.143, 0.143, 0.429, 0.714, 1]) {
-      expect(detectInput(静止, 押した(v))).not.toBeNull();
+      expect(detectInput(rest, pressed(v))).not.toBeNull();
     }
   });
 
   test("中立のままなら拾わない", () => {
-    expect(detectInput(静止, 押した(-1.286))).toBeNull();
+    expect(detectInput(rest, pressed(-1.286))).toBeNull();
   });
 
   test("普通の軸は、これまでどおりの基準で見る", () => {
@@ -354,13 +354,13 @@ describe("ゲームが使う操作だけを尋ねる", () => {
 
 describe("尋ねなかった項目の設定は残す", () => {
   test("保存済みの設定から始め、尋ねる項目だけを空にする", () => {
-    const 保存済み = createConfig("Test", "1234:5678");
-    保存済み.buttons[0] = { kind: "button", index: 2 };
-    保存済み.buttons[1] = { kind: "button", index: 3 };
-    保存済み.sticks[1] = [{ index: 4, sign: 1 }, { index: 5, sign: 1 }];
+    const saved = createConfig("Test", "1234:5678");
+    saved.buttons[0] = { kind: "button", index: 2 };
+    saved.buttons[1] = { kind: "button", index: 3 };
+    saved.sticks[1] = [{ index: 4, sign: 1 }, { index: 5, sign: 1 }];
 
     const steps = stepsFor({ button: [0] });
-    const c = startConfig("Test", "1234:5678", 保存済み, steps);
+    const c = startConfig("Test", "1234:5678", saved, steps);
     // 尋ねる項目は空に戻す
     expect(c.buttons[0]).toBeNull();
     // 尋ねない項目はそのまま残る
@@ -374,25 +374,25 @@ describe("尋ねなかった項目の設定は残す", () => {
   });
 
   test("保存済みを書き換えない（写しを使う）", () => {
-    const 保存済み = createConfig("Test", "1234:5678");
-    保存済み.buttons[0] = { kind: "button", index: 2 };
-    startConfig("Test", "1234:5678", 保存済み, stepsFor({ button: [0] }));
-    expect(保存済み.buttons[0]).toEqual({ kind: "button", index: 2 });
+    const saved = createConfig("Test", "1234:5678");
+    saved.buttons[0] = { kind: "button", index: 2 };
+    startConfig("Test", "1234:5678", saved, stepsFor({ button: [0] }));
+    expect(saved.buttons[0]).toEqual({ kind: "button", index: 2 });
   });
 
   test("4方向を尋ねる時は、ハットの記憶も消す", () => {
-    const 保存済み = createConfig("Test", "1234:5678");
-    保存済み.hatAxis = 9;
-    保存済み.cursor = [1, 2, 3, 4].map((i) => ({ kind: "hat", index: 9 }));
-    const c = startConfig("Test", "1234:5678", 保存済み, stepsFor({ cursor: true }));
+    const saved = createConfig("Test", "1234:5678");
+    saved.hatAxis = 9;
+    saved.cursor = [1, 2, 3, 4].map((i) => ({ kind: "hat", index: 9 }));
+    const c = startConfig("Test", "1234:5678", saved, stepsFor({ cursor: true }));
     expect(c.hatAxis).toBeNull();
     expect(c.cursor).toEqual([null, null, null, null]);
   });
 
   test("4方向を尋ねなければ、ハットの記憶は残す", () => {
-    const 保存済み = createConfig("Test", "1234:5678");
-    保存済み.hatAxis = 9;
-    const c = startConfig("Test", "1234:5678", 保存済み, stepsFor({ button: [0] }));
+    const saved = createConfig("Test", "1234:5678");
+    saved.hatAxis = 9;
+    const c = startConfig("Test", "1234:5678", saved, stepsFor({ button: [0] }));
     expect(c.hatAxis).toBe(9);
   });
 });

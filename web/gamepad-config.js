@@ -108,17 +108,17 @@ export function detectInput(before, after) {
   }
 
   let found = null;
-  let 割合 = 1;
+  let ratio = 1;
   (after?.axes ?? []).forEach((v, i) => {
     const base = before?.axes?.[i] ?? 0;
     const diff = v - base;
     // 中立が範囲外の軸（ハットスイッチ）は、低い基準で見る
-    const 基準 =
+    const rest =
       Math.abs(base) > HAT_NEUTRAL_MIN ? HAT_DETECT_THRESHOLD : DETECT_THRESHOLD;
     // 基準に対する超え具合で比べる。基準が違う軸どうしを公平に扱うため
-    const 超え = Math.abs(diff) / 基準;
-    if (超え > 割合) {
-      割合 = 超え;
+    const over = Math.abs(diff) / rest;
+    if (over > ratio) {
+      ratio = over;
       found = { kind: "axis", index: i, sign: diff > 0 ? 1 : -1 };
     }
   });
@@ -192,24 +192,24 @@ export function recordStep(config, step, input) {
 
 /** 設定から、描画側が使う配置を作る */
 export function buildLayoutFromConfig(config) {
-  const 方向ボタン = config.cursor.map((b) => (b?.kind === "button" ? b.index : null));
-  const 使わない = (b) => b?.kind === "none";
+  const dpadButtons = config.cursor.map((b) => (b?.kind === "button" ? b.index : null));
+  const unassigned = (b) => b?.kind === "none";
   return {
     name: config.name || "config",
     source: "config",
     hatAxis: config.hatAxis ?? null,
     left: [config.sticks[0][0]?.index ?? 0, config.sticks[0][1]?.index ?? 1],
     right: [config.sticks[1][0]?.index ?? 2, config.sticks[1][1]?.index ?? 3],
-    dpadButtons: 方向ボタン.every((v) => v !== null) ? 方向ボタン : null,
+    dpadButtons: dpadButtons.every((v) => v !== null) ? dpadButtons : null,
     buttons: config.buttons.map((b, i) => (b?.kind === "button" ? b.index : i)),
     /** 軸として割り当てられたボタン（トリガーが軸で届く機種向け） */
     buttonAxes: config.buttons.map((b) => (b?.kind === "axis" ? b : null)),
     /** 遊ぶ人が「使わない」と決めた方向 */
-    cursorNone: config.cursor.map(使わない),
+    cursorNone: config.cursor.map(unassigned),
     /** 同じくボタン */
-    buttonNone: config.buttons.map(使わない),
+    buttonNone: config.buttons.map(unassigned),
     /** 同じくスティックの軸 */
-    stickNone: config.sticks.map((pair) => pair.map(使わない)),
+    stickNone: config.sticks.map((pair) => pair.map(unassigned)),
     /** スティックの向き（右・下を正とするための符号） */
     stickSigns: [
       [config.sticks[0][0]?.sign ?? 1, config.sticks[0][1]?.sign ?? 1],
@@ -228,19 +228,19 @@ export function buildLayoutFromConfig(config) {
 export function stepsFor(use) {
   if (!use || typeof use !== "object" || Array.isArray(use)) return CONFIG_STEPS;
 
-  const 方向を使う = use.cursor === true;
-  const ボタン = new Set(Array.isArray(use.button) ? use.button : []);
-  const スティック = new Set();
+  const usesCursor = use.cursor === true;
+  const buttons = new Set(Array.isArray(use.button) ? use.button : []);
+  const sticks = new Set();
   for (const s of Array.isArray(use.stick) ? use.stick : []) {
-    if (s === "left") スティック.add(0);
-    if (s === "right") スティック.add(1);
+    if (s === "left") sticks.add(0);
+    if (s === "right") sticks.add(1);
   }
 
   // 申告の並び順ではなく、尋ねやすい元の順番を保つ
   return CONFIG_STEPS.filter((step) => {
-    if (step.kind === "cursor") return 方向を使う;
-    if (step.kind === "button") return ボタン.has(step.index);
-    return スティック.has(step.stick);
+    if (step.kind === "cursor") return usesCursor;
+    if (step.kind === "button") return buttons.has(step.index);
+    return sticks.has(step.stick);
   });
 }
 
@@ -262,11 +262,11 @@ export function startConfig(name, key, saved, steps) {
     config.sticks = (saved.sticks ?? config.sticks).map((pair) => [...pair]);
   }
 
-  let 方向を尋ねる = false;
+  let asksCursor = false;
   for (const step of steps ?? CONFIG_STEPS) {
     if (step.kind === "cursor") {
       config.cursor[step.index] = null;
-      方向を尋ねる = true;
+      asksCursor = true;
     } else if (step.kind === "button") {
       config.buttons[step.index] = null;
     } else {
@@ -274,7 +274,7 @@ export function startConfig(name, key, saved, steps) {
     }
   }
   // 4方向を尋ね直すなら、ハットスイッチの見立ても取り直す
-  if (方向を尋ねる) config.hatAxis = null;
+  if (asksCursor) config.hatAxis = null;
 
   return config;
 }

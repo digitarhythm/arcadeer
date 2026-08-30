@@ -90,38 +90,38 @@ function readSpec(format, start) {
  * 数として扱えるものだけに符号と 0埋めを効かせる（printf と同じ）。
  */
 function applySpec(value, { flags, width, precision }) {
-  const 数値 = typeof value === "number" && Number.isFinite(value);
+  const isNumber = typeof value === "number" && Number.isFinite(value);
 
-  let 本体;
-  if (数値) {
-    const 絶対値 = Math.abs(value);
+  let body;
+  if (isNumber) {
+    const abs = Math.abs(value);
     // **桁数の指定が無ければ、値をそのまま出す。**
     // 幅だけを見て小数を切り捨てると、黙って情報が消えてしまう
-    本体 = precision === undefined ? String(絶対値) : 絶対値.toFixed(precision);
+    body = precision === undefined ? String(abs) : abs.toFixed(precision);
   } else {
-    本体 = stringify(value);
+    body = stringify(value);
     // 文字列は切り詰めるが、NaN や Infinity は数なので削らない
     if (precision !== undefined && typeof value !== "number") {
-      本体 = 本体.slice(0, precision);
+      body = body.slice(0, precision);
     }
   }
 
-  let 符号 = "";
-  if (数値) {
-    if (value < 0 || Object.is(value, -0)) 符号 = "-";
-    else if (flags.includes("+")) 符号 = "+";
-    else if (flags.includes(" ")) 符号 = " ";
+  let sign = "";
+  if (isNumber) {
+    if (value < 0 || Object.is(value, -0)) sign = "-";
+    else if (flags.includes("+")) sign = "+";
+    else if (flags.includes(" ")) sign = " ";
   }
 
-  const 全体 = 符号 + 本体;
-  if (width === undefined || 全体.length >= width) return 全体;
+  const whole = sign + body;
+  if (width === undefined || whole.length >= width) return whole;
 
-  const 足りない = width - 全体.length;
+  const padCount = width - whole.length;
   // 左寄せは 0埋めより優先する（printf と同じ）
-  if (flags.includes("-")) return 全体 + " ".repeat(足りない);
+  if (flags.includes("-")) return whole + " ".repeat(padCount);
   // 0埋めは符号のあとに入れる。数でないものは 0埋めしない
-  if (flags.includes("0") && 数値) return 符号 + "0".repeat(足りない) + 本体;
-  return " ".repeat(足りない) + 全体;
+  if (flags.includes("0") && isNumber) return sign + "0".repeat(padCount) + body;
+  return " ".repeat(padCount) + whole;
 }
 
 /**
@@ -160,8 +160,8 @@ export function formatEcho(format, ...args) {
     }
     const spec = format[i] === "%" ? readSpec(format, i) : null;
     if (spec) {
-      const 書式 = format.slice(i, i + spec.length);
-      out.push(used < args.length ? applySpec(args[used++], spec) : 書式);
+      const specText = format.slice(i, i + spec.length);
+      out.push(used < args.length ? applySpec(args[used++], spec) : specText);
       i += spec.length;
       continue;
     }

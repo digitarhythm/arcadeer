@@ -152,9 +152,9 @@ describe("影のための行列", () => {
   test("光に近いほど手前（小さい値）になる", () => {
     const m = lightViewProjection({ X: 0, Y: 10, Z: 0, targetX: 0, targetY: 0, targetZ: 0 }, 5, 0.1, 50);
     // Y が高いほど光に近い
-    const 高い = transformPoint(m, [0, 3, 0])[2];
-    const 低い = transformPoint(m, [0, 0, 0])[2];
-    expect(高い).toBeLessThan(低い);
+    const high = transformPoint(m, [0, 3, 0])[2];
+    const low = transformPoint(m, [0, 0, 0])[2];
+    expect(high).toBeLessThan(low);
   });
 
   test("斜めからの光でも値が壊れない", () => {

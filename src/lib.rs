@@ -49,6 +49,9 @@ const MODEL_TAB_KEY: &str = "pane.tab.model";
 /// プロジェクトアイコンのファイル名（プロジェクトディレクトリ直下に配置）
 const ICON_FILE_NAME: &str = "icon.png";
 /// 新規プロジェクトへコピーするデフォルトアイコン（512x512 PNG）
+/// アセットの対応表（キー名 ↔ ファイル名）を置くファイル（仕様書5.7節）
+const ASSET_MAP_FILE: &str = "assets.toml";
+
 const DEFAULT_ICON_URL: &str = "./templates/assets/default-icon.png";
 /// 新規プロジェクトへコピーするデフォルト3Dモデル（glTF 2.0 バイナリ）
 const DEFAULT_MODEL_URL: &str = "./templates/assets/default-cat.glb";
@@ -106,6 +109,7 @@ pub fn start() -> Result<(), JsValue> {
     wire_editor_save()?;
     wire_game_buttons(&document)?;
     wire_game_api()?;
+    wire_asset_map_save()?;
     wire_canvas_resize()?;
     wire_game_input()?;
     wire_visibility()?;
@@ -2079,12 +2083,27 @@ fn call_destructor(object: &JsValue, event: &JsValue) {
 }
 
 /// オブジェクトの `behavior()` を呼ぶ
+///
+/// 呼び分けは実行基盤（`runtime.js`）の `arcadeerRunBehavior` が受け持つ。
+/// `waitjob` で待機している間は、そのオブジェクト自身の `behavior()` は呼ばれず、
+/// 共通処理だけが進む（仕様書6.2.1節）。
 fn call_behavior(object: &JsValue, event: &JsValue) {
+    if let Some(window) = window() {
+        if let Ok(runner) = js_sys::Reflect::get(&window, &JsValue::from_str("arcadeerRunBehavior"))
+        {
+            if let Ok(func) = runner.dyn_into::<js_sys::Function>() {
+                // 実行時エラーの捕捉は仕様書5.8節で扱う（今後実装）
+                let _ = func.call2(&JsValue::NULL, object, event);
+                return;
+            }
+        }
+    }
+
+    // 実行基盤が読み込まれていない場合に備え、これまでどおり直接呼べるようにしておく
     let Ok(method) = js_sys::Reflect::get(object, &JsValue::from_str("behavior")) else {
         return;
     };
     if let Ok(func) = method.dyn_into::<js_sys::Function>() {
-        // 実行時エラーの捕捉は仕様書5.8節で扱う（今後実装）
         let _ = func.call1(object, event);
     }
 }
@@ -2438,6 +2457,10 @@ async fn render_project_pane(project: &FileSystemDirectoryHandle) -> Result<(), 
 
         tab_group.append_child(&button)?;
     }
+    // 3Dモデルの右へ、アセットの対応表を開くボタンを置く（仕様書5.7節）。
+    // タブではないため、選択状態は持たない
+    let asset_map_button = build_asset_map_button(&document)?;
+    tab_group.append_child(&asset_map_button)?;
     tab_bar.append_child(&tab_group)?;
 
     // クラス名の重複判定に使うため、オブジェクトタブの内容は常に控えておく
@@ -2536,6 +2559,86 @@ fn build_add_card(document: &Document, tab_key: &str) -> Result<Element, JsValue
     on_key.forget();
 
     Ok(card)
+}
+
+/// アセットの対応表を開くボタンを組み立てる（仕様書5.7節）
+fn build_asset_map_button(document: &Document) -> Result<Element, JsValue> {
+    let button = document.create_element("button")?;
+    button.set_attribute("type", "button")?;
+    button.set_id("btn-asset-map");
+    button.set_class_name("pane-tab pane-tab-action");
+    let label = t("pane.assetMap");
+    button.set_attribute("data-tooltip", &label)?;
+    button.set_attribute("aria-label", &label)?;
+    // 対応表: 箇条書きと虫めがね
+    button.set_inner_html(concat!(
+        r#"<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">"#,
+        r#"<path d="M4 6h9M4 12h9M4 18h6" />"#,
+        r#"<circle cx="17.5" cy="17" r="2.5" /><path d="M19.6 18.8 22 21" /></svg>"#
+    ));
+
+    let on_click = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
+        spawn_local(async move {
+            if let Err(err) = open_asset_map().await {
+                log_err(&t("msg.assetMapFailed"), &err);
+            }
+        });
+    });
+    button.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref())?;
+    on_click.forget();
+    Ok(button)
+}
+
+/// 対応表の編集画面を開く
+///
+/// 実際に置かれているファイルの一覧と、保存されている `assets.toml` を
+/// 画面側へ渡す。突き合わせは asset-map.js が行う。
+async fn open_asset_map() -> Result<(), JsValue> {
+    let project = CURRENT_PROJECT
+        .with(|c| c.borrow().clone())
+        .ok_or_else(|| JsValue::from_str("no project is open"))?;
+
+    let files = js_sys::Object::new();
+    for kind in RESOURCE_ORDER {
+        let list = js_sys::Array::new();
+        for name in list_asset_files(&project, kind).await.unwrap_or_default() {
+            list.push(&JsValue::from_str(&name));
+        }
+        js_sys::Reflect::set(&files, &JsValue::from_str(kind.dir_name()), &list)?;
+    }
+
+    // 対応表がまだ無い場合は、空として扱う
+    let toml = read_text_file(&project, ASSET_MAP_FILE)
+        .await
+        .unwrap_or_default();
+
+    let window = window().ok_or_else(|| JsValue::from_str("no window"))?;
+    let func: js_sys::Function =
+        js_sys::Reflect::get(&window, &JsValue::from_str("arcadeerShowAssetMap"))?.dyn_into()?;
+    func.call2(&JsValue::NULL, &files, &JsValue::from_str(&toml))?;
+    Ok(())
+}
+
+/// 画面から渡された対応表を `assets.toml` へ書き出す
+fn wire_asset_map_save() -> Result<(), JsValue> {
+    let save = Closure::<dyn FnMut(String)>::new(move |text: String| {
+        spawn_local(async move {
+            let Some(project) = CURRENT_PROJECT.with(|c| c.borrow().clone()) else {
+                return;
+            };
+            if let Err(err) = write_text_file(&project, ASSET_MAP_FILE, &text).await {
+                log_err(&t("msg.assetMapFailed"), &err);
+            }
+        });
+    });
+    let window = window().ok_or_else(|| JsValue::from_str("no window"))?;
+    js_sys::Reflect::set(
+        &window,
+        &JsValue::from_str("arcadeerSaveAssetMap"),
+        save.as_ref(),
+    )?;
+    save.forget();
+    Ok(())
 }
 
 /// タブ見出しに使うアイコン（翻訳キーごと）

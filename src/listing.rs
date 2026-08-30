@@ -253,21 +253,21 @@ mod tests {
     // --- ResourceKind::label ---
 
     #[test]
-    fn 種別は翻訳キーを返す() {
+    fn kind_returns_translation_key() {
         assert_eq!(ResourceKind::Image.label_key(), "pane.tab.image");
         assert_eq!(ResourceKind::Sound.label_key(), "pane.tab.sound");
         assert_eq!(ResourceKind::Model.label_key(), "pane.tab.model");
     }
 
     #[test]
-    fn 存在を保証するディレクトリはcodeとassets() {
+    fn required_dirs_are_code_and_assets() {
         assert_eq!(PROJECT_DIRS, ["code", "assets"]);
     }
 
     // --- compare_display_names ---
 
     #[test]
-    fn 名前比較は大文字小文字を区別しない() {
+    fn name_compare_ignores_case() {
         use std::cmp::Ordering;
         assert_eq!(compare_display_names("apple", "Banana"), Ordering::Less);
         assert_eq!(compare_display_names("Banana", "apple"), Ordering::Greater);
@@ -276,14 +276,14 @@ mod tests {
     }
 
     #[test]
-    fn 綴りが同一なら元の文字列で安定させる() {
+    fn same_spelling_falls_back_to_raw_order() {
         use std::cmp::Ordering;
         assert_ne!(compare_display_names("Player", "player"), Ordering::Equal);
         assert_eq!(compare_display_names("Player", "Player"), Ordering::Equal);
     }
 
     #[test]
-    fn 名前比較はマルチバイト文字も扱える() {
+    fn name_compare_handles_multibyte() {
         use std::cmp::Ordering;
         assert_eq!(compare_display_names("あ", "い"), Ordering::Less);
     }
@@ -291,19 +291,19 @@ mod tests {
     // --- is_object_file ---
 
     #[test]
-    fn coffeeファイルはオブジェクトとして扱う() {
+    fn coffee_files_are_objects() {
         assert!(is_object_file("Player.coffee"));
         assert!(is_object_file("敵キャラ.coffee"));
     }
 
     #[test]
-    fn 拡張子の大文字小文字は区別しない() {
+    fn extension_check_ignores_case() {
         assert!(is_object_file("Player.COFFEE"));
         assert!(is_object_file("Player.Coffee"));
     }
 
     #[test]
-    fn クラスファイルは特別扱いせずすべてオブジェクトとして扱う() {
+    fn all_class_files_are_objects() {
         // code/ 直下の .coffee はすべて同一構成・同一スーパークラス継承のため
         // エントリポイントのような例外は設けない
         assert!(is_object_file("main.coffee"));
@@ -311,7 +311,7 @@ mod tests {
     }
 
     #[test]
-    fn coffee以外の拡張子は除外する() {
+    fn excludes_non_coffee_extensions() {
         assert!(!is_object_file("Player.js"));
         assert!(!is_object_file("config.toml"));
         assert!(!is_object_file("README.md"));
@@ -319,7 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn ドットで始まる隠しファイルは除外する() {
+    fn excludes_hidden_files() {
         assert!(!is_object_file(".DS_Store"));
         assert!(!is_object_file(".coffee"));
     }
@@ -327,37 +327,37 @@ mod tests {
     // --- object_name ---
 
     #[test]
-    fn オブジェクト名は拡張子を除いた部分になる() {
+    fn object_name_drops_extension() {
         assert_eq!(object_name("Player.coffee"), Some("Player".to_string()));
         assert_eq!(object_name("敵キャラ.coffee"), Some("敵キャラ".to_string()));
     }
 
     #[test]
-    fn 名前に含まれるドットは保持する() {
+    fn keeps_dots_inside_name() {
         assert_eq!(object_name("My.Player.coffee"), Some("My.Player".to_string()));
     }
 
     #[test]
-    fn オブジェクトでないファイルは値を返さない() {
+    fn non_object_file_returns_none() {
         assert_eq!(object_name("Player.js"), None);
         assert_eq!(object_name(".DS_Store"), None);
     }
 
     #[test]
-    fn mainという名前も通常のオブジェクト名として扱う() {
+    fn main_is_an_ordinary_object_name() {
         assert_eq!(object_name("main.coffee"), Some("main".to_string()));
     }
 
     // --- class_file_name ---
 
     #[test]
-    fn オブジェクト名から拡張子付きのファイル名を作る() {
+    fn builds_file_name_from_object_name() {
         assert_eq!(class_file_name("Player"), "Player.coffee");
         assert_eq!(class_file_name("敵キャラ"), "敵キャラ.coffee");
     }
 
     #[test]
-    fn ファイル名とオブジェクト名は相互に変換できる() {
+    fn file_and_object_names_round_trip() {
         for name in ["Player", "main", "My.Player", "敵キャラ"] {
             let file = class_file_name(name);
             assert_eq!(object_name(&file), Some(name.to_string()), "{name}");
@@ -367,28 +367,28 @@ mod tests {
     // --- classify_resource ---
 
     #[test]
-    fn 画像の拡張子を判定する() {
+    fn detects_image_extensions() {
         for f in ["a.png", "a.jpg", "a.jpeg", "a.gif", "a.webp", "a.bmp", "A.PNG"] {
             assert_eq!(classify_resource(f), Some(ResourceKind::Image), "{f}");
         }
     }
 
     #[test]
-    fn 音声の拡張子を判定する() {
+    fn detects_sound_extensions() {
         for f in ["a.ogg", "a.wav", "a.mp3", "a.m4a", "a.aac", "a.flac", "A.WAV"] {
             assert_eq!(classify_resource(f), Some(ResourceKind::Sound), "{f}");
         }
     }
 
     #[test]
-    fn モデルの拡張子を判定する() {
+    fn detects_model_extensions() {
         for f in ["a.glb", "a.gltf", "A.GLB"] {
             assert_eq!(classify_resource(f), Some(ResourceKind::Model), "{f}");
         }
     }
 
     #[test]
-    fn 対象外の拡張子は種別なしになる() {
+    fn unknown_extension_has_no_kind() {
         for f in ["a.txt", "a.toml", "noext"] {
             assert_eq!(classify_resource(f), None, "{f}");
         }
@@ -397,14 +397,14 @@ mod tests {
     // --- is_entry_object ---
 
     #[test]
-    fn 起点オブジェクトを判定できる() {
+    fn detects_entry_object() {
         assert!(is_entry_object("gameMain"));
         assert!(!is_entry_object("Player"));
         assert!(!is_entry_object("gameMainSub"));
     }
 
     #[test]
-    fn 起点オブジェクトの判定は大文字小文字を区別しない() {
+    fn entry_object_check_ignores_case() {
         // 大文字小文字を区別しないファイルシステムでは同じファイルを指すため
         assert!(is_entry_object("gamemain"));
         assert!(is_entry_object("GAMEMAIN"));
@@ -413,7 +413,7 @@ mod tests {
     // --- collect_objects ---
 
     #[test]
-    fn 起点オブジェクトは常に先頭に並ぶ() {
+    fn entry_object_comes_first() {
         // ゲーム作成の出発点なので、名前順に関わらず最初に見せる
         let files = names(&["Player.coffee", "gameMain.coffee", "Boss.coffee"]);
         assert_eq!(
@@ -423,25 +423,25 @@ mod tests {
     }
 
     #[test]
-    fn 起点オブジェクトが無ければ通常の名前順になる() {
+    fn plain_name_order_without_entry_object() {
         let files = names(&["Player.coffee", "Boss.coffee"]);
         assert_eq!(collect_objects(&files), names(&["Boss", "Player"]));
     }
 
     #[test]
-    fn オブジェクト一覧は名前順に並ぶ() {
+    fn object_list_is_sorted_by_name() {
         let files = names(&["Zombie.coffee", "Player.coffee", "Enemy.coffee"]);
         assert_eq!(collect_objects(&files), names(&["Enemy", "Player", "Zombie"]));
     }
 
     #[test]
-    fn オブジェクト一覧は非coffeeと隠しファイルを除外する() {
+    fn object_list_excludes_non_coffee_and_hidden() {
         let files = names(&["main.coffee", "Player.coffee", "config.toml", ".DS_Store"]);
         assert_eq!(collect_objects(&files), names(&["main", "Player"]));
     }
 
     #[test]
-    fn オブジェクト一覧は大文字小文字を区別せず並ぶ() {
+    fn object_list_sorts_ignoring_case() {
         let files = names(&["zombie.coffee", "Player.coffee", "enemy.coffee", "Boss.coffee"]);
         assert_eq!(
             collect_objects(&files),
@@ -450,7 +450,7 @@ mod tests {
     }
 
     #[test]
-    fn オブジェクトが無ければ空の一覧を返す() {
+    fn object_list_is_empty_without_objects() {
         assert_eq!(collect_objects(&names(&["config.toml"])), Vec::<String>::new());
         assert_eq!(collect_objects(&[]), Vec::<String>::new());
     }
@@ -458,21 +458,21 @@ mod tests {
     // --- dir_name / kind_from_tab_key ---
 
     #[test]
-    fn 種別ごとの格納先ディレクトリ名を返す() {
+    fn returns_directory_per_kind() {
         assert_eq!(ResourceKind::Image.dir_name(), "images");
         assert_eq!(ResourceKind::Sound.dir_name(), "sounds");
         assert_eq!(ResourceKind::Model.dir_name(), "models");
     }
 
     #[test]
-    fn タブキーから種別を引ける() {
+    fn looks_up_kind_from_tab_key() {
         assert_eq!(kind_from_tab_key("pane.tab.image"), Some(ResourceKind::Image));
         assert_eq!(kind_from_tab_key("pane.tab.sound"), Some(ResourceKind::Sound));
         assert_eq!(kind_from_tab_key("pane.tab.model"), Some(ResourceKind::Model));
     }
 
     #[test]
-    fn リソースでないタブキーは種別なし() {
+    fn non_resource_tab_has_no_kind() {
         assert_eq!(kind_from_tab_key("pane.tab.object"), None);
         assert_eq!(kind_from_tab_key(""), None);
     }
@@ -480,7 +480,7 @@ mod tests {
     // --- collect_resources ---
 
     #[test]
-    fn 種別に合うファイルだけを集める() {
+    fn collects_only_matching_files() {
         let files = names(&["player.png", "bgm.ogg", "cat.glb"]);
         assert_eq!(
             collect_resources(&files, ResourceKind::Image),
@@ -497,7 +497,7 @@ mod tests {
     }
 
     #[test]
-    fn 種別に合わないファイルは除外する() {
+    fn excludes_files_of_other_kinds() {
         // 音声ディレクトリに置かれた動画ファイルなどは表示しない
         let files = names(&["movie.mp4", "memo.txt", "bgm.ogg"]);
         assert_eq!(
@@ -507,7 +507,7 @@ mod tests {
     }
 
     #[test]
-    fn 隠しファイルはリソースに含めない() {
+    fn resources_exclude_hidden_files() {
         let files = names(&[".DS_Store", "player.png"]);
         assert_eq!(
             collect_resources(&files, ResourceKind::Image),
@@ -516,7 +516,7 @@ mod tests {
     }
 
     #[test]
-    fn リソースは大文字小文字を区別せず並ぶ() {
+    fn resources_sort_ignoring_case() {
         let files = names(&["Tiles.png", "player.png", "Bg.png"]);
         assert_eq!(
             collect_resources(&files, ResourceKind::Image),
@@ -525,7 +525,7 @@ mod tests {
     }
 
     #[test]
-    fn 該当が無ければ空になる() {
+    fn empty_when_nothing_matches() {
         assert_eq!(
             collect_resources(&names(&["bgm.ogg"]), ResourceKind::Image),
             Vec::<String>::new()
@@ -536,28 +536,28 @@ mod tests {
     // --- active_tab_index ---
 
     #[test]
-    fn 直前に選択していたタブの位置を返す() {
+    fn returns_previously_selected_tab() {
         let tabs = build_pane_tabs(Some(&[]), Some(&[]), Some(&[]), Some(&[]));
         assert_eq!(active_tab_index(&tabs, "pane.tab.sound"), 2);
         assert_eq!(active_tab_index(&tabs, "pane.tab.model"), 3);
     }
 
     #[test]
-    fn 選択情報が無ければ先頭に戻す() {
+    fn falls_back_to_first_tab_without_selection() {
         let tabs = build_pane_tabs(Some(&[]), Some(&[]), Some(&[]), Some(&[]));
         assert_eq!(active_tab_index(&tabs, ""), 0);
         assert_eq!(active_tab_index(&tabs, "pane.tab.unknown"), 0);
     }
 
     #[test]
-    fn タブが無ければ先頭扱いにする() {
+    fn treats_missing_tab_as_first() {
         assert_eq!(active_tab_index(&[], "pane.tab.sound"), 0);
     }
 
     // --- build_pane_tabs ---
 
     #[test]
-    fn タブは常に4枚を決まった順で返す() {
+    fn always_returns_four_tabs_in_order() {
         let tabs = build_pane_tabs(Some(&[]), Some(&[]), Some(&[]), Some(&[]));
         let keys: Vec<&str> = tabs.iter().map(|t| t.label_key.as_str()).collect();
         assert_eq!(
@@ -572,14 +572,14 @@ mod tests {
     }
 
     #[test]
-    fn オブジェクトタブにはクラス名が入る() {
+    fn object_tab_holds_class_names() {
         let code = names(&["Player.coffee", "main.coffee", "config.toml"]);
         let tabs = build_pane_tabs(Some(&code), Some(&[]), Some(&[]), Some(&[]));
         assert_eq!(tabs[0].items, names(&["main", "Player"]));
     }
 
     #[test]
-    fn 種別ディレクトリの内容がそれぞれのタブへ入る() {
+    fn kind_directories_fill_their_tabs() {
         let images = names(&["player.png"]);
         let sounds = names(&["bgm.ogg"]);
         let models = names(&["cat.glb"]);
@@ -590,21 +590,21 @@ mod tests {
     }
 
     #[test]
-    fn 種別ディレクトリに紛れた対象外ファイルは表示しない() {
+    fn hides_unrelated_files_in_kind_directories() {
         let sounds = names(&["ganbaruzo.mp4", "bgm.ogg"]);
         let tabs = build_pane_tabs(Some(&[]), Some(&[]), Some(&sounds), Some(&[]));
         assert_eq!(tabs[2].items, names(&["bgm.ogg"]));
     }
 
     #[test]
-    fn 中身が空でもタブは残る() {
+    fn tab_remains_when_empty() {
         let tabs = build_pane_tabs(Some(&[]), Some(&[]), Some(&[]), Some(&[]));
         assert_eq!(tabs.len(), 4);
         assert!(tabs.iter().all(|t| t.items.is_empty()));
     }
 
     #[test]
-    fn ディレクトリを使えない場合は案内文を用意する() {
+    fn shows_notice_when_directory_unavailable() {
         let tabs = build_pane_tabs(None, None, None, None);
         assert!(tabs.iter().all(|t| !t.dir_available));
         assert_eq!(tabs[0].unavailable_message_key, "pane.empty.codeDirMissing");
@@ -613,7 +613,7 @@ mod tests {
     }
 
     #[test]
-    fn ディレクトリがあれば0件でも案内文は出さない() {
+    fn no_notice_when_directory_exists() {
         // 「◯◯がありません」は表示しない。追加カードだけを見せる
         let tabs = build_pane_tabs(Some(&[]), Some(&[]), Some(&[]), Some(&[]));
         assert!(tabs.iter().all(|t| t.dir_available));

@@ -394,7 +394,7 @@ describe("左スティックを4方向キーとして扱う設定", () => {
    * 静止位置は**最初に見えた時の値**で決まるため、
    * いきなり倒した状態を渡すとそれが静止位置になってしまう。
    */
-  const 倒す = (x, y) => {
+  const tilt = (x, y) => {
     applyGamepads([stick(0, 0)], new Set());
     applyGamepads([stick(x, y)], new Set());
   };
@@ -412,7 +412,7 @@ describe("左スティックを4方向キーとして扱う設定", () => {
 
   test("入にすると4方向として立つ", () => {
     setGamepadOption({ stickAsCursor: true });
-    倒す(0, -1);
+    tilt(0, -1);
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
 
     applyGamepads([stick(1, 0)], new Set());
@@ -427,7 +427,7 @@ describe("左スティックを4方向キーとして扱う設定", () => {
 
   test("斜めに倒すと2方向が立つ", () => {
     setGamepadOption({ stickAsCursor: true });
-    倒す(0.8, -0.8);
+    tilt(0.8, -0.8);
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
     expect(GAMEPAD[0].cursor[CURSOR_RIGHT].pressed).toBe(true);
     expect(GAMEPAD[0].cursor[CURSOR_DOWN].pressed).toBe(false);
@@ -441,7 +441,7 @@ describe("左スティックを4方向キーとして扱う設定", () => {
 
   test("しきい値を変えられる", () => {
     setGamepadOption({ stickAsCursor: true, deadzone: 0.2 });
-    倒す(0, -0.3);
+    tilt(0, -0.3);
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
   });
 
@@ -469,7 +469,7 @@ describe("左スティックを4方向キーとして扱う設定", () => {
   test("スティックの値そのものは残る", () => {
     // 4方向として使っても、axes からアナログ値を読めなくならない
     setGamepadOption({ stickAsCursor: true });
-    倒す(0.8, -0.8);
+    tilt(0.8, -0.8);
     expect(GAMEPAD[0].axes[0]).toEqual([0.8, -0.8]);
   });
 
@@ -564,34 +564,34 @@ describe("配置の判定は一度だけ行う", () => {
     buttons: Array.from({ length: 13 }, () => ({ pressed: false, value: 0 })),
     axes,
   });
-  const 静止 = [0, -1, -1, 0, 0, -1, 0, 0, 0, -1.286];
-  const ハット = (v) => { const a = [...静止]; a[9] = v; return a; };
+  const rest = [0, -1, -1, 0, 0, -1, 0, 0, 0, -1.286];
+  const hat = (v) => { const a = [...rest]; a[9] = v; return a; };
 
   test("押している間もハットを見失わない", () => {
     // 押すと軸9が範囲内に入るため、毎フレーム判定し直すと見失う
-    applyGamepads([pxn(静止)], new Set());
-    applyGamepads([pxn(ハット(-1))], new Set());
+    applyGamepads([pxn(rest)], new Set());
+    applyGamepads([pxn(hat(-1))], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
 
-    applyGamepads([pxn(ハット(-0.429))], new Set());
+    applyGamepads([pxn(hat(-0.429))], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_RIGHT].pressed).toBe(true);
 
-    applyGamepads([pxn(ハット(0.143))], new Set());
+    applyGamepads([pxn(hat(0.143))], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_DOWN].pressed).toBe(true);
 
-    applyGamepads([pxn(ハット(0.714))], new Set());
+    applyGamepads([pxn(hat(0.714))], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_LEFT].pressed).toBe(true);
   });
 
   test("離せば中立へ戻る", () => {
-    applyGamepads([pxn(静止)], new Set());
-    applyGamepads([pxn(ハット(-1))], new Set());
-    applyGamepads([pxn(静止)], new Set());
+    applyGamepads([pxn(rest)], new Set());
+    applyGamepads([pxn(hat(-1))], new Set());
+    applyGamepads([pxn(rest)], new Set());
     for (const c of GAMEPAD[0].cursor) expect(c.pressed).toBe(false);
   });
 
   test("軸の数が変わったら判定し直す", () => {
-    applyGamepads([pxn(静止)], new Set());
+    applyGamepads([pxn(rest)], new Set());
     applyGamepads([rawPad({ dpad: { up: true } })], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
   });
@@ -604,17 +604,17 @@ describe("スティックに使う軸の選び方", () => {
     buttons: [],
     axes,
   });
-  const 静止 = [0, -1, -1, 0, 0, -1, 0, 0, 0, -1.286];
+  const rest = [0, -1, -1, 0, 0, -1, 0, 0, 0, -1.286];
 
   test("静止時に端へ張り付いている軸は、スティックに使わない", () => {
     // 軸1・2・5 は静止時 -1。上方向を表現できないため選んではいけない
-    const layout = resolveLayout(pxn(静止));
+    const layout = resolveLayout(pxn(rest));
     expect(layout.left).not.toContain(1);
     expect(layout.right).not.toContain(1);
   });
 
   test("静止時に0付近の軸から順に割り当てる", () => {
-    const layout = resolveLayout(pxn(静止));
+    const layout = resolveLayout(pxn(rest));
     // ハット（軸9）を除いた、静止0の軸は 0,3,4,6,7,8
     expect(layout.left).toEqual([0, 3]);
     expect(layout.right).toEqual([4, 6]);
@@ -622,10 +622,10 @@ describe("スティックに使う軸の選び方", () => {
 
   test("上へ倒せば上が立つ", () => {
     setGamepadOption({ stickAsCursor: true });
-    applyGamepads([pxn(静止)], new Set());
-    const 上 = [...静止];
-    上[3] = -1;
-    applyGamepads([pxn(上)], new Set());
+    applyGamepads([pxn(rest)], new Set());
+    const up = [...rest];
+    up[3] = -1;
+    applyGamepads([pxn(up)], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
   });
 
@@ -638,7 +638,7 @@ describe("スティックに使う軸の選び方", () => {
 
 describe("遊ぶ人の設定を最優先で使う", () => {
   /** 遊ぶ人が作った割り当て */
-  const 設定 = {
+  const option = {
     name: "PXN-P20",
     source: "config",
     hatAxis: 9,
@@ -657,30 +657,30 @@ describe("遊ぶ人の設定を最優先で使う", () => {
       pressed: pressed.includes(i), value: pressed.includes(i) ? 1 : 0,
     })),
   });
-  const 静止 = [0, -1, -1, 0, 0, -1, 0, 0, 0, -1.286];
+  const rest = [0, -1, -1, 0, 0, -1, 0, 0, 0, -1.286];
 
   test("設定があれば、標準と名乗る機種でもそちらを使う", () => {
-    setConfigLookup(() => 設定);
-    applyGamepads([pad(静止)], new Set());
+    setConfigLookup(() => option);
+    applyGamepads([pad(rest)], new Set());
     // 標準配置なら 4方向はボタン12〜15。設定ではハット軸9
-    const 上 = [...静止]; 上[9] = -1;
-    applyGamepads([pad(上)], new Set());
+    const up = [...rest]; up[9] = -1;
+    applyGamepads([pad(up)], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
     setConfigLookup(null);
   });
 
   test("ボタンの割り当てが入れ替わる", () => {
-    setConfigLookup(() => 設定);
+    setConfigLookup(() => option);
     // 設定では button[0] に、パッドの2番を当てている
-    applyGamepads([pad(静止, [2])], new Set());
+    applyGamepads([pad(rest, [2])], new Set());
     expect(GAMEPAD[0].button[0].pressed).toBe(true);
     expect(GAMEPAD[0].button[2].pressed).toBe(false);
     setConfigLookup(null);
   });
 
   test("スティックの軸も設定どおりになる", () => {
-    setConfigLookup(() => 設定);
-    const a = [...静止]; a[3] = 0.5;
+    setConfigLookup(() => option);
+    const a = [...rest]; a[3] = 0.5;
     applyGamepads([pad(a)], new Set());
     expect(GAMEPAD[0].axes[0][1]).toBe(0.5);
     setConfigLookup(null);
@@ -688,17 +688,17 @@ describe("遊ぶ人の設定を最優先で使う", () => {
 
   test("設定が無ければ、これまでどおりの判定になる", () => {
     setConfigLookup(() => null);
-    applyGamepads([pad(静止)], new Set());
-    const 上 = [...静止]; 上[9] = -1;
-    applyGamepads([pad(上)], new Set());
+    applyGamepads([pad(rest)], new Set());
+    const up = [...rest]; up[9] = -1;
+    applyGamepads([pad(up)], new Set());
     // 標準と名乗る機種なので、ハットは使われない
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(false);
     setConfigLookup(null);
   });
 
   test("向きを反転して覚えた軸は、符号をそろえて返す", () => {
-    setConfigLookup(() => ({ ...設定, stickSigns: [[1, -1], [1, 1]] }));
-    const a = [...静止]; a[3] = -0.5;
+    setConfigLookup(() => ({ ...option, stickSigns: [[1, -1], [1, 1]] }));
+    const a = [...rest]; a[3] = -0.5;
     applyGamepads([pad(a)], new Set());
     // 「下へ倒すと -1 になる」機種なので、下は正の値として返す
     expect(GAMEPAD[0].axes[0][1]).toBe(0.5);
@@ -716,7 +716,7 @@ describe("触るまで端に張り付く軸を持つ機種", () => {
    * これを「上に倒しっぱなし」と読んでしまうと、
    * 何もしていないのに動き続け、上に倒しても値が変わらない。
    */
-  const 設定 = {
+  const option = {
     name: "PXN-P20",
     source: "config",
     hatAxis: 9,
@@ -736,7 +736,7 @@ describe("触るまで端に張り付く軸を持つ機種", () => {
   });
 
   beforeEach(() => {
-    setConfigLookup(() => 設定);
+    setConfigLookup(() => option);
   });
 
   afterEach(() => {
@@ -786,7 +786,7 @@ describe("触るまで端に張り付く軸を持つ機種", () => {
     applyGamepads([pxn(-1)], new Set());
     applyGamepads([pxn(0)], new Set());
     clearGamepads();
-    setConfigLookup(() => 設定);
+    setConfigLookup(() => option);
     applyGamepads([pxn(-1)], new Set());
     expect(GAMEPAD[0].axes[0]).toEqual([0, 0]);
   });
@@ -801,7 +801,7 @@ describe("触るまで端に張り付く軸を持つ機種", () => {
 
   test("軸で届くトリガーは、静止時に押されていない", () => {
     // 軸2は静止時 -1、押し込むと +1 になる
-    const 設定 = {
+    const option = {
       name: "PXN-P20",
       source: "config",
       hatAxis: 9,
@@ -815,20 +815,20 @@ describe("触るまで端に張り付く軸を持つ機種", () => {
       ],
       stickSigns: [[1, 1], [1, 1]],
     };
-    setConfigLookup(() => 設定);
+    setConfigLookup(() => option);
     applyGamepads([pxn(0)], new Set());
     expect(GAMEPAD[0].button[6].pressed).toBe(false);
 
-    const 押した = pxn(0);
-    押した.axes[2] = 1;
-    applyGamepads([押した], new Set());
+    const pressed = pxn(0);
+    pressed.axes[2] = 1;
+    applyGamepads([pressed], new Set());
     expect(GAMEPAD[0].button[6].pressed).toBe(true);
   });
 });
 
 describe("使わないと決めた操作", () => {
   /** 設定で「使わない」と決めた配置 */
-  const 設定 = {
+  const option = {
     name: "Test",
     source: "config",
     hatAxis: 9,
@@ -850,10 +850,10 @@ describe("使わないと決めた操作", () => {
       pressed: pressed.includes(i), value: pressed.includes(i) ? 1 : 0,
     })),
   });
-  const 静止 = [0, 0, 0, 0, 0, 0, 0, 0, 0, HAT_NEUTRAL];
+  const rest = [0, 0, 0, 0, 0, 0, 0, 0, 0, HAT_NEUTRAL];
 
   beforeEach(() => {
-    setConfigLookup(() => 設定);
+    setConfigLookup(() => option);
   });
 
   afterEach(() => {
@@ -861,33 +861,33 @@ describe("使わないと決めた操作", () => {
   });
 
   test("使わない方向は、ハットを倒しても押されない", () => {
-    applyGamepads([pad(静止)], new Set());
-    const 上 = [...静止]; 上[9] = -1;
-    applyGamepads([pad(上)], new Set());
+    applyGamepads([pad(rest)], new Set());
+    const up = [...rest]; up[9] = -1;
+    applyGamepads([pad(up)], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(false);
     // 使う方向はこれまでどおり
-    const 下 = [...静止]; 下[9] = 0;
-    applyGamepads([pad(下)], new Set());
+    const down = [...rest]; down[9] = 0;
+    applyGamepads([pad(down)], new Set());
     expect(GAMEPAD[0].cursor[CURSOR_DOWN].pressed).toBe(true);
   });
 
   test("使わない方向でも、キーボードでは操作できる", () => {
     // 遊ぶ人がパッドで使わないだけで、ゲームがその方向を捨てたわけではない
-    applyGamepads([pad(静止)], new Set(["ArrowUp"]));
+    applyGamepads([pad(rest)], new Set(["ArrowUp"]));
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(true);
   });
 
   test("使わないボタンは、押しても反応しない", () => {
-    applyGamepads([pad(静止, [1])], new Set());
+    applyGamepads([pad(rest, [1])], new Set());
     expect(GAMEPAD[0].button[1].pressed).toBe(false);
-    applyGamepads([pad(静止, [0])], new Set());
+    applyGamepads([pad(rest, [0])], new Set());
     expect(GAMEPAD[0].button[0].pressed).toBe(true);
   });
 
   test("使わないスティックの軸は、倒しても 0 のまま", () => {
-    applyGamepads([pad(静止)], new Set());
-    const 倒す = [...静止]; 倒す[0] = 0.5; 倒す[1] = 0.9;
-    applyGamepads([pad(倒す)], new Set());
+    applyGamepads([pad(rest)], new Set());
+    const tilt = [...rest]; tilt[0] = 0.5; tilt[1] = 0.9;
+    applyGamepads([pad(tilt)], new Set());
     expect(GAMEPAD[0].axes[0]).toEqual([0.5, 0]);
   });
 });
@@ -941,13 +941,13 @@ describe("設定中は操作をゲームへ送らない", () => {
   });
 
   test("止めている間は、パッドを操作しても押されていない扱いになる", () => {
-    const 操作 = () => rawPad({ buttons: { 0: 1 }, dpad: { up: true }, axes: [0.8, 0.8, 0, 0] });
+    const moved = () => rawPad({ buttons: { 0: 1 }, dpad: { up: true }, axes: [0.8, 0.8, 0, 0] });
     applyGamepads([rawPad()], new Set());
-    applyGamepads([操作()], new Set());
+    applyGamepads([moved()], new Set());
     expect(GAMEPAD[0].button[0].pressed).toBe(true);
 
     setGamepadSuspended(true);
-    applyGamepads([操作()], new Set());
+    applyGamepads([moved()], new Set());
     expect(GAMEPAD[0].button[0].pressed).toBe(false);
     expect(GAMEPAD[0].cursor[CURSOR_UP].pressed).toBe(false);
     expect(GAMEPAD[0].axes[0]).toEqual([0, 0]);
@@ -962,10 +962,10 @@ describe("設定中は操作をゲームへ送らない", () => {
 
   test("入れ物は作り直さない（ゲームが持っている参照が生きたまま）", () => {
     applyGamepads([rawPad()], new Set());
-    const 参照 = GAMEPAD[0];
+    const ref = GAMEPAD[0];
     setGamepadSuspended(true);
     applyGamepads([rawPad({ buttons: { 0: 1 } })], new Set());
-    expect(GAMEPAD[0]).toBe(参照);
+    expect(GAMEPAD[0]).toBe(ref);
   });
 
   test("止めるのをやめると、また効く", () => {

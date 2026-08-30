@@ -17,7 +17,7 @@ export async function registerServiceWorker(sw, onUpdate) {
 
   // 登録より**先に**控える。初めての登録でも controllerchange は起きるため、
   // それを「更新された」と取り違えないようにする
-  const 以前から任せている = !!sw.controller;
+  const hadController = !!sw.controller;
 
   let registration = null;
   try {
@@ -38,7 +38,7 @@ export async function registerServiceWorker(sw, onUpdate) {
 
   if (typeof sw.addEventListener === "function") {
     sw.addEventListener("controllerchange", () => {
-      if (!以前から任せている) return;
+      if (!hadController) return;
       // 既に読み込み終えた JS や WASM は古いままなので、
       // **勝手に読み込み直さず**、操作する人に委ねる
       // （編集中のコードが飛ぶのを避けるため）

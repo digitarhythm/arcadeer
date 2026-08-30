@@ -13,7 +13,9 @@ import { viewMatrix, projectionMatrix } from "./camera.js";
 import { lights, shadowLight, ambient, lightVector, MAX_LIGHTS as LIGHT_LIMIT } from "./light.js";
 import { isRenderable3D, isPrimitive, modelMatrix } from "./scene.js";
 import { buildPrimitive } from "./primitive.js";
-import { parseColor, WHITE } from "./color.js";
+import { parseColor, objectColor } from "./color.js";
+import { splitByAlpha } from "./draw-order.js";
+import { splitCasters, transmittanceOf } from "./shadow-cast.js";
 import { setModelBoxLookup, boundsOf } from "./collision.js";
 import { debugOption, boundaryLines, DEBUG_COLOR } from "./debug-draw.js";
 import { resolveKind } from "./kind.js";
@@ -84,6 +86,8 @@ uniform bool uShadowOn;
 uniform sampler2D uShadowMap;
 uniform float uShadowBias;
 uniform float uShadowTexel;
+// 半透明のものが、光をどれだけ通したか（1で素通し）
+uniform sampler2D uTransmitMap;
 
 // 深度を RGBA へ詰めた値から元へ戻す（WebGL1 では深度テクスチャが使えない環境があるため）
 float unpackDepth(vec4 rgba) {
@@ -111,10 +115,32 @@ float shadowRatio() {
   return shadowed / 9.0;
 }
 
+// 半透明ごしに届く光の割合（0:さえぎられた 〜 1:素通し）
+float transmitRatio() {
+  if (!uShadowOn) return 1.0;
+  vec3 coord = vShadowPos.xyz / vShadowPos.w;
+  coord = coord * 0.5 + 0.5;
+  if (coord.x < 0.0 || coord.x > 1.0 || coord.y < 0.0 || coord.y > 1.0 || coord.z > 1.0) {
+    return 1.0;
+  }
+  // 影の輪郭と同じだけぼかす。片方だけくっきりしていると境目が浮く
+  float through = 0.0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 at = coord.xy + vec2(float(x), float(y)) * uShadowTexel;
+      through += texture2D(uTransmitMap, at).r;
+    }
+  }
+  return through / 9.0;
+}
+
 void main() {
   vec3 normal = normalize(vNormal);
   vec3 lit = uAmbient.rgb;
-  float shade = 1.0 - shadowRatio() * 0.75;
+  // 不透明にさえぎられた分と、半透明を通ってきた分を合わせる。
+  // 半透明が無ければ透過率は1になり、これまでと同じ結果になる
+  float blocked = 1.0 - (1.0 - shadowRatio()) * transmitRatio();
+  float shade = 1.0 - blocked * 0.75;
 
   for (int i = 0; i < ${MAX_LIGHTS}; i++) {
     if (i >= uLightCount) break;
@@ -175,6 +201,15 @@ void main() {
   gl_FragColor = packDepth(gl_FragCoord.z);
 }`;
 
+// 透過率を書き込むシェーダー。掛け算のブレンドで塗り重ねる
+const TRANSMIT_FRAGMENT = `
+precision highp float;
+uniform float uTransmit;
+
+void main() {
+  gl_FragColor = vec4(vec3(uTransmit), 1.0);
+}`;
+
 // 裏バッファを画面へ転送するための、画面いっぱいの四角形
 // 当たり判定の枠を描くだけの、いちばん簡単な組（5.5節）
 const LINE_VERTEX = `
@@ -215,6 +250,9 @@ let sceneProgram = null;
 let shadowProgram = null;
 /** 影を描き込むフレームバッファ一式 */
 let shadowTarget = null;
+/** 半透明が光をどれだけ通したかを描き込む組（6.2.6節） */
+let transmitProgram = null;
+let transmitTarget = null;
 let blitProgram = null;
 let blitBuffer = null;
 /** 裏フレームバッファ一式 */
@@ -254,7 +292,7 @@ function createProgram(vertexSource, fragmentSource) {
  * 深度テクスチャの拡張が無い環境でも動くよう、**深度をRGBAへ詰めて**色として書く。
  * 影の輪郭がぼやけないよう、拡大縮小の補間はしない。
  */
-function createShadowTarget() {
+function createShadowTarget(sharedDepth = null) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(
@@ -266,9 +304,11 @@ function createShadowTarget() {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-  const depth = gl.createRenderbuffer();
-  gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
-  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, SHADOW_SIZE, SHADOW_SIZE);
+  const depth = sharedDepth ?? gl.createRenderbuffer();
+  if (!sharedDepth) {
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, SHADOW_SIZE, SHADOW_SIZE);
+  }
 
   const framebuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
@@ -335,6 +375,9 @@ export function initRenderer(canvas) {
     sceneProgram = createProgram(SCENE_VERTEX, SCENE_FRAGMENT);
     shadowProgram = createProgram(SHADOW_VERTEX, SHADOW_FRAGMENT);
     shadowTarget = createShadowTarget();
+    // 深度は影のものと共有する。半透明が不透明の陰に隠れている時は数えないため
+    transmitProgram = createProgram(SHADOW_VERTEX, TRANSMIT_FRAGMENT);
+    transmitTarget = createShadowTarget(shadowTarget.depth);
     blitProgram = createProgram(BLIT_VERTEX, BLIT_FRAGMENT);
     lineProgram = createProgram(LINE_VERTEX, LINE_FRAGMENT);
 
@@ -567,6 +610,10 @@ function applyShadowMap(enabled) {
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, shadowTarget.texture);
   gl.uniform1i(at("uShadowMap"), 0);
+  // 半透明が光をどれだけ通したか（6.2.6節）
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, transmitTarget.texture);
+  gl.uniform1i(at("uTransmitMap"), 1);
   // 面が自分自身を影と誤判定しないよう、わずかに手前へずらす
   gl.uniform1f(at("uShadowBias"), 0.0025);
   gl.uniform1f(at("uShadowTexel"), 1 / SHADOW_SIZE);
@@ -606,28 +653,72 @@ function drawShadowMap(drawables, camera) {
   gl.clearColor(1, 1, 1, 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  gl.useProgram(shadowProgram);
-  const matrixLocation = gl.getUniformLocation(shadowProgram, "uShadowMatrix");
-  const skinnedLocation = gl.getUniformLocation(shadowProgram, "uSkinned");
-  const jointsLocation = gl.getUniformLocation(shadowProgram, "uJoints[0]");
+  // 影を落とす側を、不透明と半透明に分ける（6.2.6節）
+  const { solid, translucent } = splitCasters(drawables);
 
-  for (const object of drawables) {
-    // @SHADOW = false のオブジェクトは影を落とさない
-    if (object.SHADOW === false) continue;
-    const { meshes, model } = meshesFor(object);
-    gl.uniform1i(skinnedLocation, applyPose(object, model, jointsLocation) ? 1 : 0);
+  /** 光の目線で1組ぶん描く */
+  const castGroup = (program, list, onObject) => {
+    const matrixLocation = gl.getUniformLocation(program, "uShadowMatrix");
+    const skinnedLocation = gl.getUniformLocation(program, "uSkinned");
+    const jointsLocation = gl.getUniformLocation(program, "uJoints[0]");
 
-    const placement = multiply(matrix, modelMatrix(object));
-    for (const primitive of meshes) {
-      bindAttribute(shadowProgram, "aPosition", primitive.position, 3);
-      bindAttribute(shadowProgram, "aJoints", primitive.joints, 4);
-      bindAttribute(shadowProgram, "aWeights", primitive.weights, 4);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.index);
-      gl.uniformMatrix4fv(matrixLocation, false, multiply(placement, primitive.matrix));
-      gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
+    for (const object of list) {
+      const { meshes, model } = meshesFor(object);
+      gl.uniform1i(skinnedLocation, applyPose(object, model, jointsLocation) ? 1 : 0);
+      onObject?.(object);
+
+      const placement = multiply(matrix, modelMatrix(object));
+      for (const primitive of meshes) {
+        bindAttribute(program, "aPosition", primitive.position, 3);
+        bindAttribute(program, "aJoints", primitive.joints, 4);
+        bindAttribute(program, "aWeights", primitive.weights, 4);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.index);
+        gl.uniformMatrix4fv(matrixLocation, false, multiply(placement, primitive.matrix));
+        gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
+      }
     }
-  }
+  };
+
+  // 深度マップには**不透明なものだけ**を描く
+  gl.useProgram(shadowProgram);
+  castGroup(shadowProgram, solid);
+
+  drawTransmitMap(matrix, translucent, castGroup);
   return matrix;
+}
+
+/**
+ * 半透明が光をどれだけ通したかを描き込む（6.2.6節）
+ *
+ * 白（＝全部通す）で塗ってから、半透明なものを `1 - ALPHA` の色で塗り重ねる。
+ * **掛け算のブレンド**にしてあるため、2枚重なれば `0.5 × 0.5 = 0.25` と
+ * 自然に濃くなる。掛け算は順序を選ばないので、並べ替えも要らない。
+ */
+function drawTransmitMap(matrix, translucent, castGroup) {
+  if (!transmitTarget) return;
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, transmitTarget.framebuffer);
+  gl.viewport(0, 0, SHADOW_SIZE, SHADOW_SIZE);
+  gl.clearColor(1, 1, 1, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  if (translucent.length === 0) return;
+
+  gl.useProgram(transmitProgram);
+  const transmitLocation = gl.getUniformLocation(transmitProgram, "uTransmit");
+
+  gl.enable(gl.BLEND);
+  // 掛け算で塗り重ねる（新しい値 = いまの値 × 描いた色）
+  gl.blendFunc(gl.ZERO, gl.SRC_COLOR);
+  // 深度は不透明のものと共有している。その陰に隠れた半透明は数えない。
+  // 書き込みはしない（半透明どうしが打ち消し合わないように）
+  gl.depthMask(false);
+
+  castGroup(transmitProgram, translucent, (object) => {
+    gl.uniform1f(transmitLocation, transmittanceOf(object));
+  });
+
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
 }
 
 /**
@@ -700,31 +791,49 @@ export function drawScene(objects, camera) {
   applyLights(view);
   applyShadowMap(shadowMatrix !== null);
 
-  for (const object of drawables) {
-    const { meshes, model } = meshesFor(object);
+  /** まとめて1組ぶん描く */
+  const drawGroup = (list) => {
+    for (const object of list) {
+      const { meshes, model } = meshesFor(object);
 
-    // 再生中のクリップから、この時刻のボーン行列を求める（プリミティブは持たない）
-    gl.uniform1i(skinnedLocation, applyPose(object, model, jointsLocation) ? 1 : 0);
-    gl.uniform4fv(colorLocation, object.COLOR ? parseColor(object.COLOR) : WHITE);
+      // 再生中のクリップから、この時刻のボーン行列を求める（プリミティブは持たない）
+      gl.uniform1i(skinnedLocation, applyPose(object, model, jointsLocation) ? 1 : 0);
+      gl.uniform4fv(colorLocation, objectColor(object));
 
-    const model4 = modelMatrix(object);
-    const placement = multiply(view, model4);
-    const shadowPlacement = shadowMatrix ? multiply(shadowMatrix, model4) : null;
-    for (const primitive of meshes) {
-      if (shadowPlacement) {
-        gl.uniformMatrix4fv(
-          shadowMatrixLocation, false, multiply(shadowPlacement, primitive.matrix),
-        );
+      const model4 = modelMatrix(object);
+      const placement = multiply(view, model4);
+      const shadowPlacement = shadowMatrix ? multiply(shadowMatrix, model4) : null;
+      for (const primitive of meshes) {
+        if (shadowPlacement) {
+          gl.uniformMatrix4fv(
+            shadowMatrixLocation, false, multiply(shadowPlacement, primitive.matrix),
+          );
+        }
+        bindAttribute(sceneProgram, "aPosition", primitive.position, 3);
+        bindAttribute(sceneProgram, "aNormal", primitive.normal, 3);
+        bindAttribute(sceneProgram, "aColor", primitive.color, 4);
+        bindAttribute(sceneProgram, "aJoints", primitive.joints, 4);
+        bindAttribute(sceneProgram, "aWeights", primitive.weights, 4);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.index);
+        gl.uniformMatrix4fv(modelViewLocation, false, multiply(placement, primitive.matrix));
+        gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
       }
-      bindAttribute(sceneProgram, "aPosition", primitive.position, 3);
-      bindAttribute(sceneProgram, "aNormal", primitive.normal, 3);
-      bindAttribute(sceneProgram, "aColor", primitive.color, 4);
-      bindAttribute(sceneProgram, "aJoints", primitive.joints, 4);
-      bindAttribute(sceneProgram, "aWeights", primitive.weights, 4);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.index);
-      gl.uniformMatrix4fv(modelViewLocation, false, multiply(placement, primitive.matrix));
-      gl.drawElements(gl.TRIANGLES, primitive.count, primitive.indexType, 0);
     }
+  };
+
+  // 不透明を先に描き、そのあと半透明を奥から手前へ重ねる（6.2.5節）
+  const { opaque, transparent } = splitByAlpha(drawables, camera);
+  drawGroup(opaque);
+
+  if (transparent.length > 0) {
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    // 深度は読むが書かない。書いてしまうと、手前の半透明が
+    // 奥の半透明を深度テストで消してしまう
+    gl.depthMask(false);
+    drawGroup(transparent);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
   }
 
   drawBoundaries(objects ?? [], view, camera);
@@ -740,19 +849,19 @@ export function drawScene(objects, camera) {
  * `setDebug debug: true` を呼んでいない間は何もしない。
  */
 function drawBoundaries(objects, view, camera) {
-  const 設定 = debugOption();
-  if (!設定.debug || !lineProgram) return;
+  const option = debugOption();
+  if (!option.debug || !lineProgram) return;
 
-  const 線 = [];
+  const lines = [];
   for (const object of objects) {
-    const 頂点 = boundaryLines(boundsOf(object), resolveKind(object));
-    if (頂点.length > 0) 線.push(...頂点);
+    const vertices = boundaryLines(boundsOf(object), resolveKind(object));
+    if (vertices.length > 0) lines.push(...vertices);
   }
-  if (線.length === 0) return;
+  if (lines.length === 0) return;
 
   if (!lineBuffer) lineBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(線), gl.DYNAMIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.DYNAMIC_DRAW);
 
   gl.useProgram(lineProgram);
   gl.uniformMatrix4fv(
@@ -764,19 +873,19 @@ function drawBoundaries(objects, view, camera) {
   gl.uniformMatrix4fv(gl.getUniformLocation(lineProgram, "uModelView"), false, view);
   gl.uniform4f(
     gl.getUniformLocation(lineProgram, "uColor"),
-    DEBUG_COLOR[0], DEBUG_COLOR[1], DEBUG_COLOR[2], 設定.opacity,
+    DEBUG_COLOR[0], DEBUG_COLOR[1], DEBUG_COLOR[2], option.opacity,
   );
 
-  const 位置 = gl.getAttribLocation(lineProgram, "aPosition");
-  gl.enableVertexAttribArray(位置);
-  gl.vertexAttribPointer(位置, 3, gl.FLOAT, false, 0, 0);
+  const attrib = gl.getAttribLocation(lineProgram, "aPosition");
+  gl.enableVertexAttribArray(attrib);
+  gl.vertexAttribPointer(attrib, 3, gl.FLOAT, false, 0, 0);
 
   // 半透明で重ねる。枠は補助なので、下の絵を塗り潰さない
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   // 線そのものは深度を書き換えない。あとから描くものへ影響させないため
   gl.depthMask(false);
-  gl.drawArrays(gl.LINES, 0, 線.length / 3);
+  gl.drawArrays(gl.LINES, 0, lines.length / 3);
   gl.depthMask(true);
   gl.disable(gl.BLEND);
 }

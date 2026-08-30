@@ -151,5 +151,16 @@
   "message.ok": "확인",
   "message.cancel": "취소",
   "editor.fileChanged": "파일이 갱신되었습니다.\n읽어들일까요?",
-  "editor.fileChangedTitle": "파일이 변경되었습니다"
+  "editor.fileChangedTitle": "파일이 변경되었습니다",
+  "pane.assetMap": "에셋 관리",
+  "assetMap.title": "에셋 키",
+  "assetMap.note": "게임 코드에서는 키 이름으로 에셋을 지정합니다",
+  "assetMap.file": "파일 이름",
+  "assetMap.key": "키 이름",
+  "assetMap.noFiles": "파일이 없습니다",
+  "assetMap.duplicate": "그 키 이름은 이미 쓰이고 있습니다",
+  "assetMap.invalid": "영문자·숫자·밑줄만 쓰고, 숫자로 시작하지 마세요",
+  "assetMap.empty": "키 이름을 입력하세요",
+  "assetMap.saved": "저장했습니다",
+  "msg.assetMapFailed": "에셋 키를 읽거나 쓰지 못했습니다"
 }
