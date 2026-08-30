@@ -1,3 +1,4 @@
+mod asset_url;
 mod class_name;
 mod class_source;
 mod frame;
@@ -80,7 +81,7 @@ thread_local! {
     /// 開いているプロジェクトの表示名（左ペイン最上部に表示する）
     static CURRENT_PROJECT_NAME: RefCell<String> = const { RefCell::new(String::new()) };
     /// 画像サムネイル表示に発行した object URL（再描画時に解放する）
-    static ASSET_URLS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    static ASSET_URLS: RefCell<Vec<asset_url::OwnedUrl>> = const { RefCell::new(Vec::new()) };
     /// ゲームの実行状態
     static RUN_STATE: RefCell<RunState> = const { RefCell::new(RunState::Stopped) };
     /// フレームの進行管理
@@ -2199,7 +2200,7 @@ async fn preload_models() {
         if listing::classify_resource(&name) != Some(ResourceKind::Model) {
             continue;
         }
-        let Some(url) = load_asset_url(&dir, &name).await else {
+        let Some(url) = load_asset_url(&dir, &name, &name).await else {
             continue;
         };
         if let Err(err) = load_model(&name, &url).await {
@@ -2844,7 +2845,7 @@ async fn load_model_thumbnails(file_names: Vec<String>) {
     };
 
     for name in file_names {
-        let Some(url) = load_asset_url(&dir, &name).await else {
+        let Some(url) = load_asset_url(&dir, &name, &name).await else {
             continue;
         };
         // 描画できないモデル（.gltf の外部参照など）はプレースホルダーのままにする
@@ -2986,7 +2987,7 @@ async fn load_audio_urls(file_names: Vec<String>) {
     };
 
     for name in file_names {
-        let Some(url) = load_asset_url(&dir, &name).await else {
+        let Some(url) = load_asset_url(&dir, &name, &name).await else {
             continue;
         };
         set_audio_url(&name, &url);
@@ -3039,11 +3040,23 @@ fn set_audio_url(file_name: &str, url: &str) {
 fn revoke_asset_urls() {
     stop_audio_preview();
     clear_model_cache();
-    ASSET_URLS.with(|urls| {
-        for url in urls.borrow_mut().drain(..) {
-            Url::revoke_object_url(&url).ok();
-        }
-    });
+    let taken = ASSET_URLS.with(|urls| asset_url::take_all_urls(&mut urls.borrow_mut()));
+    for url in taken {
+        Url::revoke_object_url(&url).ok();
+    }
+}
+
+/// 指定したオブジェクトぶんの object URL だけを解放する
+///
+/// 1件だけ作り直す時（⌘S・実行前の自動保存）に使う。
+/// **他のカードは画面に残っている**ため、そのぶんまで捨てるとホバー回転が効かなくなる。
+fn revoke_asset_urls_for(owners: &[String]) {
+    let taken = ASSET_URLS.with(|urls| asset_url::take_urls_for(&mut urls.borrow_mut(), owners));
+    for url in taken {
+        // 解放したURLは、モデルのキャッシュからも落とす（そこだけを忘れる）
+        call_global_with_str("arcadeerForgetModel", &url);
+        Url::revoke_object_url(&url).ok();
+    }
 }
 
 /// ホバー回転を止め、解放済み URL のモデルキャッシュを捨てる
@@ -3105,7 +3118,20 @@ fn reset_object_thumbnail(object_name: &str) {
 /// 指定が無い・読めない・文字列で書かれていない場合はプレースホルダーのままにする。
 async fn load_object_thumbnails(object_names: Vec<String>) {
     revoke_asset_urls();
+    rebuild_object_thumbnails(object_names).await;
+}
 
+/// 一部のオブジェクトだけサムネイルを作り直す（⌘S・実行前の自動保存）
+///
+/// 他のカードは画面に残っているため、**そのオブジェクトぶんのURLだけ**を解放する。
+/// まとめて捨てると、他のカードのホバー回転が効かなくなる。
+async fn refresh_object_thumbnails(object_names: Vec<String>) {
+    revoke_asset_urls_for(&object_names);
+    rebuild_object_thumbnails(object_names).await;
+}
+
+/// サムネイルを実際に作り直す（URLの解放は呼び出し側が済ませておく）
+async fn rebuild_object_thumbnails(object_names: Vec<String>) {
     let Some(project) = CURRENT_PROJECT.with(|c| c.borrow().clone()) else {
         return;
     };
@@ -3139,7 +3165,7 @@ async fn load_object_thumbnails(object_names: Vec<String>) {
         let Some(dir) = ensure_asset_subdir(&project, kind).await else {
             continue;
         };
-        let Some(url) = load_asset_url(&dir, &asset).await else {
+        let Some(url) = load_asset_url(&dir, &asset, &name).await else {
             continue;
         };
 
@@ -3221,7 +3247,7 @@ async fn load_image_thumbnails(file_names: Vec<String>) {
     };
 
     for name in file_names {
-        let Some(url) = load_asset_url(&assets_dir, &name).await else {
+        let Some(url) = load_asset_url(&assets_dir, &name, &name).await else {
             continue;
         };
         set_asset_thumbnail(&name, &url);
@@ -3229,7 +3255,11 @@ async fn load_image_thumbnails(file_names: Vec<String>) {
 }
 
 /// アセットファイルを読み込み、<img> 表示用の object URL を発行する
-async fn load_asset_url(dir: &FileSystemDirectoryHandle, file_name: &str) -> Option<String> {
+async fn load_asset_url(
+    dir: &FileSystemDirectoryHandle,
+    file_name: &str,
+    owner: &str,
+) -> Option<String> {
     let file_handle: FileSystemFileHandle = JsFuture::from(dir.get_file_handle(file_name))
         .await
         .ok()?
@@ -3237,7 +3267,7 @@ async fn load_asset_url(dir: &FileSystemDirectoryHandle, file_name: &str) -> Opt
         .ok()?;
     let file: File = JsFuture::from(file_handle.get_file()).await.ok()?.dyn_into().ok()?;
     let url = Url::create_object_url_with_blob(&file).ok()?;
-    ASSET_URLS.with(|urls| urls.borrow_mut().push(url.clone()));
+    ASSET_URLS.with(|urls| urls.borrow_mut().push((owner.to_string(), url.clone())));
     Some(url)
 }
 
@@ -3452,12 +3482,9 @@ async fn flush_drafts() {
         }
     }
 
-    // ⌘S と同じように、書けたぶんのサムネイルを作り直す。
-    // まとめて1回にするのは、`load_object_thumbnails` が先頭で
-    // **全カードぶんの object URL を捨てる**ため。1件ずつ呼ぶと、
-    // そのたびに他のカードの URL が無効になり、ホバー回転が効かなくなる
+    // ⌘S と同じように、書けたぶんのサムネイルを作り直す（まとめて1回）
     if !saved.is_empty() {
-        load_object_thumbnails(saved).await;
+        refresh_object_thumbnails(saved).await;
     }
 }
 
@@ -3526,7 +3553,7 @@ fn wire_editor_save() -> Result<(), JsValue> {
                     notify_editor_saved(&content);
                     // @MODEL を書き替えた場合に備え、そのカードのサムネイルだけ作り直す
                     if let Some(object) = listing::object_name(&file_name) {
-                        load_object_thumbnails(vec![object]).await;
+                        refresh_object_thumbnails(vec![object]).await;
                     }
                 }
                 Err(err) => {

@@ -347,11 +347,25 @@ export function clearModelCache() {
   modelCache.clear();
 }
 
+/**
+ * 1つの object URL ぶんだけキャッシュから落とす
+ *
+ * 1件だけサムネイルを作り直す時に使う。**他のカードのぶんは残す**ため、
+ * 全部捨てる `clearModelCache` とは分けてある。
+ * いま回しているカードのものだった場合だけ、回転を止める。
+ */
+export function forgetModel(url) {
+  if (!url) return;
+  modelCache.delete(url);
+  if (hoverCard?.getAttribute("data-url") === url) stopModelHover();
+}
+
 if (typeof window !== "undefined") {
   window.arcadeerBuildModelThumbnail = buildModelThumbnail;
   window.arcadeerBuildPrimitiveThumbnail = buildPrimitiveThumbnail;
   window.arcadeerStopModelHover = stopModelHover;
   window.arcadeerClearModelCache = clearModelCache;
+  window.arcadeerForgetModel = forgetModel;
 
   // カードは再描画のたびに作り直されるため、イベントは委譲で受ける
   document.addEventListener(
