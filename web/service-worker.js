@@ -1,4 +1,4 @@
-const CACHE_NAME = "arcadeer-v203";
+const CACHE_NAME = "arcadeer-v204";
 const PRECACHE = [
   "./",
   "./index.html",

@@ -65,11 +65,42 @@ function build() {
   dialogEl = dialog;
 }
 
+/**
+ * 開く直前にフォーカスがあった場所
+ *
+ * 閉じた時にそこへ戻すため。編集中にエラーが出た場合、
+ * 閉じたあとそのまま書き続けられるようにする。
+ */
+let focusBefore = null;
+
+/** 開く直前のフォーカスを控える */
+function rememberFocus() {
+  const active = document.activeElement;
+  // ダイアログの中や body 自身は戻り先にしない
+  focusBefore = active && active !== document.body && !dialogEl?.contains(active) ? active : null;
+}
+
+/**
+ * 閉じたあと、元いた場所へフォーカスを戻す
+ *
+ * 元の要素が画面から消えている場合（一覧の作り直しなど）は、
+ * エディタが出ていればそちらへ戻す。
+ */
+function restoreFocus() {
+  if (focusBefore?.isConnected) {
+    focusBefore.focus({ preventScroll: true });
+  } else if (document.querySelector(".ace_editor")) {
+    window.arcadeerFocusEditor?.();
+  }
+  focusBefore = null;
+}
+
 /** 開いている問い合わせに答えて閉じる */
 function settle(value) {
   const reply = answer;
   answer = null;
   if (dialogEl?.open) fadeOutDialog(dialogEl);
+  restoreFocus();
   reply?.(value);
 }
 
@@ -93,7 +124,10 @@ export function showMessage(message, kind = "info", title) {
   bodyEl.textContent = message ?? "";
   cancelBtnEl.hidden = true;
 
-  if (!dialogEl.open) fadeInDialog(dialogEl);
+  if (!dialogEl.open) {
+    rememberFocus();
+    fadeInDialog(dialogEl);
+  }
 }
 
 /**
@@ -127,7 +161,10 @@ export function showConfirm(message, kind = "warning", title) {
     // 前の問い合わせが残っていれば「やめる」で片付ける
     answer?.(false);
     answer = resolve;
-    if (!dialogEl.open) fadeInDialog(dialogEl);
+    if (!dialogEl.open) {
+      rememberFocus();
+      fadeInDialog(dialogEl);
+    }
   });
 }
 
