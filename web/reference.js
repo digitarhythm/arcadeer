@@ -112,26 +112,46 @@ async function render() {
   nav.textContent = "";
   body.textContent = "";
 
+  // 目次はタブにする。内容が長いので、選んだ節だけを出したほうが探しやすい
+  const panels = new Map();
+  const links = new Map();
+  const show = (id) => {
+    for (const [key, panel] of panels) panel.hidden = key !== id;
+    for (const [key, link] of links) {
+      link.classList.toggle("reference-nav-item-active", key === id);
+      link.setAttribute("aria-selected", key === id ? "true" : "false");
+    }
+    body.scrollTop = 0;
+  };
+
   for (const section of SECTIONS) {
     const title = dict[section.title] ?? section.title;
 
     const link = document.createElement("button");
     link.type = "button";
     link.className = "reference-nav-item";
+    link.setAttribute("role", "tab");
     link.textContent = title;
-    link.addEventListener("click", () => {
-      document.getElementById(`reference-${section.id}`)?.scrollIntoView({ block: "start" });
-    });
+    link.addEventListener("click", () => show(section.id));
     nav.appendChild(link);
+    links.set(section.id, link);
+
+    const panel = document.createElement("section");
+    panel.className = "reference-panel";
+    panel.id = `reference-${section.id}`;
 
     const heading = document.createElement("h2");
     heading.className = "reference-section-title";
-    heading.id = `reference-${section.id}`;
     heading.textContent = title;
-    body.appendChild(heading);
+    panel.appendChild(heading);
 
-    for (const block of section.blocks) body.appendChild(buildBlock(block, dict));
+    for (const block of section.blocks) panel.appendChild(buildBlock(block, dict));
+    body.appendChild(panel);
+    panels.set(section.id, panel);
   }
+
+  // 最初は先頭の節を出す
+  if (SECTIONS.length > 0) show(SECTIONS[0].id);
 
   const titleEl = document.getElementById("reference-title");
   if (titleEl) titleEl.textContent = t("header.reference");

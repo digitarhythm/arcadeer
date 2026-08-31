@@ -33,8 +33,8 @@ export const SECTIONS = [
 
     @cat = @addObject
       name: "myship"
-      X: 0
-      Y: 0`,
+      x: 0
+      y: 0`,
       },
       { type: "heading", k: "ref.start.h2" },
       { type: "text", k: "ref.start.d2" },
@@ -56,11 +56,11 @@ export const SECTIONS = [
         type: "code",
         code: `@floor = @addObject
   name: "box"
-  Y: -2
-  SCALEX: 20
-  SCALEY: 0.5
-  SCALEZ: 20
-  COLOR: "#886644"`,
+  y: -2
+  scaleX: 20
+  scaleY: 0.5
+  scaleZ: 20
+  color: "#886644"`,
       },
     ],
   },
@@ -123,8 +123,57 @@ export const SECTIONS = [
   },
 
   {
-    id: "api",
-    title: "ref.api.title",
+    id: "create",
+    title: "ref.api.h.create",
+    blocks: [
+      { type: "text", k: "ref.api.d.addObject" },
+      { type: "text", k: "ref.api.d.casing" },
+      { type: "code", code: `@enemy = @addObject
+  name: "enemy"
+  x: 5
+  y: 0
+  z: 0
+  scaleX: 2
+  rotY: 180
+  model: "cat.glb"
+  color: "#ff8800"
+  alpha: 0.8` },
+      {
+        type: "table",
+        head: [t("ref.col.param"), t("ref.col.meaning"), t("ref.col.default")],
+        rows: [
+          ["name", t("ref.arg.name"), t("ref.required")],
+          ["x y z", t("ref.p.pos"), "0"],
+          ["xs ys zs", t("ref.p.vel"), "0"],
+          ["gravity", t("ref.p.gravity"), "0"],
+          ["rotX rotY rotZ", t("ref.p.rot"), "0"],
+          ["scaleX scaleY scaleZ", t("ref.p.scale"), "1"],
+          ["radius", t("ref.p.radius"), "-"],
+          ["model", t("ref.p.model"), '"primitive"'],
+          ["kind", t("ref.p.kind"), t("ref.p.auto")],
+          ["color", t("ref.p.color"), '""'],
+          ["alpha", t("ref.p.alpha"), "1"],
+          ["shadow", t("ref.p.shadow"), "true"],
+          ["boundary", t("ref.p.boundary"), "-"],
+          ["proc", t("ref.p.proc"), "0"],
+        ],
+      },
+      { type: "text", k: "ref.api.d.argmap" },
+      { type: "heading", k: "ref.api.h.prim2" },
+      { type: "text", k: "ref.start.d3" },
+      { type: "code", code: `@floor = @addObject
+  name: "box"
+  y: -2
+  scaleX: 20
+  scaleY: 0.5
+  scaleZ: 20
+  color: "#886644"` },
+    ],
+  },
+
+  {
+    id: "props",
+    title: "ref.props.title",
     blocks: [
       { type: "heading", k: "ref.api.h.params" },
       { type: "text", k: "ref.api.d.params" },
@@ -138,16 +187,44 @@ export const SECTIONS = [
           ["@ROTX @ROTY @ROTZ", t("ref.p.rot"), "0"],
           ["@SCALEX @SCALEY @SCALEZ", t("ref.p.scale"), "1"],
           ["@RADIUS", t("ref.p.radius"), "-"],
-          ["@MODEL", t("ref.p.model"), '""'],
+          ["@MODEL", t("ref.p.model"), '"primitive"'],
           ["@KIND", t("ref.p.kind"), t("ref.p.auto")],
           ["@COLOR", t("ref.p.color"), '""'],
           ["@ALPHA", t("ref.p.alpha"), "1"],
           ["@SHADOW", t("ref.p.shadow"), "true"],
+          ["@BOUNDARY", t("ref.p.boundary"), "-"],
           ["@proc", t("ref.p.proc"), "0"],
+          ["@animation", t("ref.p.animation"), "null"],
           ["@animationFinished", t("ref.p.animfin"), "false"],
         ],
       },
-      { type: "heading", k: "ref.api.h.object" },
+      { type: "code", code: `behavior: (e) ->
+  super(e)
+  @X += 0.1
+  @ROTY += 1
+  @COLOR = "#ff0000" if @damaged` },
+      { type: "code", code: `@COLOR = "#ff8800"
+@ALPHA = 0.3
+
+behavior: (e) ->
+  super(e)
+  @ALPHA -= 0.02
+  @removeObject @ if @ALPHA <= 0` },
+      { type: "text", k: "ref.api.d.alpha" },
+      { type: "code", code: `@MODEL = "sphere"
+@RADIUS = 0.25
+
+@MODEL = "cylinder"
+@RADIUS = 1
+@SCALEY = 3` },
+      { type: "text", k: "ref.api.d.radius" },
+    ],
+  },
+
+  {
+    id: "methods",
+    title: "ref.api.h.object",
+    blocks: [
       {
         type: "table",
         head: [t("ref.col.method"), t("ref.col.what")],
@@ -157,23 +234,30 @@ export const SECTIONS = [
           ["@setAnimation", t("ref.m.setAnimation")],
           ["@removeAfterAnimation", t("ref.m.removeAfterAnimation")],
           ["@waitjob", t("ref.m.waitjob")],
+          ["@isWaiting", t("ref.m.isWaiting")],
+          ["@intersect", t("ref.hit.intersect")],
+          ["@collision", t("ref.hit.collision")],
+          ["behavior", t("ref.m.behavior")],
+          ["destructor", t("ref.m.destructor")],
         ],
       },
+
+      { type: "heading", k: "ref.h.addObject" },
       { type: "code", code: `@enemy = @addObject
   name: "enemy"
-  X: 5
-  Y: 0` },
+  x: 5
+  y: 0` },
       { type: "text", k: "ref.api.d.addObject" },
+
+      { type: "heading", k: "ref.h.removeObject" },
       { type: "code", code: `@removeObject bullet
 @removeObject @
 
 destructor: (e) ->
   GLOBAL.SCORE += 100` },
       { type: "text", k: "ref.api.d.removeObject" },
-      { type: "code", code: `@removeAfterAnimation
-  name: "Die"
-  times: 1` },
-      { type: "text", k: "ref.api.d.removeAfterAnimation" },
+
+      { type: "heading", k: "ref.h.setAnimation" },
       { type: "code", code: `@setAnimation
   name: "Jump"
   loop: false
@@ -190,28 +274,32 @@ destructor: (e) ->
           ["rootMotion", t("ref.anim.rootMotion"), "true"],
         ],
       },
+      { type: "text", k: "ref.api.d.catClips" },
+
+      { type: "heading", k: "ref.h.removeAfterAnimation" },
+      { type: "code", code: `@removeAfterAnimation
+  name: "Down"
+  times: 1` },
+      { type: "text", k: "ref.api.d.removeAfterAnimation" },
+
+      { type: "heading", k: "ref.h.waitjob" },
       { type: "code", code: `switch @proc
   when 0
     @waitjob(1000)
   when 1
     @XS = 2` },
       { type: "text", k: "ref.api.d.waitjob" },
-      { type: "code", code: `@COLOR = "#ff8800"
-@ALPHA = 0.3
+      { type: "code", code: `@fire() unless @isWaiting()` },
+      { type: "text", k: "ref.m.isWaiting.d" },
 
-behavior: (e) ->
+      { type: "heading", k: "ref.h.behavior" },
+      { type: "code", code: `behavior: (e) ->
   super(e)
-  @ALPHA -= 0.02
-  @removeObject @ if @ALPHA <= 0` },
-      { type: "text", k: "ref.api.d.alpha" },
-      { type: "code", code: `@MODEL = "sphere"
-@RADIUS = 0.25
+  echo "%@ frame", e.frame
 
-@MODEL = "cylinder"
-@RADIUS = 1
-@SCALEY = 3` },
-      { type: "text", k: "ref.api.d.radius" },
-
+destructor: (e) ->
+  GLOBAL.SCORE += 100` },
+      { type: "text", k: "ref.m.behavior.d" },
       { type: "heading", k: "ref.api.h.event" },
       { type: "text", k: "ref.api.d.event" },
       {
@@ -222,8 +310,86 @@ behavior: (e) ->
           ["e.time", t("ref.event.time")],
         ],
       },
+    ],
+  },
 
-      { type: "heading", k: "ref.api.h.global" },
+  {
+    id: "hit",
+    title: "ref.api.h.hit",
+    blocks: [
+      { type: "text", k: "ref.hit.d" },
+      {
+        type: "table",
+        head: [t("ref.hit.col.value"), t("ref.hit.col.area"), t("ref.hit.col.scale")],
+        rows: [
+          [t("ref.hit.row.none"), t("ref.hit.row.none.area"), t("ref.hit.row.none.scale")],
+          ["null / false", t("ref.hit.row.off.area"), "-"],
+          [t("ref.hit.row.written"), t("ref.hit.row.written.area"), t("ref.hit.row.written.scale")],
+        ],
+      },
+      { type: "text", k: "ref.hit.scale" },
+
+      { type: "heading", k: "ref.h.boundary" },
+      { type: "code", code: `@BOUNDARY =
+  MODEL: "box"      # "box" / "sphere" / "cylinder"
+  SCALEX: 1
+  SCALEY: 1
+  SCALEZ: 1
+  RADIUS: 0.5       # MODEL: "sphere" / "cylinder"
+  X: 0
+  Y: 0
+  Z: 0` },
+      {
+        type: "table",
+        head: [t("ref.col.key"), t("ref.col.meaning"), t("ref.col.default")],
+        rows: [
+          ["MODEL", t("ref.b.model"), '"box"'],
+          ["SCALEX SCALEY SCALEZ", t("ref.b.size"), "1"],
+          ["RADIUS", t("ref.b.radius"), "0.5"],
+          ["X Y Z", t("ref.b.offset"), "0"],
+        ],
+      },
+      { type: "text", k: "ref.hit.keys" },
+
+      { type: "heading", k: "ref.h.ask" },
+      { type: "text", k: "ref.hit.ask" },
+      {
+        type: "table",
+        head: [t("ref.col.member"), t("ref.col.meaning")],
+        rows: [
+          ["@intersect(...)", t("ref.hit.intersect")],
+          ["@collision(...)", t("ref.hit.collision")],
+        ],
+      },
+      { type: "code", code: `behavior: (e) ->
+  super(e)
+  if @collision(@ground)
+    @Y = 0.5
+    @YS = 0
+
+  enemy = @collision(@enemies)
+  @damage() if enemy` },
+      { type: "text", k: "ref.hit.ret" },
+
+      { type: "heading", k: "ref.h.debug" },
+      { type: "text", k: "ref.hit.debug" },
+      { type: "code", code: `setDebug debug: true, opacity: 0.3
+setDebug false` },
+      {
+        type: "table",
+        head: [t("ref.col.key"), t("ref.col.meaning"), t("ref.col.default")],
+        rows: [
+          ["debug", t("ref.debug.debug"), "false"],
+          ["opacity", t("ref.debug.opacity"), "0.5"],
+        ],
+      },
+    ],
+  },
+
+  {
+    id: "global",
+    title: "ref.api.h.global",
+    blocks: [
       {
         type: "table",
         head: [t("ref.col.method"), t("ref.col.what")],
@@ -231,27 +397,46 @@ behavior: (e) ->
           ["setScreenSize", t("ref.m.setScreenSize")],
           ["isKeyDown", t("ref.m.isKeyDown")],
           ["echo", t("ref.m.echo")],
-          ["random", t("ref.m.random")],
           ["logClear", t("ref.m.logClear")],
+          ["random", t("ref.m.random")],
+          ["setDebug", t("ref.m.setDebug")],
           ["GLOBAL", t("ref.m.GLOBAL")],
         ],
       },
-      { type: "code", code: `setScreenSize 480, 640
 
+      { type: "heading", k: "ref.h.setScreenSize" },
+      { type: "code", code: `setScreenSize 480, 640` },
+      { type: "text", k: "ref.m.setScreenSize.d" },
+
+      { type: "heading", k: "ref.h.isKeyDown" },
+      { type: "code", code: `@X -= 4 if isKeyDown("ArrowLeft")
 @X += 4 if isKeyDown("ArrowRight")
+@jump() if isKeyDown("Space")` },
+      { type: "text", k: "ref.m.isKeyDown.d" },
 
-echo "X=%@ Y=%@", @X, @Y
+      { type: "heading", k: "ref.h.echo" },
+      { type: "code", code: `echo "X=%@ Y=%@", @X, @Y
 echo "X=%08.2@", @X
-
-GLOBAL.SCORE = 0
-GLOBAL.SCORE += 100` },
-
+logClear()` },
       { type: "text", k: "ref.m.echo.format" },
+
+      { type: "heading", k: "ref.h.random" },
       { type: "code", code: `@X = random 640
 @fire() if random(10) is 0` },
       { type: "text", k: "ref.m.random.d" },
 
-      { type: "heading", k: "ref.api.h.camera" },
+      { type: "heading", k: "ref.h.GLOBAL" },
+      { type: "code", code: `GLOBAL.SCORE = 0
+GLOBAL.SCORE += 100
+echo "score=%@", GLOBAL.SCORE` },
+      { type: "text", k: "ref.m.GLOBAL.d" },
+    ],
+  },
+
+  {
+    id: "camera",
+    title: "ref.api.h.camera",
+    blocks: [
       {
         type: "table",
         head: [t("ref.col.method"), t("ref.col.what")],
@@ -267,7 +452,17 @@ GLOBAL.SCORE += 100` },
   X: @cat.X + 6
   Y: @cat.Y + 6
   targetX: @cat.X
-  targetY: @cat.Y` },
+  targetY: @cat.Y
+
+addCamera
+  name: "sub"
+  X: 0
+  Y: 20
+  Z: 0
+setActiveCamera "sub"
+
+view = getCamera()
+removeCamera "sub"` },
       { type: "text", k: "ref.api.d.camera" },
       {
         type: "table",
@@ -275,13 +470,20 @@ GLOBAL.SCORE += 100` },
         rows: [
           ["X Y Z", t("ref.cam.pos"), "6 / 6 / 10"],
           ["targetX targetY targetZ", t("ref.cam.target"), "0"],
+          ["upX upY upZ", t("ref.cam.up"), "0 / 1 / 0"],
           ["lens", t("ref.cam.lens"), "29"],
           ["fov", t("ref.cam.fov"), "45"],
           ["near far", t("ref.cam.clip"), "0.1 / 1000"],
+          ["output", t("ref.cam.output"), '"screen"'],
         ],
       },
+    ],
+  },
 
-      { type: "heading", k: "ref.api.h.light" },
+  {
+    id: "light",
+    title: "ref.api.h.light",
+    blocks: [
       {
         type: "table",
         head: [t("ref.col.method"), t("ref.col.what")],
@@ -300,7 +502,14 @@ GLOBAL.SCORE += 100` },
   Y: 2
   Z: 3
   COLOR: "#ff8800"
-  range: 10` },
+  range: 10
+
+setLight
+  name: "sun"
+  intensity: 0.4
+
+setAmbient "#202028"
+removeLight "torch"` },
       { type: "text", k: "ref.api.d.light" },
       {
         type: "table",
@@ -308,56 +517,21 @@ GLOBAL.SCORE += 100` },
         rows: [
           ["type", t("ref.light.type"), '"directional"'],
           ["X Y Z", t("ref.light.pos"), "4 / 10 / 6"],
+          ["targetX targetY targetZ", t("ref.cam.target"), "0"],
           ["COLOR", t("ref.light.color"), '"#ffffff"'],
           ["intensity", t("ref.light.intensity"), "0.8"],
           ["range", t("ref.light.range"), "20"],
           ["shadow", t("ref.light.shadow"), "false"],
+          ["shadowRadius", t("ref.light.shadowRadius"), "20"],
         ],
       },
+    ],
+  },
 
-      { type: "heading", k: "ref.api.h.hit" },
-      { type: "text", k: "ref.hit.d" },
-      {
-        type: "table",
-        head: [t("ref.hit.col.value"), t("ref.hit.col.area"), t("ref.hit.col.scale")],
-        rows: [
-          [t("ref.hit.row.none"), t("ref.hit.row.none.area"), t("ref.hit.row.none.scale")],
-          ["null / false", t("ref.hit.row.off.area"), "-"],
-          [t("ref.hit.row.written"), t("ref.hit.row.written.area"), t("ref.hit.row.written.scale")],
-        ],
-      },
-      { type: "code", code: `@BOUNDARY =
-  shape: "box"      # "box" / "sphere" / "cylinder"
-  width:  1
-  height: 1
-  depth:  1
-  radius: 0.5       # shape: "sphere" / "cylinder" のとき
-  offsetX: 0
-  offsetY: 0
-  offsetZ: 0` },
-      { type: "text", k: "ref.hit.scale" },
-      { type: "text", k: "ref.hit.ask" },
-      {
-        type: "table",
-        head: [t("ref.col.member"), t("ref.col.meaning")],
-        rows: [
-          ["@intersect(相手)", t("ref.hit.intersect")],
-          ["@collision(相手)", t("ref.hit.collision")],
-        ],
-      },
-      { type: "code", code: `behavior: (e) ->
-  super(e)
-  if @collision(@ground)
-    @Y = 0.5
-    @YS = 0
-
-  enemy = @collision(@enemies)
-  @damage() if enemy` },
-      { type: "text", k: "ref.hit.ret" },
-      { type: "text", k: "ref.hit.debug" },
-      { type: "code", code: `setDebug debug: true, opacity: 0.3` },
-
-      { type: "heading", k: "ref.api.h.pad" },
+  {
+    id: "pad",
+    title: "ref.api.h.pad",
+    blocks: [
       { type: "text", k: "ref.api.d.pad" },
       { type: "code", code: `behavior: (e) ->
   super(e)
@@ -379,6 +553,8 @@ GLOBAL.SCORE += 100` },
         ],
       },
       { type: "text", k: "ref.pad.note" },
+
+      { type: "heading", k: "ref.h.padoption" },
       { type: "text", k: "ref.pad.stick" },
       { type: "code", code: `setGamepadOption
   stickAsCursor: true
@@ -389,6 +565,15 @@ GLOBAL.SCORE += 100` },
     cursor: true
     button: [0, 1]
     stick: ["left"]` },
+      {
+        type: "table",
+        head: [t("ref.col.key"), t("ref.col.meaning"), t("ref.col.default")],
+        rows: [
+          ["stickAsCursor", t("ref.padopt.stick"), "false"],
+          ["use", t("ref.padopt.use"), "-"],
+          ["deadzone", t("ref.padopt.deadzone"), "0.35"],
+        ],
+      },
 
       { type: "heading", k: "ref.api.h.padconf" },
       { type: "text", k: "ref.pad.config" },

@@ -113,10 +113,11 @@ describe("バウンディングの計算", () => {
 });
 
 describe("アニメーションクリップの取り出し", () => {
-  test("同梱の猫モデルは3つのクリップを持つ", () => {
+  test("同梱の猫モデルは4つのクリップを持つ", () => {
+    // Down は「やられた」演出（5.6節）
     const { json, bin } = parseGlb(loadGlb());
     const clips = collectClips(json, bin);
-    expect(clips.map((c) => c.name).sort()).toEqual(["Jump", "Run", "Walk"]);
+    expect(clips.map((c) => c.name).sort()).toEqual(["Down", "Jump", "Run", "Walk"]);
   });
 
   test("クリップの長さが取れる", () => {

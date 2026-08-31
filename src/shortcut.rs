@@ -2,6 +2,7 @@
 //!
 //! - **ESC** は必ず「停止」（トグルではない）
 //! - **⌘/Ctrl + Enter** は「実行」と「停止」のトグル
+//! - **Alt + ⌘/Ctrl + Enter** は、実行したまま**エディタへ戻る**
 //!
 //! ただしエディタにフォーカスがある間は ESC を横取りしない。
 //! vimキーバインドでは ESC で入力モードを抜けるため、そのたびに
@@ -16,6 +17,8 @@ pub enum Shortcut {
     Stop,
     /// ゲームを実行する
     Start,
+    /// ゲームは止めずに、エディタへフォーカスを戻す
+    FocusEditor,
     /// リファレンスを閉じる
     CloseReference,
     /// フッターのログの開閉を切り替える
@@ -44,6 +47,8 @@ pub fn focus_after(action: Shortcut) -> FocusTarget {
         Shortcut::Stop => FocusTarget::Editor,
         // 実行したら、そのままキー操作をゲームへ送れるようにする
         Shortcut::Start => FocusTarget::Game,
+        // 動かしたまま書き直せるようにする
+        Shortcut::FocusEditor => FocusTarget::Editor,
         // 読むのをやめただけなので、フォーカスは動かさない
         Shortcut::CloseReference => FocusTarget::None,
         // 編集を続けられるよう、フォーカスは動かさない
@@ -121,9 +126,15 @@ pub fn resolve(press: &KeyPress, ctx: &KeyContext) -> Shortcut {
         return Shortcut::None;
     }
 
-    // ⌘/Ctrl+Enter は実行と停止のトグル。エディタの編集中でも効かせる。
-    // ESCと違って横取りしてよい。vimの入力モードには関わらないため
     if press.key == "Enter" && press.command && ctx.project_open {
+        // Alt を足すと、**ゲームを止めずに**エディタへ戻る。
+        // 動かしたまま書き直したい時のため。止まっている時は何もしない
+        // （うっかり実行してしまわないように）
+        if press.alt {
+            return if ctx.running { Shortcut::FocusEditor } else { Shortcut::None };
+        }
+        // ⌘/Ctrl+Enter は実行と停止のトグル。エディタの編集中でも効かせる。
+        // ESCと違って横取りしてよい。vimの入力モードには関わらないため
         return if ctx.running { Shortcut::Stop } else { Shortcut::Start };
     }
 
@@ -137,6 +148,11 @@ mod tests {
     /// テスト用に、押されたキーを組み立てる（`code` は `key` から推測する）
     fn press(key: &str, command: bool) -> KeyPress<'_> {
         KeyPress { key, code: key, command, alt: false, shift: false }
+    }
+
+    /// テスト用に、Alt を伴う押し方を組み立てる
+    fn press_alt(key: &str, command: bool) -> KeyPress<'_> {
+        KeyPress { key, code: key, command, alt: true, shift: false }
     }
 
     /// テスト用に、そのときの状態を組み立てる
@@ -404,5 +420,68 @@ mod tests {
             &press("Space", true),
             &ctx(false, false, true, false),
         ), Shortcut::None);
+    }
+
+    // --- Alt+⌘/Ctrl+Enter（実行したままエディタへ戻る） ---
+
+    #[test]
+    fn alt_command_enter_returns_to_editor_while_running() {
+        // ゲームは止めない。書き直しながら動きを見たい時のため
+        assert_eq!(resolve(
+            &press_alt("Enter", true),
+            &ctx(true, false, true, false),
+        ), Shortcut::FocusEditor);
+    }
+
+    #[test]
+    fn alt_command_enter_moves_focus_to_editor() {
+        let action = resolve(
+            &press_alt("Enter", true),
+            &ctx(true, false, true, false),
+        );
+        assert_eq!(focus_after(action), FocusTarget::Editor);
+    }
+
+    #[test]
+    fn alt_command_enter_does_nothing_while_stopped() {
+        // 止まっている時に押しても、うっかり実行しない
+        assert_eq!(resolve(
+            &press_alt("Enter", true),
+            &ctx(false, false, true, false),
+        ), Shortcut::None);
+    }
+
+    #[test]
+    fn alt_command_enter_works_while_editing() {
+        assert_eq!(resolve(
+            &press_alt("Enter", true),
+            &ctx(true, true, true, false),
+        ), Shortcut::FocusEditor);
+    }
+
+    #[test]
+    fn alt_command_enter_needs_a_project() {
+        assert_eq!(resolve(
+            &press_alt("Enter", true),
+            &ctx(true, false, false, false),
+        ), Shortcut::None);
+    }
+
+    #[test]
+    fn alt_alone_does_not_return_to_editor() {
+        // ⌘/Ctrl を伴わない Alt+Enter は対象外
+        assert_eq!(resolve(
+            &press_alt("Enter", false),
+            &ctx(true, false, true, false),
+        ), Shortcut::None);
+    }
+
+    #[test]
+    fn without_alt_the_game_still_stops() {
+        // これまでどおりのトグル
+        assert_eq!(resolve(
+            &press("Enter", true),
+            &ctx(true, false, true, false),
+        ), Shortcut::Stop);
     }
 }

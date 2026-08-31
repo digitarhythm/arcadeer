@@ -9,7 +9,7 @@ mod ordering;
 mod shortcut;
 
 use class_name::{validate_class_name, MAX_CLASS_NAME_LEN};
-use class_source::parse_model_ref;
+use class_source::{build_class_template, build_entry_template, parse_model_ref};
 use frame::{
     fit_size, on_visibility_change, FramePacer, RunState, VisibilityAction, DEFAULT_FPS,
 };
@@ -56,9 +56,12 @@ const ASSET_MAP_FILE: &str = "assets.toml";
 
 const DEFAULT_ICON_URL: &str = "./templates/assets/default-icon.png";
 /// 新規プロジェクトへコピーするデフォルト3Dモデル（glTF 2.0 バイナリ）
-const DEFAULT_MODEL_URL: &str = "./templates/assets/default-cat.glb";
-/// コピー後のデフォルト3Dモデルのファイル名
-const DEFAULT_MODEL_FILE: &str = "default-cat.glb";
+///
+/// 毛色違いも一緒に入れておく。敵味方の描き分けなどに使えるようにするため
+const DEFAULT_MODELS: &[(&str, &str)] = &[
+    ("./templates/assets/default-cat.glb", "default-cat.glb"),
+    ("./templates/assets/default-cat-white.glb", "default-cat-white.glb"),
+];
 /// 直前に開いていたプロジェクト（GUIDディレクトリ名）の保存先
 const LAST_PROJECT_KEY: &str = "arcadeer.lastProject";
 
@@ -69,6 +72,8 @@ thread_local! {
     static ICON_URLS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     /// 左ペインで選択中のタブの翻訳キー（新規オブジェクト作成の可否判定に使う）
     static SELECTED_TAB: RefCell<String> = const { RefCell::new(String::new()) };
+    /// アセット管理画面を開く直前に編集していたオブジェクト名（戻る時に開き直す）
+    static ASSET_MAP_RETURN: RefCell<Option<String>> = const { RefCell::new(None) };
     /// 左ペインに表示中のオブジェクト名（クラス名の重複判定に使う）
     static CURRENT_OBJECTS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     /// 左ペインに表示中のタブ一式
@@ -150,19 +155,8 @@ fn wire_language_change() -> Result<(), JsValue> {
 }
 
 fn wire_sidebar(document: &Document) -> Result<(), JsValue> {
-    let button = document
-        .get_element_by_id("btn-new-project")
-        .ok_or_else(|| JsValue::from_str("#btn-new-project not found"))?
-        .dyn_into::<HtmlButtonElement>()?;
-
-    let on_click = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
-        if let Err(err) = open_new_project_dialog() {
-            log_err(&t("msg.dialogFailed"), &err);
-        }
-    });
-    button.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref())?;
-    on_click.forget();
-
+    // 新規プロジェクト作成はプロジェクト管理ダイアログの中へ移した（4.2節）。
+    // ここではワークスペースを開くボタンだけを受け持つ
     let open_button = document
         .get_element_by_id("btn-open-project")
         .ok_or_else(|| JsValue::from_str("#btn-open-project not found"))?
@@ -457,7 +451,7 @@ async fn create_project(name: String) -> Result<(), JsValue> {
     match ensure_subdirectory(&subdir, CODE_DIR).await {
         Some(code_dir) => {
             let file_name = class_file_name(ENTRY_OBJECT_NAME);
-            let content = build_class_template(ENTRY_OBJECT_NAME);
+            let content = build_entry_template(ENTRY_OBJECT_NAME);
             if let Err(err) = write_text_file(&code_dir, &file_name, &content).await {
                 log_err(
                     &t_with("msg.defaultAssetCopyFailed", &[("name", &file_name)]),
@@ -470,12 +464,11 @@ async fn create_project(name: String) -> Result<(), JsValue> {
 
     // デフォルトの3Dモデル（デフォルメ猫）を assets/models/ へ配置する
     if let Some(dir) = models_dir {
-        if let Err(err) = copy_url_to_file(DEFAULT_MODEL_URL, &dir, DEFAULT_MODEL_FILE).await {
-            // モデルが無くてもプロジェクト自体は使えるため、処理は続行する
-            log_err(
-                &t_with("msg.defaultAssetCopyFailed", &[("name", DEFAULT_MODEL_FILE)]),
-                &err,
-            );
+        for (url, file_name) in DEFAULT_MODELS {
+            if let Err(err) = copy_url_to_file(url, &dir, file_name).await {
+                // モデルが無くてもプロジェクト自体は使えるため、処理は続行する
+                log_err(&t_with("msg.defaultAssetCopyFailed", &[("name", file_name)]), &err);
+            }
         }
     }
 
@@ -646,7 +639,10 @@ fn unescape_toml_basic_string(s: &str) -> String {
 
 /// プロジェクト一覧の1件分
 struct ProjectEntry {
+    /// info.toml の表示名（無ければディレクトリ名）
     name: String,
+    /// 実際のディレクトリ名。**削除する時はこちらを使う**（表示名とは限らないため）
+    dir_name: String,
     icon_url: Option<String>,
     handle: FileSystemDirectoryHandle,
 }
@@ -657,7 +653,7 @@ struct ProjectEntry {
 async fn open_project_flow() -> Result<(), JsValue> {
     if let Some(root) = load_home_handle().await {
         match scan_projects(&root).await {
-            Ok(projects) => return present_projects(projects).await,
+            Ok(projects) => return present_projects(root, projects).await,
             // ディレクトリ消失等: ピッカーからやり直す
             Err(err) => log_err(
                 &t("msg.homeHandleUnreadable"),
@@ -673,17 +669,20 @@ async fn open_project_via_picker() -> Result<(), JsValue> {
     let root = pick_home_directory().await?;
     store_home_handle(&root).await;
     let projects = scan_projects(&root).await?;
-    present_projects(projects).await
+    present_projects(root, projects).await
 }
 
 /// スキャン結果をメイン部のプロジェクト選択画面として表示する
-async fn present_projects(projects: Vec<ProjectEntry>) -> Result<(), JsValue> {
+async fn present_projects(
+    root: FileSystemDirectoryHandle,
+    projects: Vec<ProjectEntry>,
+) -> Result<(), JsValue> {
     if projects.is_empty() {
         log(&t("msg.projectsNotFound"));
     } else {
         log(&t_with("msg.projectsFound", &[("count", &projects.len().to_string())]));
     }
-    render_project_selection(projects).await
+    render_project_selection(root, projects).await
 }
 
 /// ホームディレクトリ直下を走査し、info.toml を持つサブディレクトリをプロジェクトとして集める
@@ -738,6 +737,7 @@ async fn scan_projects(
         };
         projects.push(ProjectEntry {
             name,
+            dir_name: dir.name(),
             icon_url,
             handle: dir,
         });
@@ -764,7 +764,10 @@ async fn load_icon_url(dir: &FileSystemDirectoryHandle, file_name: &str) -> Opti
 /// 最上段: 左端に「プロジェクト選択」見出し、その右側にワークスペース選び直しボタン
 /// その下: アイコン＋プロジェクト名のカードグリッド（0件時は案内メッセージ）
 /// 表示中の内容がある場合は 0.3 秒フェードアウトしてから差し替え、新内容をフェードインする
-async fn render_project_selection(projects: Vec<ProjectEntry>) -> Result<(), JsValue> {
+async fn render_project_selection(
+    root: FileSystemDirectoryHandle,
+    projects: Vec<ProjectEntry>,
+) -> Result<(), JsValue> {
     let document = window()
         .and_then(|w| w.document())
         .ok_or_else(|| JsValue::from_str("no document"))?;
@@ -796,11 +799,30 @@ async fn render_project_selection(projects: Vec<ProjectEntry>) -> Result<(), JsV
     });
     repick.add_event_listener_with_callback("click", on_repick.as_ref().unchecked_ref())?;
     on_repick.forget();
-    header.append_child(&repick)?;
+    // 追加する場所は下（右端のキャンセルの左）
+
+    // 新規プロジェクト作成は見出しのすぐ右へ置く。
+    // このダイアログで真っ先にしたいのは「開く」か「作る」なので、左寄せにする
+    let create = document.create_element("button")?;
+    create.set_attribute("type", "button")?;
+    create.set_class_name("dialog-btn");
+    create.set_text_content(Some(&t("header.newProject")));
+    let on_create = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
+        close_project_select_dialog();
+        if let Err(err) = open_new_project_dialog() {
+            log_err(&t("msg.dialogFailed"), &err);
+        }
+    });
+    create.add_event_listener_with_callback("click", on_create.as_ref().unchecked_ref())?;
+    on_create.forget();
+    header.append_child(&create)?;
 
     let spacer = document.create_element("div")?;
     spacer.set_class_name("project-select-spacer");
     header.append_child(&spacer)?;
+
+    // ワークスペースの選び直しは、右端のキャンセルの左へ置く
+    header.append_child(&repick)?;
 
     // 開くのをやめられるよう、明示的な閉じるボタンを置く
     let close = document.create_element("button")?;
@@ -825,9 +847,11 @@ async fn render_project_selection(projects: Vec<ProjectEntry>) -> Result<(), JsV
         let grid = document.create_element("div")?;
         grid.set_class_name("project-grid");
         for entry in projects {
-            let card = document.create_element("button")?;
-            card.set_attribute("type", "button")?;
+            // ボタンの中にボタンは置けないため、カード自体は div にする
+            let card = document.create_element("div")?;
             card.set_class_name("project-card");
+            card.set_attribute("role", "button")?;
+            card.set_attribute("tabindex", "0")?;
             card.set_attribute("title", &entry.name)?;
 
             let icon_holder = document.create_element("div")?;
@@ -864,6 +888,30 @@ async fn render_project_selection(projects: Vec<ProjectEntry>) -> Result<(), JsV
             card.add_event_listener_with_callback("click", on_select.as_ref().unchecked_ref())?;
             on_select.forget();
 
+            // 右上のゴミ箱。押すと確認してから、プロジェクトのディレクトリごと消す
+            let trash = document.create_element("button")?;
+            trash.set_attribute("type", "button")?;
+            trash.set_class_name("project-card-delete");
+            trash.set_attribute("title", &t("projectSelect.delete"))?;
+            trash.set_attribute("aria-label", &t("projectSelect.delete"))?;
+            trash.set_inner_html(TRASH_ICON);
+            let del_root = root.clone();
+            let del_dir = entry.dir_name.clone();
+            let del_name = entry.name.clone();
+            let on_delete = Closure::<dyn FnMut(_)>::new(move |e: web_sys::Event| {
+                // カードの「開く」まで動かないように止める
+                e.stop_propagation();
+                let root = del_root.clone();
+                let dir_name = del_dir.clone();
+                let label = del_name.clone();
+                spawn_local(async move {
+                    delete_project(root, dir_name, label).await;
+                });
+            });
+            trash.add_event_listener_with_callback("click", on_delete.as_ref().unchecked_ref())?;
+            on_delete.forget();
+            card.append_child(&trash)?;
+
             grid.append_child(&card)?;
         }
         body.append_child(&grid)?;
@@ -873,6 +921,144 @@ async fn render_project_selection(projects: Vec<ProjectEntry>) -> Result<(), JsV
         dialog.show_modal()?;
     }
     Ok(())
+}
+
+/// プロジェクトカードの右上に置くゴミ箱アイコン
+const TRASH_ICON: &str = r#"<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>"#;
+
+/// 確認ダイアログを出し、OKが押されたかを返す
+///
+/// 返事が取れない場合は **false**（消さない）にする。
+/// 確かめられないまま消してしまうより、何もしないほうが安全なため。
+async fn confirm_with(message: &str, title: &str) -> bool {
+    let Some(window) = window() else { return false };
+    let Ok(func) = js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("arcadeerShowConfirm"))
+    else {
+        return false;
+    };
+    let Ok(func) = func.dyn_into::<js_sys::Function>() else {
+        return false;
+    };
+    let Ok(promise) = func.call3(
+        &JsValue::NULL,
+        &JsValue::from_str(message),
+        &JsValue::from_str("warning"),
+        &JsValue::from_str(title),
+    ) else {
+        return false;
+    };
+    let Ok(promise) = promise.dyn_into::<js_sys::Promise>() else {
+        return false;
+    };
+    JsFuture::from(promise).await.ok().and_then(|v| v.as_bool()).unwrap_or(false)
+}
+
+/// ディレクトリを中身ごと消す
+///
+/// `removeEntry(name, { recursive: true })` を呼ぶ。web-sys の型が無いため
+/// JavaScript の関数として直接呼び出す。
+async fn remove_directory(
+    root: &FileSystemDirectoryHandle,
+    dir_name: &str,
+) -> Result<(), JsValue> {
+    let options = js_sys::Object::new();
+    js_sys::Reflect::set(&options, &JsValue::from_str("recursive"), &JsValue::TRUE)?;
+    let remove: js_sys::Function =
+        js_sys::Reflect::get(root.as_ref(), &JsValue::from_str("removeEntry"))?.dyn_into()?;
+    let promise: js_sys::Promise = remove
+        .call2(root.as_ref(), &JsValue::from_str(dir_name), &options)?
+        .dyn_into()?;
+    JsFuture::from(promise).await?;
+    Ok(())
+}
+
+/// いま開いているプロジェクトのディレクトリ名
+fn open_project_dir_name() -> Option<String> {
+    CURRENT_PROJECT.with(|c| c.borrow().as_ref().map(|d| d.name()))
+}
+
+/// 開いているプロジェクトを閉じ、起動直後と同じ「何も開いていない」状態へ戻す
+///
+/// 実行中なら**先に止める**。消えたファイルを触り続けないようにするため。
+fn close_current_project() {
+    if RUN_STATE.with(|s| s.borrow().is_running()) {
+        stop_game();
+    }
+
+    CURRENT_PROJECT.with(|c| *c.borrow_mut() = None);
+    CURRENT_PROJECT_NAME.with(|n| n.borrow_mut().clear());
+    CURRENT_FILE.with(|f| *f.borrow_mut() = None);
+    SELECTED_TAB.with(|k| k.borrow_mut().clear());
+    // 次回の起動で開き直そうとしないよう、控えも消す
+    clear_last_project();
+
+    if let Some(document) = window().and_then(|w| w.document()) {
+        if let Some(sidebar) = document.get_element_by_id("ide-sidebar") {
+            sidebar.set_inner_html("");
+        }
+    }
+    clear_main();
+    update_game_buttons();
+    update_main_layout();
+}
+
+/// プロジェクトのディレクトリごと削除する（確認してから）
+///
+/// **元に戻せない操作**のため、必ず先に確認する。
+/// 消したあとは一覧を作り直して、消えたことが見て分かるようにする。
+async fn delete_project(
+    root: FileSystemDirectoryHandle,
+    dir_name: String,
+    label: String,
+) {
+    // 見出しは「中止」ではなく、何をしようとしているかにする
+    if !confirm_with(
+        &t_with("projectSelect.deleteConfirm", &[("name", &label)]),
+        &t("projectSelect.delete"),
+    )
+    .await
+    {
+        return;
+    }
+
+    match remove_directory(&root, &dir_name).await {
+        Ok(_) => {
+            log(&t_with("msg.projectDeleted", &[("name", &label)]));
+            // 開いていたものを消した場合は、実行を止めて何も開いていない状態へ戻す
+            if open_project_dir_name().as_deref() == Some(dir_name.as_str()) {
+                close_current_project();
+            }
+            // 一覧を作り直す。読み直せない場合はダイアログを閉じる
+            match scan_projects(&root).await {
+                Ok(projects) => {
+                    if let Err(err) = render_project_selection(root, projects).await {
+                        log_err(&t("msg.dialogFailed"), &err);
+                    }
+                }
+                Err(err) => {
+                    log_err(&t("msg.homeHandleUnreadable"), &err);
+                    close_project_select_dialog();
+                }
+            }
+        }
+        Err(err) => {
+            log_err(
+                &t_with(
+                    "msg.projectDeleteFailed",
+                    &[("name", &label), ("detail", &format_err(&err))],
+                ),
+                &err,
+            );
+            show_message(
+                &t_with(
+                    "msg.projectDeleteFailed",
+                    &[("name", &label), ("detail", &format_err(&err))],
+                ),
+                "error",
+                None,
+            );
+        }
+    }
 }
 
 /// プロジェクト選択ダイアログを閉じる
@@ -1680,6 +1866,8 @@ fn wire_game_input() -> Result<(), JsValue> {
         match action {
             Shortcut::Stop => stop_game(),
             Shortcut::Start => start_game(),
+            // ゲームは動かしたまま。フォーカスだけ下で移す
+            Shortcut::FocusEditor => {}
             Shortcut::CloseReference => call_global("arcadeerToggleReference"),
             Shortcut::ToggleLog => call_global("arcadeerToggleFooterLog"),
             Shortcut::None => {}
@@ -2434,12 +2622,29 @@ async fn render_project_pane(project: &FileSystemDirectoryHandle) -> Result<(), 
                 let children = bar.children();
                 for i in 0..children.length() {
                     if let Some(child) = children.item(i) {
+                        // タブでないもの（アセット管理ボタン）は触らない。
+                        // 選択状態の付け外しでクラス名を書き換えるため、
+                        // 巻き込むと見た目の指定ごと消えてしまう
+                        if child.get_attribute("role").as_deref() != Some("tab") {
+                            continue;
+                        }
                         let selected = child.is_same_node(Some(clicked.as_ref()));
                         let _ = set_tab_selected(&child, selected);
                     }
                 }
             }
             SELECTED_TAB.with(|k| *k.borrow_mut() = label_key.clone());
+
+            // アセット管理画面を出したままタブを選んだ場合は、メイン部を空にする。
+            // タブはこの一覧から選ぶものなので、別画面が残っていると噛み合わない。
+            // エディタを開いている時は消さない（タブを見ながら書き続けられるように）
+            if asset_map_open() || model_view_open() {
+                // 再生を止めてから消す（止めないと裏で描き続ける）
+                call_global("arcadeerStopModelView");
+                clear_main();
+                // タブを選んだ時は、その一覧から選び直すので戻り先は捨てる
+                ASSET_MAP_RETURN.with(|r| *r.borrow_mut() = None);
+            }
 
             // 描画時点ではなく、現在の内容（並べ替え後）を読み直す
             let current = PANE_TABS.with(|tabs| {
@@ -2579,8 +2784,13 @@ fn build_asset_map_button(document: &Document) -> Result<Element, JsValue> {
         r#"<circle cx="17.5" cy="17" r="2.5" /><path d="M19.6 18.8 22 21" /></svg>"#
     ));
 
+    // 開いている時にもう一度押したら、元の状態へ戻す（トグル）
     let on_click = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
         spawn_local(async move {
+            if asset_map_open() {
+                close_asset_map().await;
+                return;
+            }
             if let Err(err) = open_asset_map().await {
                 log_err(&t("msg.assetMapFailed"), &err);
             }
@@ -2599,6 +2809,18 @@ async fn open_asset_map() -> Result<(), JsValue> {
     let project = CURRENT_PROJECT
         .with(|c| c.borrow().clone())
         .ok_or_else(|| JsValue::from_str("no project is open"))?;
+
+    // メイン部をこの画面で置き換えるため、エディタの状態を手放す。
+    // 残したままだと「同じファイルは開き直さない」判定に引っかかり、
+    // 直前まで編集していたオブジェクトを選び直しても何も起きなくなる
+    commit_draft().await;
+    // 戻ってきた時に開き直せるよう、編集していたオブジェクト名を控える
+    let editing = CURRENT_FILE
+        .with(|f| f.borrow().clone())
+        .and_then(|file| listing::object_name(&file));
+    ASSET_MAP_RETURN.with(|r| *r.borrow_mut() = editing);
+    CURRENT_FILE.with(|f| *f.borrow_mut() = None);
+    highlight_open_object("");
 
     let files = js_sys::Object::new();
     for kind in RESOURCE_ORDER {
@@ -2619,6 +2841,64 @@ async fn open_asset_map() -> Result<(), JsValue> {
         js_sys::Reflect::get(&window, &JsValue::from_str("arcadeerShowAssetMap"))?.dyn_into()?;
     func.call2(&JsValue::NULL, &files, &JsValue::from_str(&toml))?;
     Ok(())
+}
+
+/// 3Dモデルの詳細（正面プレビューとアニメーション一覧）をメイン部へ出す
+///
+/// アセット管理画面と同じく、エディタの状態は手放す。
+/// 残したままだと「同じファイルは開き直さない」判定に引っかかるため。
+async fn open_model_view(file_name: String, url: String) {
+    commit_draft().await;
+    CURRENT_FILE.with(|f| *f.borrow_mut() = None);
+    highlight_open_object("");
+
+    let Some(window) = window() else { return };
+    let Ok(func) = js_sys::Reflect::get(&window, &JsValue::from_str("arcadeerShowModelView")) else {
+        return;
+    };
+    let Ok(func) = func.dyn_into::<js_sys::Function>() else {
+        return;
+    };
+    let _ = func.call2(
+        &JsValue::NULL,
+        &JsValue::from_str(&file_name),
+        &JsValue::from_str(&url),
+    );
+}
+
+/// モデルの詳細表示がメイン部に出ているか
+fn model_view_open() -> bool {
+    window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.query_selector(".modelview-pane").ok().flatten())
+        .is_some()
+}
+
+/// アセット管理画面がメイン部に出ているか
+///
+/// 画面の有無そのものを見る。別に状態を持つと、実際の表示とずれるため。
+fn asset_map_open() -> bool {
+    window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.query_selector(".assetmap-pane").ok().flatten())
+        .is_some()
+}
+
+/// アセット管理画面を閉じ、開く前の状態へ戻す
+///
+/// 直前までオブジェクトを編集していた場合は、そのエディタを開き直す。
+/// 何も開いていなかった場合は、メイン部を空にするだけ。
+async fn close_asset_map() {
+    let back = ASSET_MAP_RETURN.with(|r| r.borrow_mut().take());
+    let Some(name) = back else {
+        clear_main();
+        return;
+    };
+    if let Err(err) = open_object_in_editor(&name).await {
+        // 開き直せない場合（消された等）は、空にして知らせるだけに留める
+        log_err(&t("msg.fileOpenFailed"), &err);
+        clear_main();
+    }
 }
 
 /// 画面から渡された対応表を `assets.toml` へ書き出す
@@ -2829,6 +3109,23 @@ fn build_model_card(document: &Document, file_name: &str) -> Result<Element, JsV
     label.set_class_name("object-card-name");
     label.set_text_content(Some(file_name));
     card.append_child(&label)?;
+
+    // 押すと、正面プレビューとアニメーション一覧をメイン部へ出す（4.4節）
+    let target = file_name.to_string();
+    let on_click = Closure::<dyn FnMut(_)>::new(move |e: web_sys::Event| {
+        // サムネイルの読み込みが済むまでは data-url が無いので、その時は何もしない
+        let url = e
+            .current_target()
+            .and_then(|t| t.dyn_into::<Element>().ok())
+            .and_then(|el| el.get_attribute("data-url"));
+        let Some(url) = url else { return };
+        let name = target.clone();
+        spawn_local(async move {
+            open_model_view(name, url).await;
+        });
+    });
+    card.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref())?;
+    on_click.forget();
 
     Ok(card)
 }
@@ -3409,6 +3706,27 @@ fn current_project_id() -> String {
         .unwrap_or_default()
 }
 
+/// 書きかけの下書きを、待ちを打ち切って確定させる
+///
+/// エディタを画面から外す前に呼ぶ。1秒の待ちの途中だと、
+/// 最後の入力が落ちてしまうため。
+async fn commit_draft() {
+    let Some(window) = window() else { return };
+    let Ok(commit) = js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("arcadeerCommitDraft"))
+    else {
+        return;
+    };
+    let Ok(commit) = commit.dyn_into::<js_sys::Function>() else {
+        return;
+    };
+    let Ok(promise) = commit.call0(&JsValue::NULL) else {
+        return;
+    };
+    if let Ok(promise) = promise.dyn_into::<js_sys::Promise>() {
+        let _ = JsFuture::from(promise).await;
+    }
+}
+
 /// 保存されていない下書きを、すべてファイルへ書き出す（仕様書4.11節）
 ///
 /// ゲームを実行する前に呼ぶ。エンジンはファイルを読むため、
@@ -3802,13 +4120,6 @@ async fn create_class_file(name: String) -> Result<(), JsValue> {
 
     // 一覧へ反映する
     render_project_pane(&project).await
-}
-
-/// クラスファイルの雛形を組み立てる（内容は docs/templete.md に準拠。詳細は今後詰める）
-fn build_class_template(name: &str) -> String {
-    format!(
-        "class {name} extends arcadeermain\n  constructor: (param) ->\n    super(param)\n\n  behavior: (e) ->\n    super(e)\n\n    switch @proc\n      when 0\n        @waitjob(1000)\n"
-    )
 }
 
 /// メイン部（作業エリア）を 0.3 秒フェードアウトしてから空にする

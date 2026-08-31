@@ -5,9 +5,11 @@ Arcadeer デフォルトキャラクター（デフォルメ猫）glTF(.glb) 生
 
 - 外部依存なし（Python 標準ライブラリのみ）
 - ボーン(スケルトン)＋リジッドスキニングを内包
-- アニメーション3種「Walk / Run / Jump」を内包
+- アニメーション4種「Walk / Run / Jump / Down」を内包
 - 複数パーツを頂点カラー(COLOR_0)で色分け
-- 出力: web/templates/assets/default-cat.glb
+- **二足歩行風**（胴体を立て、前脚を腕にした立ち姿）
+- 出力: web/templates/assets/default-cat.glb（オレンジ）
+        web/templates/assets/default-cat-white.glb（白）
 
 座標系: glTF 標準 (Y-up / 右手系 / -Z が前方)
 """
@@ -243,24 +245,26 @@ def add_cone(base_center, radius, apex, color, joint, seg=14):
 
 JOINT_NAMES = [
     "hips", "spine", "head", "ear_L", "ear_R",
-    "leg_FL", "leg_FR", "leg_BL", "leg_BR",
+    "arm_L", "arm_R", "leg_L", "leg_R",
     "tail1", "tail2", "tail3",
 ]
 J = {name: i for i, name in enumerate(JOINT_NAMES)}
 
+# 二足歩行風の立ち姿。腰から上へ背骨・頭、肩から腕、腰から脚を下ろす。
+# しっぽは腰の後ろ（+Z）へ流す（-Z が前方）
 GLOBAL = {
-    "hips":   (0.00, 0.55, 0.15),
-    "spine":  (0.00, 0.60, -0.25),
-    "head":   (0.00, 0.72, -0.55),
-    "ear_L":  (-0.13, 0.92, -0.55),
-    "ear_R":  (0.13, 0.92, -0.55),
-    "leg_FL": (-0.17, 0.42, -0.30),
-    "leg_FR": (0.17, 0.42, -0.30),
-    "leg_BL": (-0.18, 0.42, 0.32),
-    "leg_BR": (0.18, 0.42, 0.32),
-    "tail1":  (0.00, 0.62, 0.45),
-    "tail2":  (0.00, 0.78, 0.60),
-    "tail3":  (0.00, 0.92, 0.70),
+    "hips":   (0.00, 0.62, 0.00),
+    "spine":  (0.00, 0.92, 0.00),
+    "head":   (0.00, 1.28, 0.00),
+    "ear_L":  (-0.13, 1.50, 0.00),
+    "ear_R":  (0.13, 1.50, 0.00),
+    "arm_L":  (-0.26, 1.02, 0.00),
+    "arm_R":  (0.26, 1.02, 0.00),
+    "leg_L":  (-0.13, 0.58, 0.00),
+    "leg_R":  (0.13, 0.58, 0.00),
+    "tail1":  (0.00, 0.62, 0.24),
+    "tail2":  (0.00, 0.78, 0.42),
+    "tail3":  (0.00, 0.96, 0.50),
 }
 
 # 親子関係（ノード階層）
@@ -270,10 +274,10 @@ PARENT = {
     "head": "spine",
     "ear_L": "head",
     "ear_R": "head",
-    "leg_FL": "hips",
-    "leg_FR": "hips",
-    "leg_BL": "hips",
-    "leg_BR": "hips",
+    "arm_L": "spine",
+    "arm_R": "spine",
+    "leg_L": "hips",
+    "leg_R": "hips",
     "tail1": "hips",
     "tail2": "tail1",
     "tail3": "tail2",
@@ -290,43 +294,90 @@ def local_translation(name):
 # カラーパレット（複数パーツ色分け）
 # ---------------------------------------------------------------------------
 
-COL_FUR    = (0.91, 0.58, 0.30, 1.0)   # 体・頭（オレンジ）
-COL_EAR    = (0.66, 0.38, 0.18, 1.0)   # 耳（濃いオレンジ）
-COL_MUZZLE = (0.97, 0.93, 0.85, 1.0)   # 口まわり（クリーム）
-COL_NOSE   = (0.92, 0.50, 0.52, 1.0)   # 鼻（ピンク）
-COL_EYE    = (0.12, 0.12, 0.14, 1.0)   # 目（黒）
-COL_PAW    = (0.95, 0.90, 0.80, 1.0)   # 脚・肉球（クリーム）
-COL_TAIL   = (0.91, 0.58, 0.30, 1.0)   # しっぽ（オレンジ）
-COL_TAILTIP = (0.66, 0.38, 0.18, 1.0)  # しっぽ先端（濃い）
+# 毛色ごとの組。fur を変えるだけで別の猫になるよう、部位ごとに持つ
+PALETTES = {
+    "default-cat.glb": {
+        "fur":     (0.91, 0.58, 0.30, 1.0),   # 体・頭（オレンジ）
+        "ear":     (0.66, 0.38, 0.18, 1.0),   # 耳（濃いオレンジ）
+        "muzzle":  (0.97, 0.93, 0.85, 1.0),   # 口まわり（クリーム）
+        "nose":    (0.92, 0.50, 0.52, 1.0),   # 鼻（ピンク）
+        "eye":     (0.12, 0.12, 0.14, 1.0),   # 目（黒）
+        "paw":     (0.95, 0.90, 0.80, 1.0),   # 手足（クリーム）
+        "belly":   (0.97, 0.93, 0.85, 1.0),   # お腹（クリーム）
+        "tail":    (0.91, 0.58, 0.30, 1.0),   # しっぽ
+        "tailtip": (0.66, 0.38, 0.18, 1.0),   # しっぽ先端
+    },
+    "default-cat-white.glb": {
+        # 白猫。真っ白だと陰影が飛ぶため、少しだけ灰色を混ぜる
+        "fur":     (0.96, 0.95, 0.94, 1.0),
+        "ear":     (0.80, 0.75, 0.76, 1.0),
+        "muzzle":  (1.00, 0.99, 0.98, 1.0),
+        "nose":    (0.94, 0.60, 0.62, 1.0),
+        "eye":     (0.16, 0.20, 0.30, 1.0),   # 白猫は青みがかった目にする
+        "paw":     (1.00, 0.99, 0.98, 1.0),
+        "belly":   (1.00, 0.99, 0.98, 1.0),
+        "tail":    (0.96, 0.95, 0.94, 1.0),
+        "tailtip": (0.80, 0.75, 0.76, 1.0),
+    },
+}
+
+# いま組み立てている毛色（build_mesh の前に差し替える）
+palette = PALETTES["default-cat.glb"]
 
 # ---------------------------------------------------------------------------
 # メッシュ構築
 # ---------------------------------------------------------------------------
 
 def build_mesh():
-    # 胴体（楕円体）
-    add_ellipsoid((0.0, 0.56, 0.06), (0.30, 0.27, 0.50), COL_FUR, J["hips"], seg_u=24, seg_v=16)
+    """二足歩行風の立ち姿を組み立てる。
+
+    胴体を縦長にして立たせ、肩から腕、腰から脚を下ろす。
+    四つ足のときと違い、**しっぽは体を支える向き（後ろへ）**に流す。
+    """
+    c = palette
+
+    # 胴体（縦長の楕円体）
+    add_ellipsoid((0.0, 0.86, 0.0), (0.26, 0.34, 0.22), c["fur"], J["spine"], seg_u=24, seg_v=16)
+    # お腹（前面に薄く重ねて色を分ける）
+    add_ellipsoid((0.0, 0.82, -0.10), (0.17, 0.24, 0.14), c["belly"], J["spine"], seg_u=20, seg_v=14)
+    # 腰
+    add_ellipsoid((0.0, 0.62, 0.0), (0.22, 0.18, 0.20), c["fur"], J["hips"], seg_u=20, seg_v=14)
+
     # 頭
-    add_ellipsoid((0.0, 0.72, -0.55), (0.26, 0.25, 0.25), COL_FUR, J["head"], seg_u=24, seg_v=16)
+    add_ellipsoid((0.0, 1.28, 0.0), (0.27, 0.26, 0.26), c["fur"], J["head"], seg_u=24, seg_v=16)
     # 口まわり
-    add_ellipsoid((0.0, 0.66, -0.74), (0.14, 0.11, 0.12), COL_MUZZLE, J["head"], seg_u=16, seg_v=12)
+    add_ellipsoid((0.0, 1.21, -0.20), (0.14, 0.11, 0.12), c["muzzle"], J["head"], seg_u=16, seg_v=12)
     # 鼻
-    add_ellipsoid((0.0, 0.68, -0.84), (0.035, 0.03, 0.03), COL_NOSE, J["head"], seg_u=12, seg_v=8)
+    add_ellipsoid((0.0, 1.23, -0.30), (0.035, 0.03, 0.03), c["nose"], J["head"], seg_u=12, seg_v=8)
     # 目
-    add_ellipsoid((-0.10, 0.77, -0.74), (0.045, 0.05, 0.045), COL_EYE, J["head"], seg_u=12, seg_v=10)
-    add_ellipsoid((0.10, 0.77, -0.74), (0.045, 0.05, 0.045), COL_EYE, J["head"], seg_u=12, seg_v=10)
+    add_ellipsoid((-0.10, 1.33, -0.20), (0.045, 0.05, 0.045), c["eye"], J["head"], seg_u=12, seg_v=10)
+    add_ellipsoid((0.10, 1.33, -0.20), (0.045, 0.05, 0.045), c["eye"], J["head"], seg_u=12, seg_v=10)
     # 耳（円錐）
-    add_cone((-0.13, 0.87, -0.50), 0.10, (-0.17, 1.08, -0.55), COL_EAR, J["ear_L"], seg=16)
-    add_cone((0.13, 0.87, -0.50), 0.10, (0.17, 1.08, -0.55), COL_EAR, J["ear_R"], seg=16)
-    # 脚（カプセル: 静止姿勢で関節→足先）
-    leg_r = 0.078
-    for leg in ("leg_FL", "leg_FR", "leg_BL", "leg_BR"):
+    add_cone((-0.13, 1.43, 0.02), 0.10, (-0.17, 1.64, 0.0), c["ear"], J["ear_L"], seg=16)
+    add_cone((0.13, 1.43, 0.02), 0.10, (0.17, 1.64, 0.0), c["ear"], J["ear_R"], seg=16)
+
+    # 腕（肩→手先）
+    arm_r = 0.070
+    for arm, sign in (("arm_L", -1.0), ("arm_R", 1.0)):
+        gx, gy, gz = GLOBAL[arm]
+        tip = (gx + sign * 0.05, 0.68, gz - 0.02)
+        add_capsule((gx, gy, gz), tip, arm_r, c["fur"], J[arm], seg_u=12, seg_v=8)
+        # 手（先端を色分け）
+        add_ellipsoid(tip, (0.085, 0.075, 0.085), c["paw"], J[arm], seg_u=12, seg_v=10)
+
+    # 脚（腰→足首）と足
+    leg_r = 0.085
+    for leg in ("leg_L", "leg_R"):
         gx, gy, gz = GLOBAL[leg]
-        add_capsule((gx, gy, gz), (gx, 0.06, gz), leg_r, COL_PAW, J[leg], seg_u=12, seg_v=8)
+        ankle = (gx, 0.10, gz)
+        add_capsule((gx, gy, gz), ankle, leg_r, c["fur"], J[leg], seg_u=12, seg_v=8)
+        # 足（前方へ伸ばして立ち姿を安定させる）
+        add_ellipsoid((gx, 0.07, gz - 0.06), (0.10, 0.06, 0.16), c["paw"], J[leg], seg_u=14, seg_v=10)
+
     # しっぽ（3 セグメント、各セグメントを下位関節にバインド）
-    add_capsule(GLOBAL["tail1"], GLOBAL["tail2"], 0.085, COL_TAIL, J["tail1"], seg_u=12, seg_v=8)
-    add_capsule(GLOBAL["tail2"], GLOBAL["tail3"], 0.065, COL_TAIL, J["tail2"], seg_u=12, seg_v=8)
-    add_ellipsoid(GLOBAL["tail3"], (0.07, 0.07, 0.07), COL_TAILTIP, J["tail3"], seg_u=14, seg_v=10)
+    add_capsule(GLOBAL["tail1"], GLOBAL["tail2"], 0.080, c["tail"], J["tail1"], seg_u=12, seg_v=8)
+    add_capsule(GLOBAL["tail2"], GLOBAL["tail3"], 0.062, c["tail"], J["tail2"], seg_u=12, seg_v=8)
+    add_ellipsoid(GLOBAL["tail3"], (0.07, 0.07, 0.07), c["tailtip"], J["tail3"], seg_u=14, seg_v=10)
 
 # ---------------------------------------------------------------------------
 # バイナリバッファ構築
@@ -426,67 +477,137 @@ def hips_translations(dys):
     base = local_translation("hips")
     return [(base[0], base[1] + dy, base[2]) for dy in dys]
 
+def quats_about_z(angles):
+    return [quat_axis_angle((0.0, 0.0, 1.0), a) for a in angles]
+
+
 def build_animations():
+    """二足歩行向けのアニメーション。
+
+    腕と脚は**左右で位相を逆**にして、歩いているように見せる。
+    振り幅はX軸まわり（前後）で、Z軸まわり（左右）は倒れる演出に使う。
+    """
     anims = []
 
     # --- Walk（1.0秒ループ）---
     t = [0.0, 0.25, 0.5, 0.75, 1.0]
-    a_phase = [0.35, 0.0, -0.35, 0.0, 0.35]
-    b_phase = [-0.35, 0.0, 0.35, 0.0, -0.35]
+    fwd = [0.40, 0.0, -0.40, 0.0, 0.40]
+    bwd = [-0.40, 0.0, 0.40, 0.0, -0.40]
     walk = {
         "name": "Walk",
         "channels": [
-            ("leg_FL", "rotation", t, quats_about_x(a_phase)),
-            ("leg_BR", "rotation", t, quats_about_x(a_phase)),
-            ("leg_FR", "rotation", t, quats_about_x(b_phase)),
-            ("leg_BL", "rotation", t, quats_about_x(b_phase)),
-            ("hips", "translation", t, hips_translations([0.0, 0.025, 0.0, 0.025, 0.0])),
-            ("tail1", "rotation", t, quats_about_y([0.2, 0.0, -0.2, 0.0, 0.2])),
-            ("tail2", "rotation", t, quats_about_y([0.15, 0.0, -0.15, 0.0, 0.15])),
+            # 腕と脚は左右で逆。さらに腕は脚と逆に振る（人が歩く形）
+            ("leg_L", "rotation", t, quats_about_x(fwd)),
+            ("leg_R", "rotation", t, quats_about_x(bwd)),
+            ("arm_L", "rotation", t, quats_about_x(bwd)),
+            ("arm_R", "rotation", t, quats_about_x(fwd)),
+            # 一歩ごとに体が少し浮く
+            ("hips", "translation", t, hips_translations([0.0, 0.03, 0.0, 0.03, 0.0])),
+            ("spine", "rotation", t, quats_about_y([0.06, 0.0, -0.06, 0.0, 0.06])),
+            ("tail1", "rotation", t, quats_about_y([0.18, 0.0, -0.18, 0.0, 0.18])),
+            ("tail2", "rotation", t, quats_about_y([0.14, 0.0, -0.14, 0.0, 0.14])),
         ],
     }
     anims.append(walk)
 
     # --- Run（0.55秒ループ・大振幅）---
     t = [0.0, 0.1375, 0.275, 0.4125, 0.55]
-    a_phase = [0.6, 0.0, -0.6, 0.0, 0.6]
-    b_phase = [-0.6, 0.0, 0.6, 0.0, -0.6]
+    fwd = [0.75, 0.0, -0.75, 0.0, 0.75]
+    bwd = [-0.75, 0.0, 0.75, 0.0, -0.75]
     run = {
         "name": "Run",
         "channels": [
-            ("leg_FL", "rotation", t, quats_about_x(a_phase)),
-            ("leg_BR", "rotation", t, quats_about_x(a_phase)),
-            ("leg_FR", "rotation", t, quats_about_x(b_phase)),
-            ("leg_BL", "rotation", t, quats_about_x(b_phase)),
-            ("hips", "translation", t, hips_translations([0.0, 0.06, 0.0, 0.06, 0.0])),
-            ("spine", "rotation", t, quats_about_x([0.0, -0.06, 0.0, -0.06, 0.0])),
-            ("tail1", "rotation", t, quats_about_x([-0.3, -0.35, -0.3, -0.35, -0.3])),
+            ("leg_L", "rotation", t, quats_about_x(fwd)),
+            ("leg_R", "rotation", t, quats_about_x(bwd)),
+            ("arm_L", "rotation", t, quats_about_x(bwd)),
+            ("arm_R", "rotation", t, quats_about_x(fwd)),
+            ("hips", "translation", t, hips_translations([0.0, 0.07, 0.0, 0.07, 0.0])),
+            # 走るときは前傾する
+            ("spine", "rotation", t, quats_about_x([-0.18, -0.22, -0.18, -0.22, -0.18])),
+            ("tail1", "rotation", t, quats_about_x([-0.35, -0.42, -0.35, -0.42, -0.35])),
         ],
     }
     anims.append(run)
 
     # --- Jump（1.3秒・非ループ）---
     t = [0.0, 0.15, 0.35, 0.55, 0.8, 1.0, 1.3]
-    leg_j = [0.0, 0.30, -0.18, 0.60, 0.55, -0.12, 0.0]
+    leg_j = [0.0, 0.45, 0.10, -0.30, -0.20, 0.30, 0.0]
+    arm_j = [0.0, 0.30, -0.60, -1.20, -0.95, -0.20, 0.0]
     jump = {
         "name": "Jump",
         "channels": [
-            ("hips", "translation", t, hips_translations([0.0, -0.10, -0.04, 0.38, 0.18, -0.06, 0.0])),
-            ("leg_FL", "rotation", t, quats_about_x(leg_j)),
-            ("leg_FR", "rotation", t, quats_about_x(leg_j)),
-            ("leg_BL", "rotation", t, quats_about_x(leg_j)),
-            ("leg_BR", "rotation", t, quats_about_x(leg_j)),
-            ("tail1", "rotation", t, quats_about_x([0.0, 0.1, -0.1, -0.5, -0.4, 0.05, 0.0])),
+            ("hips", "translation", t, hips_translations([0.0, -0.14, -0.05, 0.42, 0.20, -0.08, 0.0])),
+            # しゃがんでから伸び上がる
+            ("leg_L", "rotation", t, quats_about_x(leg_j)),
+            ("leg_R", "rotation", t, quats_about_x(leg_j)),
+            # 腕は上へ振り上げる
+            ("arm_L", "rotation", t, quats_about_x(arm_j)),
+            ("arm_R", "rotation", t, quats_about_x(arm_j)),
+            ("spine", "rotation", t, quats_about_x([0.0, 0.22, 0.05, -0.15, -0.10, 0.12, 0.0])),
+            ("tail1", "rotation", t, quats_about_x([0.0, 0.15, -0.20, -0.55, -0.45, 0.05, 0.0])),
         ],
     }
     anims.append(jump)
+
+    # --- Down（1.4秒・非ループ）「やられたー！」 ---
+    # のけぞる → 尻もち → 仰向けに倒れて手足をジタバタ。
+    # **腰ごと後ろへ倒す**のが肝。背骨だけ曲げてもよろけて見えるだけで、
+    # 倒れたようには見えない。
+    t = [0.0, 0.10, 0.24, 0.40, 0.56, 0.70, 0.84, 0.98, 1.12, 1.40]
+    # 腰の回転：のけぞり（マイナス）→ 一気に後ろへ倒れる（プラス）
+    hips_x = [0.0, -0.30, 0.35, 1.00, 1.30, 1.32, 1.28, 1.32, 1.28, 1.30]
+    # 腰の高さ：立っている → 尻もち → 寝そべる
+    hips_dy = [0.0, 0.05, -0.20, -0.46, -0.56, -0.56, -0.56, -0.56, -0.56, -0.56]
+    # 背骨：倒れた後は少しだけ起こして「まだもがいている」感じにする
+    spine_x = [0.0, -0.25, 0.10, -0.20, -0.35, -0.22, -0.35, -0.22, -0.32, -0.30]
+    # 頭：ガクガク揺れる
+    head_x = [0.0, -0.35, 0.25, -0.15, 0.20, -0.10, 0.20, -0.10, 0.15, 0.10]
+    # ジタバタ（左右で位相をずらす）。倒れた体に対して手足が宙で暴れる
+    flail_a = [0.0, -0.45, -0.20, -1.30, -0.40, -1.35, -0.40, -1.35, -0.60, -0.90]
+    flail_b = [0.0, -0.15, -0.70, -0.35, -1.35, -0.40, -1.35, -0.45, -1.25, -0.90]
+    kick_a = [0.0, 0.25, 0.65, -0.20, -1.10, -0.25, -1.10, -0.30, -0.95, -0.70]
+    kick_b = [0.0, 0.10, 0.30, -1.05, -0.25, -1.10, -0.30, -1.05, -0.35, -0.70]
+    down = {
+        "name": "Down",
+        "channels": [
+            ("hips", "translation", t, hips_translations(hips_dy)),
+            ("hips", "rotation", t, quats_about_x(hips_x)),
+            ("spine", "rotation", t, quats_about_x(spine_x)),
+            ("head", "rotation", t, quats_about_x(head_x)),
+            ("arm_L", "rotation", t, quats_about_x(flail_a)),
+            ("arm_R", "rotation", t, quats_about_x(flail_b)),
+            ("leg_L", "rotation", t, quats_about_x(kick_a)),
+            ("leg_R", "rotation", t, quats_about_x(kick_b)),
+            # しっぽも小刻みに振る
+            ("tail1", "rotation", t, quats_about_y(
+                [0.0, 0.25, -0.30, 0.40, -0.40, 0.40, -0.40, 0.35, -0.30, 0.0])),
+            ("tail2", "rotation", t, quats_about_y(
+                [0.0, -0.30, 0.35, -0.45, 0.45, -0.45, 0.45, -0.40, 0.35, 0.0])),
+        ],
+    }
+    anims.append(down)
     return anims
 
 # ---------------------------------------------------------------------------
 # メイン
 # ---------------------------------------------------------------------------
 
+def reset_buffers():
+    """毛色ごとに作り直せるよう、ためこんだデータを空にする"""
+    for buf in (positions, normals, colors, joints, weights, indices,
+                buffer_views, accessors):
+        buf.clear()
+    bin_data.clear()
+
+
 def main():
+    for file_name in PALETTES:
+        reset_buffers()
+        globals()["palette"] = PALETTES[file_name]
+        build_one(file_name)
+
+
+def build_one(file_name):
     build_mesh()
 
     # 頂点属性アクセサ
@@ -586,10 +707,10 @@ def main():
         "buffers": [{"byteLength": len(bin_data)}],
     }
 
-    write_glb(gltf, bin_data)
+    write_glb(gltf, bin_data, file_name)
 
 
-def write_glb(gltf, bin_bytes):
+def write_glb(gltf, bin_bytes, file_name):
     json_bytes = json.dumps(gltf, separators=(",", ":")).encode("utf-8")
     while len(json_bytes) % 4 != 0:
         json_bytes += b" "
@@ -606,7 +727,7 @@ def write_glb(gltf, bin_bytes):
     out += bin_padded
 
     here = os.path.dirname(os.path.abspath(__file__))
-    out_path = os.path.normpath(os.path.join(here, "..", "web", "templates", "assets", "default-cat.glb"))
+    out_path = os.path.normpath(os.path.join(here, "..", "web", "templates", "assets", file_name))
     with open(out_path, "wb") as f:
         f.write(out)
 

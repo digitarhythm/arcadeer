@@ -64,12 +64,12 @@ describe("arcadeermain の初期値", () => {
   });
 
   test("回転をパラメータで指定できる", () => {
-    const o = new ArcadeerMain({ ROTX: 10, ROTY: 20, ROTZ: 30 });
+    const o = new ArcadeerMain({ rotX: 10, rotY: 20, rotZ: 30 });
     expect([o.ROTX, o.ROTY, o.ROTZ]).toEqual([10, 20, 30]);
   });
 
   test("パラメータで上書きできる", () => {
-    const o = new ArcadeerMain({ X: 10, Y: -5, MODEL: "cat.glb", KIND: "3D" });
+    const o = new ArcadeerMain({ x: 10, y: -5, model: "cat.glb", kind: "3D" });
     expect(o.X).toBe(10);
     expect(o.Y).toBe(-5);
     expect(o.MODEL).toBe("cat.glb");
@@ -83,14 +83,14 @@ describe("arcadeermain の初期値", () => {
 
 describe("arcadeermain の behavior", () => {
   test("加速度が座標へ加算される", () => {
-    const o = new ArcadeerMain({ X: 1, Y: 2, Z: 3, XS: 10, YS: 20, ZS: 30 });
+    const o = new ArcadeerMain({ x: 1, y: 2, z: 3, xs: 10, ys: 20, zs: 30 });
     o.behavior();
     expect([o.X, o.Y, o.Z]).toEqual([11, 22, 33]);
   });
 
   test("正の重力はY加速度を下向きにする", () => {
     // Yは上が正。重力は正の値で「下へ引く力」を表すため、YS からは引く
-    const o = new ArcadeerMain({ GRAVITY: 2, YS: 0 });
+    const o = new ArcadeerMain({ gravity: 2, ys: 0 });
     o.behavior();
     expect(o.YS).toBe(-2);
     o.behavior();
@@ -98,13 +98,13 @@ describe("arcadeermain の behavior", () => {
   });
 
   test("負の重力はY加速度を上向きにする", () => {
-    const o = new ArcadeerMain({ GRAVITY: -2, YS: 0 });
+    const o = new ArcadeerMain({ gravity: -2, ys: 0 });
     o.behavior();
     expect(o.YS).toBe(2);
   });
 
   test("重力は座標更新の前に効く", () => {
-    const o = new ArcadeerMain({ GRAVITY: 3, Y: 0, YS: 0 });
+    const o = new ArcadeerMain({ gravity: 3, y: 0, ys: 0 });
     o.behavior();
     // YS が -3 になってから Y へ加算される
     expect(o.Y).toBe(-3);
@@ -112,7 +112,7 @@ describe("arcadeermain の behavior", () => {
 
   test("上向きの初速に重力がかかると放物線になる", () => {
     // 上へ跳ばして重力で戻ってくる、というゲームらしい使い方
-    const o = new ArcadeerMain({ GRAVITY: 1, Y: 0, YS: 3 });
+    const o = new ArcadeerMain({ gravity: 1, y: 0, ys: 3 });
     const heights = [];
     for (let i = 0; i < 6; i += 1) {
       o.behavior();
@@ -166,7 +166,7 @@ describe("クラスの登録と生成", () => {
 
   test("登録したクラスから生成できる", () => {
     defineClass("myship", Ship);
-    const o = createObject("myship", { X: 5 });
+    const o = createObject("myship", { x: 5 });
     expect(o).toBeInstanceOf(Ship);
     expect(o.X).toBe(5);
   });
@@ -203,7 +203,7 @@ describe("addObject", () => {
     defineClass("myship", Ship);
     const { parent, added } = parentObject();
 
-    const ship = parent.addObject({ name: "myship", X: 3, Y: 4 });
+    const ship = parent.addObject({ name: "myship", x: 3, y: 4 });
     expect(ship).toBeInstanceOf(Ship);
     expect(ship.X).toBe(3);
     expect(ship.Y).toBe(4);
@@ -233,7 +233,7 @@ describe("addObject", () => {
     class Boss extends ArcadeerMain {
       constructor(param) {
         super(param);
-        this.ship = this.addObject({ name: "myship", X: 9 });
+        this.ship = this.addObject({ name: "myship", x: 9 });
       }
     }
     defineClass("boss", Boss);
@@ -253,7 +253,7 @@ describe("addObject", () => {
 
   test("name が無ければ例外にする", () => {
     const { parent } = parentObject();
-    expect(() => parent.addObject({ X: 1 })).toThrow();
+    expect(() => parent.addObject({ x: 1 })).toThrow();
     expect(() => parent.addObject()).toThrow();
   });
 
@@ -522,7 +522,7 @@ describe("色の指定（COLOR）", () => {
   });
 
   test("指定した値を保つ", () => {
-    expect(new ArcadeerMain({ COLOR: "#ff8800" }).COLOR).toBe("#ff8800");
+    expect(new ArcadeerMain({ color: "#ff8800" }).COLOR).toBe("#ff8800");
   });
 
   test("途中で書き換えられる", () => {
@@ -551,14 +551,14 @@ describe("プリミティブの単独生成", () => {
   });
 
   test("座標や色をまとめて指定できる", () => {
-    const o = createObject("box", { X: 1, Y: 2, Z: 3, SCALEX: 20, COLOR: "#ff8800" });
+    const o = createObject("box", { x: 1, y: 2, z: 3, scaleX: 20, color: "#ff8800" });
     expect([o.X, o.Y, o.Z]).toEqual([1, 2, 3]);
     expect(o.SCALEX).toBe(20);
     expect(o.COLOR).toBe("#ff8800");
   });
 
   test("インスタンスメソッドがそのまま呼べる", () => {
-    const o = createObject("box", { XS: 2, YS: 0, GRAVITY: 1 });
+    const o = createObject("box", { xs: 2, ys: 0, gravity: 1 });
     o.behavior();
     expect(o.X).toBe(2);
     expect(o.YS).toBe(-1);
@@ -569,7 +569,7 @@ describe("プリミティブの単独生成", () => {
   });
 
   test("MODELを明示すればそちらを使う", () => {
-    expect(createObject("box", { MODEL: "sphere" }).MODEL).toBe("sphere");
+    expect(createObject("box", { model: "sphere" }).MODEL).toBe("sphere");
   });
 
   test("同じ名前のクラスがあればそちらを優先する", () => {
@@ -592,7 +592,7 @@ describe("影の指定（SHADOW）", () => {
   });
 
   test("false にすると影を落とさない", () => {
-    expect(new ArcadeerMain({ SHADOW: false }).SHADOW).toBe(false);
+    expect(new ArcadeerMain({ shadow: false }).SHADOW).toBe(false);
   });
 
   test("途中で切り替えられる", () => {
@@ -604,13 +604,13 @@ describe("影の指定（SHADOW）", () => {
 
 describe("behavior が受け取るフレーム情報", () => {
   test("引数を渡しても落ちない", () => {
-    const o = new ArcadeerMain({ XS: 2 });
+    const o = new ArcadeerMain({ xs: 2 });
     o.behavior({ frame: 10, time: 0.166 });
     expect(o.X).toBe(2);
   });
 
   test("引数を渡さなくても動く（従来どおり）", () => {
-    const o = new ArcadeerMain({ XS: 2 });
+    const o = new ArcadeerMain({ xs: 2 });
     o.behavior();
     expect(o.X).toBe(2);
   });
@@ -623,7 +623,7 @@ describe("behavior が受け取るフレーム情報", () => {
         received = e;
       }
     }
-    const o = new child({ YS: 1 });
+    const o = new child({ ys: 1 });
     const event = { frame: 3, time: 0.05 };
     o.behavior(event);
     expect(received).toBe(event);
@@ -668,7 +668,7 @@ describe("回転角の正規化", () => {
 
 describe("回転角は自動でそろう", () => {
   test("生成した時点でそろっている", () => {
-    const o = new ArcadeerMain({ ROTX: -3, ROTY: 370, ROTZ: -725 });
+    const o = new ArcadeerMain({ rotX: -3, rotY: 370, rotZ: -725 });
     expect(o.ROTX).toBe(357);
     expect(o.ROTY).toBe(10);
     expect(o.ROTZ).toBe(355);
@@ -682,7 +682,7 @@ describe("回転角は自動でそろう", () => {
   });
 
   test("回し続けても値が膨らまない", () => {
-    const o = new ArcadeerMain({ ROTY: 0 });
+    const o = new ArcadeerMain({ rotY: 0 });
     for (let i = 0; i < 200; i += 1) {
       o.ROTY += 2;
       o.behavior();
@@ -692,7 +692,7 @@ describe("回転角は自動でそろう", () => {
   });
 
   test("逆回しでも0を下回ったままにならない", () => {
-    const o = new ArcadeerMain({ ROTY: 0 });
+    const o = new ArcadeerMain({ rotY: 0 });
     for (let i = 0; i < 5; i += 1) {
       o.ROTY -= 1;
       o.behavior();
@@ -714,8 +714,8 @@ describe("回転角は自動でそろう", () => {
 
 describe("当たり判定のメソッド", () => {
   /** 判定を持つオブジェクトを作る */
-  const place = (X, Y, Z, param = {}) =>
-    new ArcadeerMain({ X, Y, Z, MODEL: "box", ...param });
+  const place = (x, y, z, param = {}) =>
+    new ArcadeerMain({ x, y, z, model: "box", ...param });
 
   test("collision は、当たった相手を返す", () => {
     const mine = place(0, 0, 0);
@@ -763,7 +763,7 @@ describe("当たり判定のメソッド", () => {
   });
 
   test("BOUNDARY を書けば、その形で判断する", () => {
-    const mine = place(0, 0, 0, { BOUNDARY: { width: 0.1, height: 0.1, depth: 0.1 } });
+    const mine = place(0, 0, 0, { boundary: { SCALEX: 0.1, SCALEY: 0.1, SCALEZ: 0.1 } });
     const other = place(0.9, 0, 0);
     // 見た目どうしなら当たるが、判定を小さくしたので当たらない
     expect(place(0, 0, 0).collision(other)).toBe(other);
@@ -771,7 +771,7 @@ describe("当たり判定のメソッド", () => {
   });
 
   test("BOUNDARY に null を入れると、何とも当たらない", () => {
-    const mine = place(0, 0, 0, { BOUNDARY: null });
+    const mine = place(0, 0, 0, { boundary: null });
     expect(mine.collision(place(0, 0, 0))).toBeNull();
   });
 
@@ -1009,7 +1009,7 @@ describe("待機中の behavior の呼び分け", () => {
 
   test("待機中も、スーパークラスの共通処理は動く", () => {
     // 重力と座標の更新は止めない
-    const o = new Counter({ GRAVITY: 1 });
+    const o = new Counter({ gravity: 1 });
     o.XS = 2;
     o.waitjob(1000);
     now = 500;
@@ -1030,7 +1030,7 @@ describe("待機中の behavior の呼び分け", () => {
 
   test("共通処理が二重に走らない", () => {
     // 待機明けのフレームで、重力が2回かからないこと
-    const o = new Counter({ GRAVITY: 1 });
+    const o = new Counter({ gravity: 1 });
     o.waitjob(1000);
     now = 1000;
     runBehavior(o, {});
@@ -1098,7 +1098,7 @@ describe("透明度（@ALPHA）", () => {
   });
 
   test("生成時に指定できる", () => {
-    expect(new ArcadeerMain({ ALPHA: 0.5 }).ALPHA).toBe(0.5);
+    expect(new ArcadeerMain({ alpha: 0.5 }).ALPHA).toBe(0.5);
   });
 });
 
@@ -1108,6 +1108,51 @@ describe("丸いプリミティブの太さ（@RADIUS）", () => {
   });
 
   test("生成時に指定できる", () => {
-    expect(new ArcadeerMain({ RADIUS: 0.25 }).RADIUS).toBe(0.25);
+    expect(new ArcadeerMain({ radius: 0.25 }).RADIUS).toBe(0.25);
+  });
+});
+
+describe("生成時の引数は小文字（camelCase）", () => {
+  test("座標と加速度", () => {
+    // メソッドへ渡す引数は小文字、プロパティは大文字（5.5節）
+    const o = new ArcadeerMain({ x: 1, y: 2, z: 3, xs: 4, ys: 5, zs: 6 });
+    expect([o.X, o.Y, o.Z]).toEqual([1, 2, 3]);
+    expect([o.XS, o.YS, o.ZS]).toEqual([4, 5, 6]);
+  });
+
+  test("回転と重力", () => {
+    const o = new ArcadeerMain({ rotX: 10, rotY: 20, rotZ: 30, gravity: 0.5 });
+    expect([o.ROTX, o.ROTY, o.ROTZ]).toEqual([10, 20, 30]);
+    expect(o.GRAVITY).toBe(0.5);
+  });
+
+  test("大きさ", () => {
+    const o = new ArcadeerMain({ scaleX: 2, scaleY: 3, scaleZ: 4, radius: 5 });
+    expect([o.SCALEX, o.SCALEY, o.SCALEZ]).toEqual([2, 3, 4]);
+    expect(o.RADIUS).toBe(5);
+  });
+
+  test("見た目", () => {
+    const o = new ArcadeerMain({ model: "cat.glb", kind: "3D", color: "#ff8800", alpha: 0.5, shadow: false });
+    expect(o.MODEL).toBe("cat.glb");
+    expect(o.KIND).toBe("3D");
+    expect(o.COLOR).toBe("#ff8800");
+    expect(o.ALPHA).toBe(0.5);
+    expect(o.SHADOW).toBe(false);
+  });
+
+  test("当たり判定とステータス番号", () => {
+    const o = new ArcadeerMain({ boundary: { MODEL: "sphere" }, proc: 3 });
+    expect(o.BOUNDARY).toEqual({ MODEL: "sphere" });
+    expect(o.proc).toBe(3);
+  });
+
+  test("大文字で渡しても効かない", () => {
+    // 書き方は1つに絞る。紛れがあると、どちらが効くのか分からなくなる
+    const o = new ArcadeerMain({ X: 9, SCALEX: 9, MODEL: "cat.glb", ALPHA: 0.2 });
+    expect(o.X).toBe(0);
+    expect(o.SCALEX).toBe(1);
+    expect(o.MODEL).toBe("primitive");
+    expect(o.ALPHA).toBe(1);
   });
 });

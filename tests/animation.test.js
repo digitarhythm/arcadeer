@@ -225,8 +225,8 @@ describe("ルートモーションの無効化（stripRootMotion）", () => {
     expect(moving.max - moving.min).toBeGreaterThan(0.3);
     // 無効化すると動かない
     expect(fixed.max - fixed.min).toBeLessThan(1e-6);
-    // 固定される高さはバインドポーズ（hips の translation.y = 0.55）
-    near(fixed.min, 0.55, 1e-4);
+    // 固定される高さはバインドポーズ（hips の translation.y = 0.62）
+    near(fixed.min, 0.62, 1e-4);
   });
 });
 

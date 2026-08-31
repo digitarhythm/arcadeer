@@ -122,11 +122,14 @@ function drawModel(gl, program, model, gpu, yaw) {
 
   // モデル全体が収まる位置へカメラを置く（斜め前方から見下ろす）
   // 画角の半頂角 18度 に対し、余白を1割ほど持たせた距離
+  //
+  // **-Z 側から見る。**ゲームの決まりでは -Z が前方なので、
+  // +Z 側に置くと人型モデルの背中しか見えない
   const distance = radius * 3.5;
   const eye = [
     center[0] + distance * 0.6,
     center[1] + distance * 0.45,
-    center[2] + distance * 0.75,
+    center[2] - distance * 0.75,
   ];
   const view = lookAt(eye, center, [0, 1, 0]);
   gl.uniformMatrix4fv(

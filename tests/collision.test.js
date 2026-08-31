@@ -34,26 +34,26 @@ describe("判定の形", () => {
   });
 
   test("大きさを指定できる", () => {
-    const b = boundsOf(obj(0, 0, 0, { width: 4, height: 2, depth: 6 }));
+    const b = boundsOf(obj(0, 0, 0, { SCALEX: 4, SCALEY: 2, SCALEZ: 6 }));
     expect([b.hw, b.hh, b.hd]).toEqual([2, 1, 3]);
   });
 
   test("ずれを指定できる", () => {
-    const b = boundsOf(obj(10, 20, 30, { offsetX: 1, offsetY: -2, offsetZ: 3 }));
+    const b = boundsOf(obj(10, 20, 30, { X: 1, Y: -2, Z: 3 }));
     expect([b.X, b.Y, b.Z]).toEqual([11, 18, 33]);
   });
 
   test("球は半径で決まる（既定は 0.5）", () => {
-    expect(boundsOf(obj(0, 0, 0, { shape: "sphere" })).r).toBe(0.5);
-    expect(boundsOf(obj(0, 0, 0, { shape: "sphere", radius: 3 })).r).toBe(3);
+    expect(boundsOf(obj(0, 0, 0, { MODEL: "sphere" })).r).toBe(0.5);
+    expect(boundsOf(obj(0, 0, 0, { MODEL: "sphere", RADIUS: 3 })).r).toBe(3);
   });
 
   test("知らない形は直方体として扱う", () => {
-    expect(boundsOf(obj(0, 0, 0, { shape: "まる" })).shape).toBe("box");
+    expect(boundsOf(obj(0, 0, 0, { MODEL: "まる" })).shape).toBe("box");
   });
 
   test("扱えない大きさは既定へ戻す", () => {
-    const b = boundsOf(obj(0, 0, 0, { width: -1, height: "おおきい", depth: 0 }));
+    const b = boundsOf(obj(0, 0, 0, { SCALEX: -1, SCALEY: "おおきい", SCALEZ: 0 }));
     expect([b.hw, b.hh, b.hd]).toEqual([0.5, 0.5, 0.5]);
   });
 
@@ -65,8 +65,8 @@ describe("判定の形", () => {
   });
 
   test("回転は判定に効かない", () => {
-    const plain = boundsOf(obj(0, 0, 0, { width: 4 }));
-    const turned = boundsOf(obj(0, 0, 0, { width: 4 }, { ROTY: 45, ROTX: 30, ROTZ: 90 }));
+    const plain = boundsOf(obj(0, 0, 0, { SCALEX: 4 }));
+    const turned = boundsOf(obj(0, 0, 0, { SCALEX: 4 }, { ROTY: 45, ROTX: 30, ROTZ: 90 }));
     expect(turned).toEqual(plain);
   });
 });
@@ -91,24 +91,24 @@ describe("2つの当たり", () => {
   });
 
   test("球どうしは中心の距離で見る", () => {
-    const a = boundsOf(obj(0, 0, 0, { shape: "sphere", radius: 1 }));
-    const near = boundsOf(obj(1.5, 0, 0, { shape: "sphere", radius: 1 }));
-    const distant = boundsOf(obj(2.5, 0, 0, { shape: "sphere", radius: 1 }));
+    const a = boundsOf(obj(0, 0, 0, { MODEL: "sphere", RADIUS: 1 }));
+    const near = boundsOf(obj(1.5, 0, 0, { MODEL: "sphere", RADIUS: 1 }));
+    const distant = boundsOf(obj(2.5, 0, 0, { MODEL: "sphere", RADIUS: 1 }));
     expect(hitBetween(a, near)).toBe(true);
     expect(hitBetween(a, distant)).toBe(false);
     // 斜めでも、角ではなく距離で判断する（直方体との違い）
-    const diagonal = boundsOf(obj(1.5, 1.5, 0, { shape: "sphere", radius: 1 }));
+    const diagonal = boundsOf(obj(1.5, 1.5, 0, { MODEL: "sphere", RADIUS: 1 }));
     expect(hitBetween(a, diagonal)).toBe(false);
   });
 
   test("球と直方体は、いちばん近い点までの距離で見る", () => {
-    const box = boundsOf(obj(0, 0, 0, { width: 2, height: 2, depth: 2 }));
-    expect(hitBetween(box, boundsOf(obj(1.5, 0, 0, { shape: "sphere", radius: 1 })))).toBe(true);
-    expect(hitBetween(box, boundsOf(obj(2.5, 0, 0, { shape: "sphere", radius: 1 })))).toBe(false);
+    const box = boundsOf(obj(0, 0, 0, { SCALEX: 2, SCALEY: 2, SCALEZ: 2 }));
+    expect(hitBetween(box, boundsOf(obj(1.5, 0, 0, { MODEL: "sphere", RADIUS: 1 })))).toBe(true);
+    expect(hitBetween(box, boundsOf(obj(2.5, 0, 0, { MODEL: "sphere", RADIUS: 1 })))).toBe(false);
     // 角のそば。中心どうしは遠いが、角には触れている
-    expect(hitBetween(box, boundsOf(obj(1.5, 1.5, 0, { shape: "sphere", radius: 1 })))).toBe(true);
+    expect(hitBetween(box, boundsOf(obj(1.5, 1.5, 0, { MODEL: "sphere", RADIUS: 1 })))).toBe(true);
     // 順番を入れ替えても同じ
-    const sphere = boundsOf(obj(1.5, 1.5, 0, { shape: "sphere", radius: 1 }));
+    const sphere = boundsOf(obj(1.5, 1.5, 0, { MODEL: "sphere", RADIUS: 1 }));
     expect(hitBetween(sphere, box)).toBe(true);
   });
 
@@ -132,16 +132,16 @@ describe("2Dの重なり（奥行きを見ない）", () => {
   });
 
   test("球は円として見る", () => {
-    const a = boundsOf(obj(0, 0, 0, { shape: "sphere", radius: 1 }));
-    const near = boundsOf(obj(1.5, 0, 50, { shape: "sphere", radius: 1 }));
-    const diagonal = boundsOf(obj(1.5, 1.5, 50, { shape: "sphere", radius: 1 }));
+    const a = boundsOf(obj(0, 0, 0, { MODEL: "sphere", RADIUS: 1 }));
+    const near = boundsOf(obj(1.5, 0, 50, { MODEL: "sphere", RADIUS: 1 }));
+    const diagonal = boundsOf(obj(1.5, 1.5, 50, { MODEL: "sphere", RADIUS: 1 }));
     expect(hitBetweenXY(a, near)).toBe(true);
     expect(hitBetweenXY(a, diagonal)).toBe(false);
   });
 
   test("球と直方体も奥行きを見ない", () => {
-    const box = boundsOf(obj(0, 0, 0, { width: 2, height: 2, depth: 2 }));
-    const sphere = boundsOf(obj(1.5, 1.5, 99, { shape: "sphere", radius: 1 }));
+    const box = boundsOf(obj(0, 0, 0, { SCALEX: 2, SCALEY: 2, SCALEZ: 2 }));
+    const sphere = boundsOf(obj(1.5, 1.5, 99, { MODEL: "sphere", RADIUS: 1 }));
     expect(hitBetweenXY(box, sphere)).toBe(true);
   });
 });
@@ -267,7 +267,7 @@ describe("BOUNDARY を書かない場合は、見た目そのものが判定に�
   });
 
   test("自分で書いた場合は、これまでどおり拡大縮小が効かない", () => {
-    const b = boundsOf(look("box", { SCALEX: 10, BOUNDARY: { width: 2 } }));
+    const b = boundsOf(look("box", { SCALEX: 10, BOUNDARY: { SCALEX: 2 } }));
     expect(b.hw).toBe(1);
   });
 
@@ -282,10 +282,10 @@ describe("BOUNDARY を書かない場合は、見た目そのものが判定に�
 describe("円柱の判定", () => {
   /** 円柱の判定を持つオブジェクト */
   const cylinder = (X, Y, Z, extra = {}) =>
-    obj(X, Y, Z, { shape: "cylinder", radius: 1, height: 2, ...extra });
+    obj(X, Y, Z, { MODEL: "cylinder", RADIUS: 1, SCALEY: 2, ...extra });
 
   test("半径と高さで決まる（既定は半径0.5・高さ1）", () => {
-    const b = boundsOf(obj(0, 0, 0, { shape: "cylinder" }));
+    const b = boundsOf(obj(0, 0, 0, { MODEL: "cylinder" }));
     expect(b.shape).toBe("cylinder");
     expect(b.r).toBe(0.5);
     expect(b.hh).toBe(0.5);
@@ -299,7 +299,7 @@ describe("円柱の判定", () => {
   });
 
   test("扱えない値は既定へ戻す", () => {
-    const b = boundsOf(obj(0, 0, 0, { shape: "cylinder", radius: -1, height: "たかい" }));
+    const b = boundsOf(obj(0, 0, 0, { MODEL: "cylinder", RADIUS: -1, SCALEY: "たかい" }));
     expect([b.r, b.hh]).toEqual([0.5, 0.5]);
   });
 
@@ -317,7 +317,7 @@ describe("円柱の判定", () => {
 
   test("円柱と直方体は、XZの円と矩形で見る", () => {
     const cylB = boundsOf(cylinder(0, 0, 0));
-    const box = (X, Y, Z) => boundsOf(obj(X, Y, Z, { width: 2, height: 2, depth: 2 }));
+    const box = (X, Y, Z) => boundsOf(obj(X, Y, Z, { SCALEX: 2, SCALEY: 2, SCALEZ: 2 }));
     expect(hitBetween(cylB, box(1.5, 0, 0))).toBe(true);
     expect(hitBetween(cylB, box(2.5, 0, 0))).toBe(false);
     // 角のそば。中心どうしは遠いが、角には触れている
@@ -332,7 +332,7 @@ describe("円柱の判定", () => {
 
   test("円柱と球は、いちばん近い点までの距離で見る", () => {
     const cylB = boundsOf(cylinder(0, 0, 0));
-    const sphere = (X, Y, Z, radius = 0.5) => boundsOf(obj(X, Y, Z, { shape: "sphere", radius }));
+    const sphere = (X, Y, Z, radius = 0.5) => boundsOf(obj(X, Y, Z, { MODEL: "sphere", radius }));
     // 真横
     expect(hitBetween(cylB, sphere(1.4, 0, 0))).toBe(true);
     expect(hitBetween(cylB, sphere(1.6, 0, 0))).toBe(false);
@@ -353,9 +353,9 @@ describe("円柱の判定", () => {
     // Zが離れていても、XYが重なっていれば当たり
     expect(hitBetweenXY(a, boundsOf(cylinder(1.5, 0, 100)))).toBe(true);
     // 幅は半径ぶん、高さは指定どおり
-    expect(hitBetweenXY(a, boundsOf(obj(2.1, 0, 0, { width: 0.2 })))).toBe(false);
-    expect(hitBetweenXY(a, boundsOf(obj(0, 1.2, 0, { height: 0.2 })))).toBe(false);
-    expect(hitBetweenXY(a, boundsOf(obj(0, 1.05, 0, { height: 0.2 })))).toBe(true);
+    expect(hitBetweenXY(a, boundsOf(obj(2.1, 0, 0, { SCALEX: 0.2 })))).toBe(false);
+    expect(hitBetweenXY(a, boundsOf(obj(0, 1.2, 0, { SCALEY: 0.2 })))).toBe(false);
+    expect(hitBetweenXY(a, boundsOf(obj(0, 1.05, 0, { SCALEY: 0.2 })))).toBe(true);
   });
 });
 
@@ -381,8 +381,53 @@ describe("@RADIUS は当たり判定にも効く", () => {
     // 自分で書いた判定は見た目と切り離す（5.5節）
     const b = boundsOf({
       MODEL: "sphere", KIND: "PRIM", RADIUS: 10, X: 0, Y: 0, Z: 0,
-      BOUNDARY: { shape: "sphere", radius: 0.5 },
+      BOUNDARY: { MODEL: "sphere", RADIUS: 0.5 },
     });
     expect(b.r).toBeCloseTo(0.5, 6);
+  });
+});
+
+describe("@BOUNDARY のキーは大文字", () => {
+  const at = (extra) => ({ MODEL: "box", KIND: "PRIM", X: 0, Y: 0, Z: 0, BOUNDARY: extra });
+
+  test("形は MODEL で指定する", () => {
+    // インスタンスのプロパティ @MODEL と同じ言葉にする
+    expect(boundsOf(at({ MODEL: "sphere", RADIUS: 2 })).shape).toBe("sphere");
+    expect(boundsOf(at({ MODEL: "cylinder", RADIUS: 1 })).shape).toBe("cylinder");
+  });
+
+  test("大きさは SCALEX / SCALEY / SCALEZ", () => {
+    const b = boundsOf(at({ MODEL: "box", SCALEX: 4, SCALEY: 2, SCALEZ: 6 }));
+    expect([b.hw, b.hh, b.hd]).toEqual([2, 1, 3]);
+  });
+
+  test("丸い形の太さは RADIUS", () => {
+    expect(boundsOf(at({ MODEL: "sphere", RADIUS: 3 })).r).toBe(3);
+  });
+
+  test("ずれは X / Y / Z", () => {
+    const b = boundsOf({ MODEL: "box", KIND: "PRIM", X: 10, Y: 20, Z: 30,
+                         BOUNDARY: { MODEL: "box", X: 1, Y: -2, Z: 0.5 } });
+    expect([b.X, b.Y, b.Z]).toEqual([11, 18, 30.5]);
+  });
+
+  test("小文字で書いても効かない", () => {
+    // 書き方は1つに絞る。紛れがあると、どちらが効くのか分からなくなる
+    const b = boundsOf({ MODEL: "box", KIND: "PRIM", X: 0, Y: 0, Z: 0,
+                         BOUNDARY: { shape: "sphere", radius: 9, width: 8, offsetX: 7 } });
+    expect(b.shape).toBe("box");
+    expect(b.r).toBe(0.5);
+    expect(b.hw).toBe(0.5);
+    expect(b.X).toBe(0);
+  });
+
+  test("円柱は RADIUS が横幅になる", () => {
+    const b = boundsOf(at({ MODEL: "cylinder", RADIUS: 2, SCALEY: 10 }));
+    expect([b.hw, b.hd]).toEqual([2, 2]);
+    expect(b.hh).toBe(5);
+  });
+
+  test("知らない形は直方体として扱う", () => {
+    expect(boundsOf(at({ MODEL: "torus" })).shape).toBe("box");
   });
 });

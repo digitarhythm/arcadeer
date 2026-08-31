@@ -8,16 +8,20 @@
 // | `null` / `false` | 持たない | ― |
 // | オブジェクト | 書いた形 | **効かない** |
 //
+// **キーはすべて大文字**にそろえてある。`@BOUNDARY` はオブジェクト（値の入れ物）なので、
+// インスタンスのプロパティと同じ書き方にする。
+// メソッドへ渡す引数（`@addObject` など）は小文字（camelCase）で、そちらとは分ける。
+//
 // ```coffee
 // @BOUNDARY =
-//   shape: "box"      # "box"（直方体）/ "sphere"（球）/ "cylinder"（円柱）
-//   width:  1
-//   height: 1
-//   depth:  1
-//   radius: 0.5       # shape: "sphere" / "cylinder" のとき
-//   offsetX: 0        # オブジェクトの位置からのずれ
-//   offsetY: 0
-//   offsetZ: 0
+//   MODEL: "box"      # "box"（直方体）/ "sphere"（球）/ "cylinder"（円柱）
+//   SCALEX: 1         # 大きさ（1×1×1 の何倍か）
+//   SCALEY: 1
+//   SCALEZ: 1
+//   RADIUS: 0.5       # MODEL: "sphere" / "cylinder" のとき
+//   X: 0              # オブジェクトの位置からの**ずれ**
+//   Y: 0
+//   Z: 0
 // ```
 //
 // 自分で書いた判定に拡大縮小が効かないのは、**見た目と切り離す**ためである。
@@ -126,20 +130,21 @@ export function boundsOf(object) {
 
   if (!c || typeof c !== "object") return null;
 
-  const shape = SHAPES.includes(c.shape) ? c.shape : "box";
-  const r = toPositive(c.radius, DEFAULT_RADIUS);
+  const shape = SHAPES.includes(c.MODEL) ? c.MODEL : "box";
+  const r = toPositive(c.RADIUS, DEFAULT_RADIUS);
   const isCylinder = shape === "cylinder";
+  const half = (value) => toPositive(value, DEFAULT_SIZE) / 2;
   return {
     shape,
     // 位置はオブジェクトの座標にずれを足したもの
-    X: toNumber(object.X) + toNumber(c.offsetX),
-    Y: toNumber(object.Y) + toNumber(c.offsetY),
-    Z: toNumber(object.Z) + toNumber(c.offsetZ),
+    X: toNumber(object.X) + toNumber(c.X),
+    Y: toNumber(object.Y) + toNumber(c.Y),
+    Z: toNumber(object.Z) + toNumber(c.Z),
     // 直方体は「中心から端まで」で持つ。当たりを見る時に扱いやすい。
     // 円柱の横幅は半径にそろえ、外接する直方体としても使えるようにする
-    hw: isCylinder ? r : toPositive(c.width, DEFAULT_SIZE) / 2,
-    hh: toPositive(c.height, DEFAULT_SIZE) / 2,
-    hd: isCylinder ? r : toPositive(c.depth, DEFAULT_SIZE) / 2,
+    hw: isCylinder ? r : half(c.SCALEX),
+    hh: half(c.SCALEY),
+    hd: isCylinder ? r : half(c.SCALEZ),
     r,
   };
 }

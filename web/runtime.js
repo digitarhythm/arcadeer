@@ -238,8 +238,8 @@ export function createObject(name, param = {}) {
   if (klass) return new klass(param);
 
   if (isPrimitiveName(name)) {
-    // 形状名をそのまま @MODEL にする。明示された @MODEL があればそちらを立てる
-    return new ArcadeerMain({ ...param, MODEL: param.MODEL ?? name });
+    // 形状名をそのまま @MODEL にする。model を書いてあればそちらを立てる
+    return new ArcadeerMain({ ...param, model: param.model ?? name });
   }
   throw new Error(`class not found: ${name}`);
 }
@@ -250,48 +250,62 @@ export function createObject(name, param = {}) {
  * 仕様書6.3節のパラメータを持ち、`behavior` で加速度と座標を更新する。
  */
 export class ArcadeerMain {
+  /**
+   * @param param `@addObject` へ渡した引数
+   *
+   * **メソッドへ渡す引数は小文字（camelCase）、プロパティは大文字**にそろえてある。
+   * どちらの側の話をしているのかが、書いた形で見分けられるようにするため。
+   *
+   * ```coffee
+   * @enemy = @addObject
+   *   name: "enemy"
+   *   x: 5
+   *   scaleX: 2
+   *   model: "cat.glb"
+   * ```
+   */
   constructor(param = {}) {
     // 座標と加速度
-    this.X = param.X ?? 0;
-    this.Y = param.Y ?? 0;
-    this.Z = param.Z ?? 0;
-    this.XS = param.XS ?? 0;
-    this.YS = param.YS ?? 0;
-    this.ZS = param.ZS ?? 0;
+    this.X = param.x ?? 0;
+    this.Y = param.y ?? 0;
+    this.Z = param.z ?? 0;
+    this.XS = param.xs ?? 0;
+    this.YS = param.ys ?? 0;
+    this.ZS = param.zs ?? 0;
 
     // 毎フレーム Y加速度へ効く。**正の値が下向きの力**（Yは上が正）
-    this.GRAVITY = param.GRAVITY ?? 0;
+    this.GRAVITY = param.gravity ?? 0;
 
     // 各軸まわりの回転（度）。Z → X → Y の順に効く。
     // 0以上360未満へそろえる（6.2.8節）
-    this.ROTX = normalizeAngle(param.ROTX ?? 0);
-    this.ROTY = normalizeAngle(param.ROTY ?? 0);
-    this.ROTZ = normalizeAngle(param.ROTZ ?? 0);
+    this.ROTX = normalizeAngle(param.rotX ?? 0);
+    this.ROTY = normalizeAngle(param.rotY ?? 0);
+    this.ROTZ = normalizeAngle(param.rotZ ?? 0);
 
     // 丸いプリミティブ（sphere / cylinder / cone）の太さ。
     // 書けば @SCALE より優先する（6.2.5節）。未指定は null
-    this.RADIUS = param.RADIUS ?? null;
+    this.RADIUS = param.radius ?? null;
 
-    this.SCALEX = param.SCALEX ?? 1;
-    this.SCALEY = param.SCALEY ?? 1;
-    this.SCALEZ = param.SCALEZ ?? 1;
+    this.SCALEX = param.scaleX ?? 1;
+    this.SCALEY = param.scaleY ?? 1;
+    this.SCALEZ = param.scaleZ ?? 1;
 
     // 表示に使うアセット（IDEはこの値をサムネイルに使う）
-    this.MODEL = param.MODEL ?? "primitive";
+    this.MODEL = param.model ?? "primitive";
     // 0:2D / 1:3D
     // 種別。"PRIM" / "2D" / "3D"（数値の 0 / 1 / 2 も可）。
     // 既定は**指定なし**。この場合は @MODEL の内容から自動で決める（6.2.5節）
-    this.KIND = param.KIND ?? "";
+    this.KIND = param.kind ?? "";
 
     // 描画色。空なら素材そのままの色で描く（`"#ff8800"` のように指定する）
-    this.COLOR = param.COLOR ?? "";
+    this.COLOR = param.color ?? "";
 
     // 透明度。1で不透明、0で見えなくなる（6.2.5節）。
     // @COLOR を8桁で書いた場合は、その透明度とも掛け合わせる
-    this.ALPHA = param.ALPHA ?? 1;
+    this.ALPHA = param.alpha ?? 1;
 
     // 影を落とすか。false にすると、このオブジェクトは影を作らない（6.2.6節）
-    this.SHADOW = param.SHADOW ?? true;
+    this.SHADOW = param.shadow ?? true;
 
     // 当たり判定に使う範囲（5.5節）。
     // **書かなければ見た目そのもの**が範囲になる（拡大縮小が効く）。
@@ -299,7 +313,7 @@ export class ArcadeerMain {
     // null や false を入れれば、判定を持たせないこともできる。
     //
     // `?? null` にしてはいけない。「書かない」と「外す」を区別できなくなる
-    if (param.BOUNDARY !== undefined) this.BOUNDARY = param.BOUNDARY;
+    if (param.boundary !== undefined) this.BOUNDARY = param.boundary;
 
     // ステータス番号
     this.proc = param.proc ?? 0;

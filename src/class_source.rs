@@ -70,12 +70,53 @@ fn first_string_literal(text: &str) -> Option<String> {
     None
 }
 
+/// クラスファイルの雛形を組み立てる（内容は docs/templete.md に準拠）
+pub fn build_class_template(name: &str) -> String {
+    format!(
+        "class {name} extends arcadeermain\n  constructor: (param) ->\n    super(param)\n\n  \
+         behavior: (e) ->\n    super(e)\n\n    switch @proc\n      when 0\n        \
+         @waitjob(1000)\n"
+    )
+}
+
+/// ゲームの起点（`gameMain`）の雛形を組み立てる（仕様書6.2.2節）
+///
+/// 通常のクラスと違い、**すぐ動くもの**を置く。
+/// 同梱の猫を出し、こちらを向かせ、歩かせながら回す。
+/// 新しく作った人が、実行すればいきなり絵が動くところから始められるようにするため。
+pub fn build_entry_template(name: &str) -> String {
+    format!(
+        "class {name} extends arcadeermain\n\
+         \x20 constructor: (param) ->\n\
+         \x20   super(param)\n\
+         \x20   \n\
+         \x20   @MODEL = \"default-cat.glb\"\n\
+         \x20   @X = 0.0\n\
+         \x20   @Y = 0.0\n\
+         \x20   @Z = 0.0\n\
+         \x20   @scaleX = 1.0\n\
+         \x20   @scaleY = 1.0\n\
+         \x20   @scaleZ = 1.0\n\
+         \x20   \n\
+         \x20   @ROTY = 180.0\n\
+         \x20   \n\
+         \x20   @setAnimation({{name:\"Walk\", loop:true}})\n\
+         \n\
+         \x20 behavior: (e) ->\n\
+         \x20   super(e)\n\
+         \n\
+         \x20   switch @proc\n\
+         \x20     when 0\n\
+         \x20       @ROTY += 1\n"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn 二重引用符の指定を読み取れる() {
+    fn reads_double_quoted_value() {
         let source = "class Player extends arcadeermain\n  constructor: (param) ->\n    @MODEL = \"player.png\"\n";
         assert_eq!(parse_model_ref(source), Some("player.png".to_string()));
     }
@@ -152,5 +193,47 @@ mod tests {
     #[test]
     fn ignores_empty_string_value() {
         assert_eq!(parse_model_ref("    @MODEL = \"\"\n"), None);
+    }
+
+    // --- 雛形 ---
+
+    #[test]
+    fn class_template_starts_from_waitjob() {
+        let text = build_class_template("enemy");
+        assert!(text.starts_with("class enemy extends arcadeermain\n"));
+        assert!(text.contains("@waitjob(1000)"));
+        // 通常のクラスには、モデルもアニメーションも入れない
+        assert!(!text.contains("@MODEL"));
+    }
+
+    #[test]
+    fn entry_template_shows_the_bundled_cat() {
+        let text = build_entry_template("gameMain");
+        assert!(text.starts_with("class gameMain extends arcadeermain\n"));
+        assert!(text.contains("@MODEL = \"default-cat.glb\""));
+        // 実行すればすぐ動くように、歩かせて回す
+        assert!(text.contains("@setAnimation({name:\"Walk\", loop:true})"));
+        assert!(text.contains("@ROTY = 180.0"));
+        assert!(text.contains("@ROTY += 1"));
+    }
+
+    #[test]
+    fn entry_template_is_indented_by_two_spaces() {
+        // CoffeeScript はインデントで構造が決まる
+        let text = build_entry_template("gameMain");
+        assert!(text.contains("\n  constructor: (param) ->\n    super(param)\n"));
+        assert!(text.contains("\n  behavior: (e) ->\n    super(e)\n"));
+        assert!(text.contains("\n    switch @proc\n      when 0\n        @ROTY += 1\n"));
+    }
+
+    #[test]
+    fn entry_template_ends_with_a_newline() {
+        assert!(build_entry_template("gameMain").ends_with("\n"));
+    }
+
+    #[test]
+    fn templates_use_the_given_name() {
+        assert!(build_class_template("Ship").starts_with("class Ship "));
+        assert!(build_entry_template("Ship").starts_with("class Ship "));
     }
 }

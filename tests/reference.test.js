@@ -10,8 +10,11 @@ const DIR = join(import.meta.dir, "..", "web", "reference");
 const load = (lang) => JSON.parse(readFileSync(join(DIR, `${lang}.json`), "utf8"));
 
 describe("構成", () => {
-  test("4つの章がある", () => {
-    expect(SECTIONS.map((s) => s.id)).toEqual(["start", "basics", "api", "ide"]);
+  test("章立て（目次のタブと同じ並び）", () => {
+    expect(SECTIONS.map((s) => s.id)).toEqual([
+      "start", "basics", "create", "props", "methods", "hit",
+      "global", "camera", "light", "pad", "ide",
+    ]);
   });
 
   test("どの章にも中身がある", () => {
