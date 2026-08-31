@@ -1984,3 +1984,19 @@ body.footer-expanded .footer-log {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* 一覧から説明へ飛ぶための名前（押せることが分かるようにする） */
+.reference-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.reference-link:hover {
+  text-decoration-thickness: 2px;
+}

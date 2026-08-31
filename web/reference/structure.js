@@ -16,6 +16,17 @@
 /** 翻訳キーを表すセルを作る */
 const t = (k) => ({ k });
 
+/**
+ * 飛び先つきのセルを作る
+ *
+ * 一覧の名前を押したら、その項目の説明まで動かす。
+ * 項目が増えたので、上から探し直さずに済むようにする。
+ *
+ * @param text そのまま見せる文字（API名など）
+ * @param to 飛び先の見出しの翻訳キー
+ */
+const link = (text, to) => ({ text, to });
+
 export const SECTIONS = [
   {
     id: "start",
@@ -230,16 +241,17 @@ behavior: (e) ->
         type: "table",
         head: [t("ref.col.method"), t("ref.col.what")],
         rows: [
-          ["@addObject", t("ref.m.addObject")],
-          ["@removeObject", t("ref.m.removeObject")],
-          ["@setAnimation", t("ref.m.setAnimation")],
-          ["@removeAfterAnimation", t("ref.m.removeAfterAnimation")],
-          ["@waitjob", t("ref.m.waitjob")],
-          ["@isWaiting", t("ref.m.isWaiting")],
-          ["@intersect", t("ref.hit.intersect")],
-          ["@collision", t("ref.hit.collision")],
-          ["behavior", t("ref.m.behavior")],
-          ["destructor", t("ref.m.destructor")],
+          [link("@addObject", "ref.h.addObject"), t("ref.m.addObject")],
+          [link("@removeObject", "ref.h.removeObject"), t("ref.m.removeObject")],
+          [link("@setAnimation", "ref.h.setAnimation"), t("ref.m.setAnimation")],
+          [link("@removeAfterAnimation", "ref.h.removeAfterAnimation"),
+            t("ref.m.removeAfterAnimation")],
+          [link("@waitjob", "ref.h.waitjob"), t("ref.m.waitjob")],
+          [link("@isWaiting", "ref.h.waitjob"), t("ref.m.isWaiting")],
+          [link("@intersect", "ref.h.ask"), t("ref.hit.intersect")],
+          [link("@collision", "ref.h.ask"), t("ref.hit.collision")],
+          [link("behavior", "ref.h.behavior"), t("ref.m.behavior")],
+          [link("destructor", "ref.h.behavior"), t("ref.m.destructor")],
         ],
       },
 
@@ -395,13 +407,13 @@ setDebug false` },
         type: "table",
         head: [t("ref.col.method"), t("ref.col.what")],
         rows: [
-          ["setScreenSize", t("ref.m.setScreenSize")],
-          ["isKeyDown", t("ref.m.isKeyDown")],
-          ["echo", t("ref.m.echo")],
-          ["logClear", t("ref.m.logClear")],
-          ["random", t("ref.m.random")],
-          ["setDebug", t("ref.m.setDebug")],
-          ["GLOBAL", t("ref.m.GLOBAL")],
+          [link("setScreenSize", "ref.h.setScreenSize"), t("ref.m.setScreenSize")],
+          [link("isKeyDown", "ref.h.isKeyDown"), t("ref.m.isKeyDown")],
+          [link("echo", "ref.h.echo"), t("ref.m.echo")],
+          [link("logClear", "ref.h.echo"), t("ref.m.logClear")],
+          [link("random", "ref.h.random"), t("ref.m.random")],
+          [link("setDebug", "ref.h.debug"), t("ref.m.setDebug")],
+          [link("GLOBAL", "ref.h.GLOBAL"), t("ref.m.GLOBAL")],
         ],
       },
 
@@ -637,4 +649,29 @@ export function referenceKeys() {
     }
   }
   return keys;
+}
+
+/**
+ * 見出しの id
+ *
+ * 章をまたいでも重ならないよう、翻訳キーをそのまま使う。
+ */
+export function headingId(key) {
+  return `ref-h-${String(key).replace(/\./g, "-")}`;
+}
+
+/**
+ * その見出しが載っている章の id
+ *
+ * 飛び先が別の章にある場合は、先にその章へ切り替える必要がある。
+ * 見つからなければ null（飛び先を持たせない）。
+ */
+export function sectionOfHeading(key) {
+  if (typeof key !== "string") return null;
+  for (const section of SECTIONS) {
+    for (const block of section.blocks) {
+      if (block.type === "heading" && block.k === key) return section.id;
+    }
+  }
+  return null;
 }

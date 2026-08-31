@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { SECTIONS, referenceKeys } from "../web/reference/structure.js";
+import { SECTIONS, referenceKeys, sectionOfHeading, headingId } from "../web/reference/structure.js";
 import { SUPPORTED_LANGS } from "../web/i18n.js";
 
 const DIR = join(import.meta.dir, "..", "web", "reference");
@@ -92,5 +92,40 @@ describe("各言語の内容", () => {
     const same = keys.filter((k) => ja[k] === en[k]);
     // 記号だけの項目は一致しうるが、大半が一致するのは訳し漏れ
     expect(same.length).toBeLessThan(keys.length * 0.2);
+  });
+});
+
+describe("一覧から説明へ飛ぶ", () => {
+  test("見出しのキーから、それが載っている章を引ける", () => {
+    expect(sectionOfHeading("ref.h.addObject")).toBe("methods");
+    expect(sectionOfHeading("ref.h.boundary")).toBe("hit");
+    expect(sectionOfHeading("ref.h.isKeyDown")).toBe("global");
+  });
+
+  test("知らない見出しなら null", () => {
+    // 飛び先が無い場合は、ただの文字として見せる
+    expect(sectionOfHeading("ref.h.unknown")).toBeNull();
+    expect(sectionOfHeading(null)).toBeNull();
+  });
+
+  test("見出しの id は、キーから決まる", () => {
+    // 章をまたいでも重ならないよう、キーをそのまま使う
+    expect(headingId("ref.h.addObject")).toBe("ref-h-ref-h-addObject");
+    expect(headingId("ref.api.h.event")).toBe("ref-h-ref-api-h-event");
+  });
+
+  test("飛び先つきのセルは、必ず存在する見出しを指す", () => {
+    const targets = [];
+    const visit = (v) => {
+      if (!v || typeof v !== "object") return;
+      if (typeof v.to === "string") targets.push(v.to);
+      if (Array.isArray(v)) v.forEach(visit);
+      else Object.values(v).forEach(visit);
+    };
+    for (const s of SECTIONS) visit(s.blocks);
+    expect(targets.length).toBeGreaterThan(0);
+    for (const to of targets) {
+      expect(sectionOfHeading(to)).not.toBeNull();
+    }
   });
 });

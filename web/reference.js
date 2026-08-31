@@ -4,7 +4,7 @@
 // 横長のときはゲーム表示エリアと同じ場所へ、そうでないときは右ペイン全体へ出す。
 
 import { getLanguage, FALLBACK_LANG, t } from "./i18n.js";
-import { SECTIONS } from "./reference/structure.js";
+import { SECTIONS, headingId, sectionOfHeading } from "./reference/structure.js";
 
 const OPEN_CLASS = "reference-open";
 
@@ -33,19 +33,23 @@ export function isReferenceOpen() {
   return document.body.classList.contains(OPEN_CLASS);
 }
 
-/** セルを文字列にする（{k} は翻訳、それ以外はそのまま） */
+/** セルを文字列にする（{k} は翻訳、{text} はそのまま、それ以外もそのまま） */
 function cellText(cell, dict) {
-  if (cell && typeof cell === "object" && typeof cell.k === "string") {
-    return dict[cell.k] ?? cell.k;
+  if (cell && typeof cell === "object") {
+    if (typeof cell.k === "string") return dict[cell.k] ?? cell.k;
+    // 飛び先つきのセル。名前は翻訳しない（API名のため）
+    if (typeof cell.text === "string") return cell.text;
   }
   return String(cell);
 }
 
 /** ブロックを組み立てる */
-function buildBlock(block, dict) {
+function buildBlock(block, dict, goTo) {
   if (block.type === "heading") {
     const el = document.createElement("h3");
     el.className = "reference-heading";
+    // 一覧から飛べるように、翻訳キーから決まる id を付ける
+    el.id = headingId(block.k);
     el.textContent = dict[block.k] ?? block.k;
     return el;
   }
@@ -86,8 +90,20 @@ function buildBlock(block, dict) {
       const td = document.createElement("td");
       const text = cellText(cell, dict);
       // 翻訳しないセル（API名や記号）は等幅で見せる
-      if (typeof cell === "string") td.className = "reference-mono";
-      td.textContent = text;
+      if (typeof cell === "string" || typeof cell?.to === "string") {
+        td.className = "reference-mono";
+      }
+      // 飛び先を持つセルは押せるようにする。持たないものはただの文字のまま
+      if (typeof cell?.to === "string" && goTo) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "reference-link";
+        button.textContent = text;
+        button.addEventListener("click", () => goTo(cell.to));
+        td.appendChild(button);
+      } else {
+        td.textContent = text;
+      }
       // 最初の列は見出し扱いにして読みやすくする
       if (i === 0) td.classList.add("reference-first");
       tr.appendChild(td);
@@ -124,6 +140,23 @@ async function render() {
     body.scrollTop = 0;
   };
 
+  /**
+   * 一覧の名前から、その項目の説明まで動かす
+   *
+   * 飛び先が別の章にある場合は、**先に章を切り替える**。
+   * 隠れたままだと位置が測れず、動かせないため。
+   */
+  const goTo = (key) => {
+    const sectionId = sectionOfHeading(key);
+    if (sectionId) show(sectionId);
+    const heading = document.getElementById(headingId(key));
+    if (!heading) return;
+    // scrollIntoView は入れ子の都合で途中までしか動かないことがあるため、
+    // 表示領域からの差を測って自分でずらす。少し上に余白を残す
+    const offset = heading.getBoundingClientRect().top - body.getBoundingClientRect().top;
+    body.scrollTop += offset - 8;
+  };
+
   for (const section of SECTIONS) {
     const title = dict[section.title] ?? section.title;
 
@@ -145,7 +178,7 @@ async function render() {
     heading.textContent = title;
     panel.appendChild(heading);
 
-    for (const block of section.blocks) panel.appendChild(buildBlock(block, dict));
+    for (const block of section.blocks) panel.appendChild(buildBlock(block, dict, goTo));
     body.appendChild(panel);
     panels.set(section.id, panel);
   }
