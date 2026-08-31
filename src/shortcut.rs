@@ -1,7 +1,7 @@
 //! ゲーム実行のキーボードショートカットの判定（仕様書6.5節）。
 //!
 //! - **ESC** は必ず「停止」（トグルではない）
-//! - **⌘/Ctrl + Enter** は「実行」と「停止」のトグル
+//! - **⌘（Mac）/ Windowsキー + Enter** は「実行」と「停止」のトグル
 //!
 //! ただしエディタにフォーカスがある間は ESC を横取りしない。
 //! vimキーバインドでは ESC で入力モードを抜けるため、そのたびに
@@ -62,8 +62,11 @@ pub struct KeyPress<'a> {
     pub key: &'a str,
     /// `KeyboardEvent.code`（`"KeyN"` など。配列や修飾キーに影響されない）
     pub code: &'a str,
-    /// ⌘（Mac）または Ctrl
-    pub command: bool,
+    /// ⌘（Mac）または Windowsキー（GUIキー）
+    ///
+    /// **Ctrl は含めない。**Windows では Ctrl+Enter がブラウザまで届かないことがあり、
+    /// 押しても効かないキーを案内することになるため。
+    pub meta: bool,
     /// Alt（Option）
     pub alt: bool,
     /// Shift
@@ -88,12 +91,12 @@ pub struct KeyContext {
 /// 押されたキーから、行う操作を決める
 ///
 /// * `key` — `KeyboardEvent.key`
-/// * `command` — ⌘（Mac）または Ctrl が押されているか
+/// * `meta` — ⌘（Mac）または Windowsキーが押されているか
 /// * `running` — ゲームを実行中か
 /// * `editor_focused` — エディタにフォーカスがあるか
 pub fn resolve(press: &KeyPress, ctx: &KeyContext) -> Shortcut {
     // Alt+Shift+N はフッターのログの開閉。編集中でも効かせる
-    if press.code == "KeyN" && press.alt && press.shift && !press.command {
+    if press.code == "KeyN" && press.alt && press.shift && !press.meta {
         return Shortcut::ToggleLog;
     }
 
@@ -118,9 +121,9 @@ pub fn resolve(press: &KeyPress, ctx: &KeyContext) -> Shortcut {
         return Shortcut::None;
     }
 
-    // ⌘/Ctrl+Enter は実行と停止のトグル。エディタの編集中でも効かせる。
+    // ⌘/Windowsキー+Enter は実行と停止のトグル。エディタの編集中でも効かせる。
     // ESCと違って横取りしてよい。vimの入力モードには関わらないため
-    if press.key == "Enter" && press.command && ctx.project_open {
+    if press.key == "Enter" && press.meta && ctx.project_open {
         return if ctx.running { Shortcut::Stop } else { Shortcut::Start };
     }
 
@@ -132,8 +135,8 @@ mod tests {
     use super::*;
 
     /// テスト用に、押されたキーを組み立てる（`code` は `key` から推測する）
-    fn press(key: &str, command: bool) -> KeyPress<'_> {
-        KeyPress { key, code: key, command, alt: false, shift: false }
+    fn press(key: &str, meta: bool) -> KeyPress<'_> {
+        KeyPress { key, code: key, meta, alt: false, shift: false }
     }
 
     /// テスト用に、そのときの状態を組み立てる
@@ -197,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_starts_game() {
+    fn meta_enter_starts_game() {
         assert_eq!(resolve(
             &press("Enter", true),
             &ctx(false, false, true, false),
@@ -205,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_works_while_editing() {
+    fn meta_enter_works_while_editing() {
         assert_eq!(resolve(
             &press("Enter", true),
             &ctx(false, true, true, false),
@@ -213,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_stops_while_running() {
+    fn meta_enter_stops_while_running() {
         // トグル。実行中に押したら止める
         assert_eq!(resolve(
             &press("Enter", true),
@@ -222,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_stops_even_while_editing() {
+    fn meta_enter_stops_even_while_editing() {
         // ESCと違い、編集中でも横取りする（vimの入力モードには関わらないため）
         assert_eq!(resolve(
             &press("Enter", true),
@@ -231,7 +234,7 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_stop_moves_focus_to_editor() {
+    fn meta_enter_stop_moves_focus_to_editor() {
         let action = resolve(
             &press("Enter", true),
             &ctx(true, false, true, false),
@@ -240,7 +243,7 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_does_nothing_without_project() {
+    fn meta_enter_does_nothing_without_project() {
         // プロジェクトが無ければ、実行も停止もしない
         assert_eq!(resolve(
             &press("Enter", true),
@@ -250,6 +253,8 @@ mod tests {
 
     #[test]
     fn plain_enter_does_nothing() {
+        // Ctrl+Enter もここに入る。Ctrl は `KeyPress` に持たせていないため、
+        // 修飾なしと同じ扱いになる（Windows で届かないことがあるため対象外）
         assert_eq!(resolve(
             &press("Enter", false),
             &ctx(false, false, true, false),
@@ -290,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    fn command_enter_moves_to_game() {
+    fn meta_enter_moves_to_game() {
         let action = resolve(
             &press("Enter", true),
             &ctx(false, true, true, false),
@@ -350,39 +355,39 @@ mod tests {
 
     #[test]
     fn alt_shift_n_toggles_log() {
-        let p = KeyPress { key: "n", code: "KeyN", command: false, alt: true, shift: true };
+        let p = KeyPress { key: "n", code: "KeyN", meta: false, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::ToggleLog);
     }
 
     #[test]
     fn log_toggle_works_while_editing() {
-        let p = KeyPress { key: "n", code: "KeyN", command: false, alt: true, shift: true };
+        let p = KeyPress { key: "n", code: "KeyN", meta: false, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(true, true, true, true)), Shortcut::ToggleLog);
     }
 
     #[test]
     fn no_toggle_without_alt() {
-        let p = KeyPress { key: "n", code: "KeyN", command: false, alt: false, shift: true };
+        let p = KeyPress { key: "n", code: "KeyN", meta: false, alt: false, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::None);
     }
 
     #[test]
     fn no_toggle_without_shift() {
-        let p = KeyPress { key: "n", code: "KeyN", command: false, alt: true, shift: false };
+        let p = KeyPress { key: "n", code: "KeyN", meta: false, alt: true, shift: false };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::None);
     }
 
     #[test]
-    fn no_toggle_with_command() {
+    fn no_toggle_with_meta() {
         // ⌘やCtrlとの組み合わせは別の操作に使われうるため、横取りしない
-        let p = KeyPress { key: "n", code: "KeyN", command: true, alt: true, shift: true };
+        let p = KeyPress { key: "n", code: "KeyN", meta: true, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::None);
     }
 
     #[test]
     fn detects_by_code_when_key_changes() {
         // macOSでは Alt+N が「˜」になるため、key ではなく code で判定する
-        let p = KeyPress { key: "˜", code: "KeyN", command: false, alt: true, shift: true };
+        let p = KeyPress { key: "˜", code: "KeyN", meta: false, alt: true, shift: true };
         assert_eq!(resolve(&p, &ctx(false, false, true, false)), Shortcut::ToggleLog);
     }
 

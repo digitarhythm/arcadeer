@@ -1651,7 +1651,7 @@ fn wire_game_input() -> Result<(), JsValue> {
     canvas.add_event_listener_with_callback("keyup", on_up.as_ref().unchecked_ref())?;
     on_up.forget();
 
-    // ESCは必ず「停止」、⌘/Ctrl+Enter は必ず「実行」にする（どちらもトグルではない）
+    // ESCは必ず「停止」。⌘/Windowsキー+Enter は実行と停止のトグル（6.5節）
     let on_escape = Closure::<dyn FnMut(_)>::new(move |e: web_sys::KeyboardEvent| {
         let key = e.key();
         let code = e.code();
@@ -1659,7 +1659,9 @@ fn wire_game_input() -> Result<(), JsValue> {
             &KeyPress {
                 key: &key,
                 code: &code,
-                command: e.meta_key() || e.ctrl_key(),
+                // Windows では Ctrl+Enter がブラウザまで届かないことがあるため、
+                // ⌘（Mac）と Windowsキー だけを見る（6.5節）
+                meta: e.meta_key(),
                 alt: e.alt_key(),
                 shift: e.shift_key(),
             },
