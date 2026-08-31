@@ -3437,19 +3437,22 @@ async fn rebuild_object_thumbnails(object_names: Vec<String>) {
     };
 
     for name in object_names {
-        // 前の絵とホバー指定を落としてから作り直す
-        reset_object_thumbnail(&name);
-
+        // **絵を消すのは、指し示すものが無いと分かった時だけ。**
+        // 先に消してしまうと、作り直しにしくじった時（WebGLの都合など）に
+        // 空のまま残ってしまう。差し替えは新しい絵ができてから行う
         let Ok(source) = read_text_file(&code_dir, &class_file_name(&name)).await else {
             continue;
         };
         let Some(asset) = parse_model_ref(&source) else {
+            // @MODEL を消した場合は、既定のアイコンへ戻す
+            reset_object_thumbnail(&name);
             continue;
         };
         // 組み込みプリミティブ（box / sphere など）は、その形を白く描いて出す。
         // ファイルが無いので、ここで済ませてしまう
         if is_primitive_name(&asset) {
             if let Some(data_url) = build_primitive_thumbnail(&asset).await {
+                reset_object_thumbnail(&name);
                 set_object_thumbnail(&name, &data_url);
                 enable_object_primitive_hover(&name, &asset);
             }
@@ -3457,18 +3460,23 @@ async fn rebuild_object_thumbnails(object_names: Vec<String>) {
         }
         // 拡張子で画像か3Dモデルかを判断する（既定値の "primitive" はここで除かれる）
         let Some(kind) = classify_resource(&asset) else {
+            reset_object_thumbnail(&name);
             continue;
         };
         let Some(dir) = ensure_asset_subdir(&project, kind).await else {
             continue;
         };
         let Some(url) = load_asset_url(&dir, &asset, &name).await else {
+            // ファイルが見つからない（消された等）
+            reset_object_thumbnail(&name);
             continue;
         };
 
         match kind {
             ResourceKind::Model => {
+                // 描けなかった場合は、いまの絵をそのまま残す（一時的な失敗のことがある）
                 if let Some(data_url) = build_model_thumbnail(&url).await {
+                    reset_object_thumbnail(&name);
                     set_object_thumbnail(&name, &data_url);
                     // ホバーで回して確認できるようにする
                     enable_object_model_hover(&name, &url);
@@ -3476,7 +3484,10 @@ async fn rebuild_object_thumbnails(object_names: Vec<String>) {
             }
             // 音声には見た目が無いため、サムネイルにはしない
             ResourceKind::Sound => {}
-            ResourceKind::Image => set_object_thumbnail(&name, &url),
+            ResourceKind::Image => {
+                reset_object_thumbnail(&name);
+                set_object_thumbnail(&name, &url);
+            }
         }
     }
 }
