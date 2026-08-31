@@ -47,8 +47,9 @@ export const SECTIONS = [
 
   behavior: (e) ->
     super(e)
-    @X -= 0.1 if isKeyDown("ArrowLeft")
-    @X += 0.1 if isKeyDown("ArrowRight")`,
+    pad = GAMEPAD[0]
+    @X -= 0.1 if pad.cursor[3].pressed
+    @X += 0.1 if pad.cursor[1].pressed`,
       },
       { type: "heading", k: "ref.start.h3" },
       { type: "text", k: "ref.start.d3" },
@@ -413,6 +414,7 @@ setDebug false` },
 @X += 4 if isKeyDown("ArrowRight")
 @jump() if isKeyDown("Space")` },
       { type: "text", k: "ref.m.isKeyDown.d" },
+      { type: "text", k: "ref.m.isKeyDown.pad" },
 
       { type: "heading", k: "ref.h.echo" },
       { type: "code", code: `echo "X=%@ Y=%@", @X, @Y
