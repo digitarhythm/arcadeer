@@ -29,6 +29,7 @@
 // 画面にもWebGLにも依存しないため単体テストできる。
 
 import { KIND_2D, KIND_3D, KIND_PRIMITIVE, resolveKind } from "./kind.js";
+import { effectiveScale } from "./scene.js";
 
 /** 指定できる形 */
 const SHAPES = ["box", "sphere", "cylinder"];
@@ -109,9 +110,8 @@ export function boundsOf(object) {
   if (c === undefined) {
     const look = lookBounds(object);
     if (!look) return null;
-    const sx = toPositive(object.SCALEX, 1);
-    const sy = toPositive(object.SCALEY, 1);
-    const sz = toPositive(object.SCALEZ, 1);
+    // 描画と同じ倍率を使う（@RADIUS もここで効く。6.2.5節）
+    const [sx, sy, sz] = effectiveScale(object);
     return {
       shape: "box",
       X: toNumber(object.X) + look.center[0] * sx,

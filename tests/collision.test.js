@@ -358,3 +358,31 @@ describe("円柱の判定", () => {
     expect(hitBetweenXY(a, boundsOf(obj(0, 1.05, 0, { height: 0.2 })))).toBe(true);
   });
 });
+
+describe("@RADIUS は当たり判定にも効く", () => {
+  test("@BOUNDARY を書かなければ、見た目どおりの大きさになる", () => {
+    // 元の形は半径0.5。@RADIUS = 2 なら、中心から端まで 2
+    const b = boundsOf({ MODEL: "sphere", KIND: "PRIM", RADIUS: 2, X: 0, Y: 0, Z: 0 });
+    expect(b.hw).toBeCloseTo(2, 6);
+    expect(b.hh).toBeCloseTo(2, 6);
+    expect(b.hd).toBeCloseTo(2, 6);
+  });
+
+  test("円柱は太さだけが変わり、高さは @SCALEY のまま", () => {
+    const b = boundsOf({
+      MODEL: "cylinder", KIND: "PRIM", RADIUS: 1, SCALEY: 6, X: 0, Y: 0, Z: 0,
+    });
+    expect(b.hw).toBeCloseTo(1, 6);
+    expect(b.hh).toBeCloseTo(3, 6);
+    expect(b.hd).toBeCloseTo(1, 6);
+  });
+
+  test("@BOUNDARY を書いた場合は、これまでどおり @RADIUS に影響されない", () => {
+    // 自分で書いた判定は見た目と切り離す（5.5節）
+    const b = boundsOf({
+      MODEL: "sphere", KIND: "PRIM", RADIUS: 10, X: 0, Y: 0, Z: 0,
+      BOUNDARY: { shape: "sphere", radius: 0.5 },
+    });
+    expect(b.r).toBeCloseTo(0.5, 6);
+  });
+});

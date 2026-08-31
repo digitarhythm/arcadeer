@@ -53,12 +53,56 @@ export function isPrimitive(object) {
  * 拡大縮小 → 回転（**Z → X → Y** の順）→ 平行移動 の順に効く。
  * 回転は扱いやすさを優先して**度**で指定する。
  */
-export function modelMatrix(object) {
-  const scale = scaling(
+/** 丸いプリミティブ。@RADIUS が効くもの */
+const ROUND_SHAPES = ["sphere", "cylinder", "cone"];
+
+/** 正の有限数だけを通す（それ以外は「書かなかった」ものとして扱う） */
+function positive(value) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/**
+ * そのオブジェクトの実際の拡大率（仕様書6.2.5節）
+ *
+ * 丸いプリミティブは `@RADIUS` で太さを指定できる。**書けば `@SCALE` より優先する**。
+ * 掛け合わせないのは、`@RADIUS = 1` と書いたのに `@SCALEX = 2` が残っていて
+ * 半径2になる、という分かりにくさを避けるため。
+ *
+ * ```coffee
+ * @MODEL = "sphere"
+ * @RADIUS = 0.25      # 3軸を書かなくてよい
+ *
+ * @MODEL = "cylinder"
+ * @RADIUS = 1         # 太さ
+ * @SCALEY = 3         # 高さは @SCALEY のまま
+ * ```
+ *
+ * 元の形はどれも原点中心の 1×1×1（半径0.5）なので、**倍率は `@RADIUS` の2倍**になる。
+ *
+ * 描画と当たり判定の両方がここを通る。別々に書くと必ずずれるため。
+ *
+ * @returns `[x, y, z]` の倍率
+ */
+export function effectiveScale(object) {
+  const scale = [
     num(object?.SCALEX, 1),
     num(object?.SCALEY, 1),
     num(object?.SCALEZ, 1),
-  );
+  ];
+
+  const radius = positive(object?.RADIUS);
+  if (radius === null) return scale;
+  // 組み込みプリミティブのうち、丸いものだけが対象
+  const shape = typeof object?.MODEL === "string" ? object.MODEL.toLowerCase() : "";
+  if (!ROUND_SHAPES.includes(shape) || !isPrimitive(object)) return scale;
+
+  const width = radius * 2;
+  // 球は3軸とも。円柱と円錐は太さ（X・Z）だけで、高さは @SCALEY のまま
+  return shape === "sphere" ? [width, width, width] : [width, scale[1], width];
+}
+
+export function modelMatrix(object) {
+  const scale = scaling(...effectiveScale(object));
   const rotation = multiply(
     rotationY(rad(object?.ROTY)),
     multiply(rotationX(rad(object?.ROTX)), rotationZ(rad(object?.ROTZ))),

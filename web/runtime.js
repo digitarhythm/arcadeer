@@ -268,6 +268,10 @@ export class ArcadeerMain {
     this.ROTY = normalizeAngle(param.ROTY ?? 0);
     this.ROTZ = normalizeAngle(param.ROTZ ?? 0);
 
+    // 丸いプリミティブ（sphere / cylinder / cone）の太さ。
+    // 書けば @SCALE より優先する（6.2.5節）。未指定は null
+    this.RADIUS = param.RADIUS ?? null;
+
     this.SCALEX = param.SCALEX ?? 1;
     this.SCALEY = param.SCALEY ?? 1;
     this.SCALEZ = param.SCALEZ ?? 1;

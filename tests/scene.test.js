@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   isRenderable3D,
   modelMatrix,
+  effectiveScale,
   modelsUsedBy,
   isPrimitive,
   KIND_NONE,
@@ -208,5 +209,63 @@ describe("種別の名前指定と自動判定", () => {
   test("明示した指定は MODEL より優先する", () => {
     // 3Dモデルを指定していても、PRIM と書けば3Dとしては描かない
     expect(isRenderable3D({ KIND: "PRIM", MODEL: "cat.glb" })).toBe(false);
+  });
+});
+
+describe("丸いプリミティブの太さ（@RADIUS）", () => {
+  test("球は3軸とも @RADIUS の2倍になる", () => {
+    // 元の形は半径0.5なので、@RADIUS = 1 なら倍率2
+    expect(effectiveScale({ MODEL: "sphere", RADIUS: 1 })).toEqual([2, 2, 2]);
+    expect(effectiveScale({ MODEL: "sphere", RADIUS: 0.25 })).toEqual([0.5, 0.5, 0.5]);
+  });
+
+  test("円柱と円錐は太さだけで、高さは @SCALEY のまま", () => {
+    expect(effectiveScale({ MODEL: "cylinder", RADIUS: 1, SCALEY: 3 })).toEqual([2, 3, 2]);
+    expect(effectiveScale({ MODEL: "cone", RADIUS: 0.5, SCALEY: 4 })).toEqual([1, 4, 1]);
+  });
+
+  test("@RADIUS は @SCALE より優先する", () => {
+    // 掛け合わせない。書いた値がそのまま太さになる
+    expect(effectiveScale({ MODEL: "sphere", RADIUS: 1, SCALEX: 5, SCALEY: 5, SCALEZ: 5 }))
+      .toEqual([2, 2, 2]);
+  });
+
+  test("箱と板には効かない", () => {
+    expect(effectiveScale({ MODEL: "box", RADIUS: 3, SCALEX: 2 })).toEqual([2, 1, 1]);
+    expect(effectiveScale({ MODEL: "plane", RADIUS: 3 })).toEqual([1, 1, 1]);
+  });
+
+  test("3Dモデルには効かない", () => {
+    // ファイル名に sphere が入っていても、モデルはモデル
+    expect(effectiveScale({ MODEL: "sphere.glb", KIND: "3D", RADIUS: 3 })).toEqual([1, 1, 1]);
+  });
+
+  test("書かなければ @SCALE のまま", () => {
+    expect(effectiveScale({ MODEL: "sphere", SCALEX: 2, SCALEY: 3, SCALEZ: 4 }))
+      .toEqual([2, 3, 4]);
+    expect(effectiveScale({ MODEL: "sphere" })).toEqual([1, 1, 1]);
+  });
+
+  test("使えない値は書かなかったものとして扱う", () => {
+    // 書き間違いで描画が消えないように
+    for (const bad of [0, -1, "1", null, NaN, Infinity]) {
+      expect(effectiveScale({ MODEL: "sphere", RADIUS: bad, SCALEX: 2, SCALEY: 2, SCALEZ: 2 }))
+        .toEqual([2, 2, 2]);
+    }
+  });
+
+  test("渡されなくても落ちない", () => {
+    expect(effectiveScale(null)).toEqual([1, 1, 1]);
+  });
+});
+
+describe("@RADIUS は配置行列にも効く", () => {
+  test("球の端が @RADIUS のぶんだけ動く", () => {
+    // 元の形の端（0.5）が、@RADIUS = 2 なら 2 になる
+    const m = modelMatrix({ MODEL: "sphere", RADIUS: 2, X: 0, Y: 0, Z: 0 });
+    const [x, y, z] = transformPoint(m, [0.5, 0.5, 0.5]);
+    expect(x).toBeCloseTo(2, 6);
+    expect(y).toBeCloseTo(2, 6);
+    expect(z).toBeCloseTo(2, 6);
   });
 });

@@ -137,6 +137,7 @@ export const SECTIONS = [
           ["@GRAVITY", t("ref.p.gravity"), "0"],
           ["@ROTX @ROTY @ROTZ", t("ref.p.rot"), "0"],
           ["@SCALEX @SCALEY @SCALEZ", t("ref.p.scale"), "1"],
+          ["@RADIUS", t("ref.p.radius"), "-"],
           ["@MODEL", t("ref.p.model"), '""'],
           ["@KIND", t("ref.p.kind"), t("ref.p.auto")],
           ["@COLOR", t("ref.p.color"), '""'],
@@ -203,6 +204,13 @@ behavior: (e) ->
   @ALPHA -= 0.02
   @removeObject @ if @ALPHA <= 0` },
       { type: "text", k: "ref.api.d.alpha" },
+      { type: "code", code: `@MODEL = "sphere"
+@RADIUS = 0.25
+
+@MODEL = "cylinder"
+@RADIUS = 1
+@SCALEY = 3` },
+      { type: "text", k: "ref.api.d.radius" },
 
       { type: "heading", k: "ref.api.h.event" },
       { type: "text", k: "ref.api.d.event" },

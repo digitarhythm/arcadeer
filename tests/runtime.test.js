@@ -1101,3 +1101,13 @@ describe("透明度（@ALPHA）", () => {
     expect(new ArcadeerMain({ ALPHA: 0.5 }).ALPHA).toBe(0.5);
   });
 });
+
+describe("丸いプリミティブの太さ（@RADIUS）", () => {
+  test("既定は未指定（@SCALE がそのまま効く）", () => {
+    expect(new ArcadeerMain({}).RADIUS).toBeNull();
+  });
+
+  test("生成時に指定できる", () => {
+    expect(new ArcadeerMain({ RADIUS: 0.25 }).RADIUS).toBe(0.25);
+  });
+});

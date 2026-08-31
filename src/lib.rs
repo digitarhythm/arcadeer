@@ -1651,7 +1651,7 @@ fn wire_game_input() -> Result<(), JsValue> {
     canvas.add_event_listener_with_callback("keyup", on_up.as_ref().unchecked_ref())?;
     on_up.forget();
 
-    // ESCは必ず「停止」。⌘/Windowsキー+Enter は実行と停止のトグル（6.5節）
+    // ESCは必ず「停止」。⌘/Ctrl+Enter は実行と停止のトグル（6.5節）
     let on_escape = Closure::<dyn FnMut(_)>::new(move |e: web_sys::KeyboardEvent| {
         let key = e.key();
         let code = e.code();
@@ -1659,9 +1659,7 @@ fn wire_game_input() -> Result<(), JsValue> {
             &KeyPress {
                 key: &key,
                 code: &code,
-                // Windows では Ctrl+Enter がブラウザまで届かないことがあるため、
-                // ⌘（Mac）と Windowsキー だけを見る（6.5節）
-                meta: e.meta_key(),
+                command: e.meta_key() || e.ctrl_key(),
                 alt: e.alt_key(),
                 shift: e.shift_key(),
             },
@@ -1673,30 +1671,30 @@ fn wire_game_input() -> Result<(), JsValue> {
                 dialog_open: is_dialog_open(),
             },
         );
+        // 引き受けたキーは、エディタなどへ渡さない。
+        // 捕捉フェーズで受けているため、止めないと改行が入ってしまう
+        if action != Shortcut::None {
+            e.prevent_default();
+            e.stop_propagation();
+        }
         match action {
-            Shortcut::Stop => {
-                e.prevent_default();
-                stop_game();
-            }
-            Shortcut::Start => {
-                e.prevent_default();
-                start_game();
-            }
-            Shortcut::CloseReference => {
-                e.prevent_default();
-                call_global("arcadeerToggleReference");
-            }
-            Shortcut::ToggleLog => {
-                e.prevent_default();
-                call_global("arcadeerToggleFooterLog");
-            }
+            Shortcut::Stop => stop_game(),
+            Shortcut::Start => start_game(),
+            Shortcut::CloseReference => call_global("arcadeerToggleReference"),
+            Shortcut::ToggleLog => call_global("arcadeerToggleFooterLog"),
             Shortcut::None => {}
         }
         move_focus(focus_after(action));
     });
+    // **捕捉フェーズで受ける。**エディタ（Ace）は自分が扱ったキーの伝播を止めるため、
+    // 通常の（浮上）フェーズだと、編集中の ⌘/Ctrl+Enter が届かないことがある（6.5節）
     window()
         .ok_or_else(|| JsValue::from_str("no window"))?
-        .add_event_listener_with_callback("keydown", on_escape.as_ref().unchecked_ref())?;
+        .add_event_listener_with_callback_and_bool(
+            "keydown",
+            on_escape.as_ref().unchecked_ref(),
+            true,
+        )?;
     on_escape.forget();
 
     // 画面外へフォーカスが移ったら押しっぱなし扱いを解除する
