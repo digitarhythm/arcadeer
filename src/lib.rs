@@ -1606,6 +1606,8 @@ fn stop_game() {
         }
     });
     set_fps_display(None);
+    // 止めたのに画面いっぱいのままだと、IDEへ戻れない
+    exit_fullscreen();
 
     log(&t("msg.gameStopped"));
     update_game_buttons();
@@ -1810,6 +1812,70 @@ fn fit_game_canvas() {
     }
 }
 
+/// ゲーム画面を画面いっぱいに表示しているか
+fn is_fullscreen() -> bool {
+    window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.fullscreen_element())
+        .is_some()
+}
+
+/// ゲーム画面を画面いっぱいにする（実行中だけ）
+///
+/// 対象は canvas を置いている領域（`#ide-game-body`）。
+/// canvas 自体を対象にすると余白の色が指定できないため、囲む領域ごと出す。
+/// 大きさ合わせは `fullscreenchange` で `fit_game_canvas` が行う。
+fn enter_fullscreen() {
+    if !RUN_STATE.with(|s| s.borrow().is_running()) {
+        return;
+    }
+    let Some(document) = window().and_then(|w| w.document()) else {
+        return;
+    };
+    let Some(area) = document.get_element_by_id("ide-game-body") else {
+        return;
+    };
+    // 断られても（利用者の操作なし等）実行は続ける
+    let _ = area.request_fullscreen();
+}
+
+/// 画面いっぱいの表示をやめる（していなければ何もしない）
+fn exit_fullscreen() {
+    if !is_fullscreen() {
+        return;
+    }
+    if let Some(document) = window().and_then(|w| w.document()) {
+        document.exit_fullscreen();
+    }
+}
+
+/// ゲーム画面のダブルクリックで、画面いっぱいの表示を出し入れする（仕様書6.5節）
+fn wire_fullscreen(document: &Document, canvas: &Element) -> Result<(), JsValue> {
+    let on_double_click = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
+        if is_fullscreen() {
+            exit_fullscreen();
+        } else {
+            enter_fullscreen();
+        }
+    });
+    canvas.add_event_listener_with_callback("dblclick", on_double_click.as_ref().unchecked_ref())?;
+    on_double_click.forget();
+
+    // 出入りしたら canvas の大きさを合わせ直す。
+    // ブラウザの ESC で戻った場合もここを通るので、こちらで追いかける必要はない
+    let on_change = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
+        fit_game_canvas();
+        // 続けて遊べるよう、フォーカスはゲーム画面に残す
+        if RUN_STATE.with(|s| s.borrow().is_running()) {
+            move_focus(FocusTarget::Game);
+        }
+    });
+    document
+        .add_event_listener_with_callback("fullscreenchange", on_change.as_ref().unchecked_ref())?;
+    on_change.forget();
+    Ok(())
+}
+
 /// ゲーム実行中のキー入力を受け取る
 ///
 /// canvas にフォーカスがある状態で押されたキーを記録し、ゲームコードから
@@ -1821,6 +1887,7 @@ fn wire_game_input() -> Result<(), JsValue> {
     let canvas = document
         .get_element_by_id("game-canvas")
         .ok_or_else(|| JsValue::from_str("#game-canvas not found"))?;
+    wire_fullscreen(&document, &canvas)?;
 
     let on_down = Closure::<dyn FnMut(_)>::new(move |e: web_sys::KeyboardEvent| {
         // ブラウザ既定の動作（スクロールなど）を止めてゲームへ渡す
@@ -1855,6 +1922,7 @@ fn wire_game_input() -> Result<(), JsValue> {
                 project_open: CURRENT_PROJECT.with(|c| c.borrow().is_some()),
                 reference_open: is_reference_open(),
                 dialog_open: is_dialog_open(),
+                fullscreen: is_fullscreen(),
             },
         );
         // 引き受けたキーは、エディタなどへ渡さない。
@@ -1868,6 +1936,7 @@ fn wire_game_input() -> Result<(), JsValue> {
             Shortcut::Start => start_game(),
             // ゲームは動かしたまま。フォーカスだけ下で移す
             Shortcut::FocusEditor => {}
+            Shortcut::ExitFullscreen => exit_fullscreen(),
             Shortcut::CloseReference => call_global("arcadeerToggleReference"),
             Shortcut::ToggleLog => call_global("arcadeerToggleFooterLog"),
             Shortcut::None => {}

@@ -845,6 +845,16 @@ body.footer-expanded {
   border-radius: 4px;
 }
 
+/* 画面いっぱいの表示（ゲーム画面のダブルクリック）。余白も黒にして枠を消す */
+.ide-game-body:fullscreen {
+  background: #000;
+}
+
+.ide-game-body:fullscreen .game-canvas {
+  border: none;
+  border-radius: 0;
+}
+
 /*
  * ブラウザウィンドウが 横:縦 = 16:9 より横に広い場合、
  * メイン部を左右half&halfに分割し、右をゲーム実行画面にする。

@@ -3,6 +3,7 @@
 //! - **ESC** は必ず「停止」（トグルではない）
 //! - **⌘/Ctrl + Enter** は「実行」と「停止」のトグル
 //! - **Alt + ⌘/Ctrl + Enter** は、実行したまま**エディタへ戻る**
+//! - フルスクリーン中の **ESC** は画面いっぱいの表示を戻すだけ（ゲームは止めない）
 //!
 //! ただしエディタにフォーカスがある間は ESC を横取りしない。
 //! vimキーバインドでは ESC で入力モードを抜けるため、そのたびに
@@ -19,6 +20,8 @@ pub enum Shortcut {
     Start,
     /// ゲームは止めずに、エディタへフォーカスを戻す
     FocusEditor,
+    /// 画面いっぱいの表示をやめる（ゲームは止めない）
+    ExitFullscreen,
     /// リファレンスを閉じる
     CloseReference,
     /// フッターのログの開閉を切り替える
@@ -49,6 +52,8 @@ pub fn focus_after(action: Shortcut) -> FocusTarget {
         Shortcut::Start => FocusTarget::Game,
         // 動かしたまま書き直せるようにする
         Shortcut::FocusEditor => FocusTarget::Editor,
+        // 続けて遊べるよう、フォーカスはゲーム画面に残す
+        Shortcut::ExitFullscreen => FocusTarget::Game,
         // 読むのをやめただけなので、フォーカスは動かさない
         Shortcut::CloseReference => FocusTarget::None,
         // 編集を続けられるよう、フォーカスは動かさない
@@ -91,6 +96,8 @@ pub struct KeyContext {
     pub reference_open: bool,
     /// ダイアログ（キーコンフィグなど）を開いているか
     pub dialog_open: bool,
+    /// ゲーム画面を画面いっぱいに表示しているか（6.5節）
+    pub fullscreen: bool,
 }
 
 /// 押されたキーから、行う操作を決める
@@ -111,6 +118,11 @@ pub fn resolve(press: &KeyPress, ctx: &KeyContext) -> Shortcut {
         // 横取りするとゲームだけが止まり、閉じるのに2回押すことになる。
         if ctx.dialog_open {
             return Shortcut::None;
+        }
+        // 画面いっぱいの表示は、いちばん外側の状態。先に戻し、ゲームは止めない。
+        // ブラウザ自身も ESC で戻すが、キーが届く場合に備えてこちらでも受ける
+        if ctx.fullscreen {
+            return Shortcut::ExitFullscreen;
         }
         // エディタの編集中は横取りしない（vimが入力モードを抜けるのに使うため）
         if ctx.editor_focused {
@@ -157,7 +169,14 @@ mod tests {
 
     /// テスト用に、そのときの状態を組み立てる
     fn ctx(running: bool, editor_focused: bool, project_open: bool, reference_open: bool) -> KeyContext {
-        KeyContext { running, editor_focused, project_open, reference_open, dialog_open: false }
+        KeyContext {
+            running,
+            editor_focused,
+            project_open,
+            reference_open,
+            dialog_open: false,
+            fullscreen: false,
+        }
     }
 
     /// ダイアログを開いている状態
@@ -168,6 +187,7 @@ mod tests {
             project_open: true,
             reference_open,
             dialog_open: true,
+            fullscreen: false,
         }
     }
 
@@ -483,5 +503,66 @@ mod tests {
             &press("Enter", true),
             &ctx(true, false, true, false),
         ), Shortcut::Stop);
+    }
+
+    // --- フルスクリーン（ゲーム画面のダブルクリックで出入りする） ---
+
+    /** フルスクリーン中の状態 */
+    fn ctx_fullscreen(running: bool, reference_open: bool) -> KeyContext {
+        KeyContext {
+            running,
+            editor_focused: false,
+            project_open: true,
+            reference_open,
+            dialog_open: false,
+            fullscreen: true,
+        }
+    }
+
+    #[test]
+    fn esc_leaves_fullscreen_before_stopping() {
+        // 画面いっぱいの状態を先に戻す。ゲームは止めない
+        assert_eq!(
+            resolve(&press("Escape", false), &ctx_fullscreen(true, false)),
+            Shortcut::ExitFullscreen
+        );
+    }
+
+    #[test]
+    fn esc_leaves_fullscreen_even_with_reference_open() {
+        // 画面いっぱいのほうが外側なので、リファレンスより先に戻す
+        assert_eq!(
+            resolve(&press("Escape", false), &ctx_fullscreen(true, true)),
+            Shortcut::ExitFullscreen
+        );
+    }
+
+    #[test]
+    fn dialog_still_wins_over_fullscreen() {
+        // ダイアログは最前面に出るため、閉じるのが最優先のまま
+        let ctx = KeyContext {
+            running: true,
+            editor_focused: false,
+            project_open: true,
+            reference_open: false,
+            dialog_open: true,
+            fullscreen: true,
+        };
+        assert_eq!(resolve(&press("Escape", false), &ctx), Shortcut::None);
+    }
+
+    #[test]
+    fn leaving_fullscreen_keeps_focus_on_game() {
+        // 続けて遊べるよう、フォーカスはゲーム画面に残す
+        assert_eq!(focus_after(Shortcut::ExitFullscreen), FocusTarget::Game);
+    }
+
+    #[test]
+    fn command_enter_still_stops_in_fullscreen() {
+        // トグルはフルスクリーンでも変わらない
+        assert_eq!(
+            resolve(&press("Enter", true), &ctx_fullscreen(true, false)),
+            Shortcut::Stop
+        );
     }
 }
