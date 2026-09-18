@@ -113,6 +113,8 @@
   "msg.renderInitFailed": "绘制准备失败\n{detail}",
   "msg.modelLoadFailed": "无法加载模型“{name}”",
   "msg.modelsLoaded": "已加载 {count} 个 3D 模型",
+  "msg.imageLoadFailed": "无法加载图片 '{name}'",
+  "msg.imagesLoaded": "已加载 {count} 张图片",
   "welcome.title": "首先，选择保存游戏的位置",
   "welcome.lead": "一个游戏就是一个文件夹。请先告诉本应用要把它们统一放在哪里。只会在所选位置内读写。",
   "welcome.step1.title": "点击文件夹图标",
@@ -173,5 +175,7 @@
   "modelView.copied": "已复制“{name}”",
   "modelView.copyFailed": "无法复制",
   "modelView.unavailable": "无法显示：WebGL 不可用",
-  "modelView.unreadable": "无法读取该模型"
+  "modelView.unreadable": "无法读取该模型",
+  "imageView.cellSize": "精灵尺寸",
+  "imageView.unreadable": "无法读取此图片"
 }

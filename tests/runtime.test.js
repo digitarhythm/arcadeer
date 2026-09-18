@@ -10,6 +10,9 @@ import {
   setScreenSize,
   screenSize,
   resetScreenSize,
+  setPlane,
+  planes,
+  resetPlanes,
   DEFAULT_SCREEN_WIDTH,
   DEFAULT_SCREEN_HEIGHT,
   MAX_SCREEN_SIZE,
@@ -1154,5 +1157,72 @@ describe("生成時の引数は小文字（camelCase）", () => {
     expect(o.SCALEX).toBe(1);
     expect(o.MODEL).toBe("primitive");
     expect(o.ALPHA).toBe(1);
+  });
+});
+
+describe("2Dスプライトの生成（size / pattern / anim）", () => {
+  test("引数がプロパティになる", () => {
+    const o = new ArcadeerMain({
+      model: "cat.png", size: 32, pattern: [[0], [1, 2]], anim: 1,
+    });
+    expect(o.SIZE).toBe(32);
+    expect(o.PATTERN).toEqual([
+      { cells: [0], interval: 6 },
+      { cells: [1, 2], interval: 6 },
+    ]);
+    expect(o.ANIM).toBe(1);
+  });
+
+  test("anim を省略すると 0", () => {
+    expect(new ArcadeerMain({ model: "cat.png", size: 32, pattern: [[0]] }).ANIM).toBe(0);
+  });
+
+  test("書かなければ、絵として切り出さない", () => {
+    const o = new ArcadeerMain({ model: "cat.png" });
+    expect(o.SIZE).toBe(0);
+    expect(o.PATTERN).toEqual([]);
+  });
+
+  test("2Dでは、正の重力が画面の下（Yが増える向き）へ引く", () => {
+    // 2Dは左上が原点でYが下向き。3Dと「見た目の意味」をそろえる
+    const o = new ArcadeerMain({ model: "cat.png", gravity: 1 });
+    o.behavior();
+    expect(o.YS).toBe(1);
+    expect(o.Y).toBe(1);
+  });
+
+  test("3Dではこれまでどおり、正の重力でYが減る", () => {
+    const o = new ArcadeerMain({ model: "cat.glb", gravity: 1 });
+    o.behavior();
+    expect(o.YS).toBe(-1);
+  });
+});
+
+describe("プレーン（setPlane）", () => {
+  beforeEach(() => resetPlanes());
+
+  test("既定は 3D の下に -1、上に 0 の2枚", () => {
+    expect(planes()).toEqual([-1, 0]);
+  });
+
+  test("setPlane(n1, n2) で下の枚数と上の枚数を決める", () => {
+    setPlane(2, 3);
+    expect(planes()).toEqual([-2, -1, 0, 1, 2]);
+  });
+
+  test("0 を渡すと既定の1枚ずつ", () => {
+    setPlane(0, 0);
+    expect(planes()).toEqual([-1, 0]);
+  });
+
+  test("ゲームを止めると既定へ戻る", () => {
+    setPlane(3, 3);
+    resetPlanes();
+    expect(planes()).toEqual([-1, 0]);
+  });
+
+  test("@addObject の plane が @PLANE になる。省略すると 0", () => {
+    expect(new ArcadeerMain({ model: "cat.png", plane: -1 }).PLANE).toBe(-1);
+    expect(new ArcadeerMain({ model: "cat.png" }).PLANE).toBe(0);
   });
 });

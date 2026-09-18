@@ -5,6 +5,8 @@ import {
   modelMatrix,
   effectiveScale,
   modelsUsedBy,
+  imagesUsedBy,
+  isSprite,
   isPrimitive,
   KIND_NONE,
   KIND_PRIMITIVE,
@@ -267,5 +269,22 @@ describe("@RADIUS は配置行列にも効く", () => {
     expect(x).toBeCloseTo(2, 6);
     expect(y).toBeCloseTo(2, 6);
     expect(z).toBeCloseTo(2, 6);
+  });
+});
+
+describe("2Dスプライトの選別", () => {
+  test("画像を指す2Dだけが対象", () => {
+    expect(isSprite({ MODEL: "cat.png" })).toBe(true);
+    expect(isSprite({ MODEL: "cat.png", KIND: "NONE" })).toBe(false);
+    expect(isSprite({ MODEL: "cat.glb" })).toBe(false);
+    expect(isSprite({ MODEL: "box" })).toBe(false);
+    expect(isSprite(null)).toBe(false);
+  });
+
+  test("使っている画像の名前を重複なく集める", () => {
+    const names = imagesUsedBy([
+      { MODEL: "cat.png" }, { MODEL: "cat.png" }, { MODEL: "dog.PNG" }, { MODEL: "cat.glb" },
+    ]);
+    expect([...names].sort()).toEqual(["cat.png", "dog.PNG"]);
   });
 });

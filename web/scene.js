@@ -5,6 +5,10 @@
 import { multiply, translation, scaling, rotationX, rotationY, rotationZ } from "./matrix.js";
 import { isPrimitiveName } from "./primitive.js";
 import { KIND_NONE, KIND_PRIMITIVE, KIND_2D, KIND_3D, resolveKind } from "./kind.js";
+import { isSprite } from "./sprite.js";
+
+// 2Dの選別は sprite.js が持つ。ここからも使えるように通す
+export { isSprite };
 
 /** 3Dモデルとして扱う拡張子 */
 const MODEL_EXTS = [".glb", ".gltf"];
@@ -118,6 +122,15 @@ export function modelsUsedBy(objects) {
   const names = new Set();
   for (const object of objects ?? []) {
     if (isRenderable3D(object)) names.add(object.MODEL);
+  }
+  return [...names];
+}
+
+/** 2Dが使っている画像の名前を、重複を除いて集める（事前読み込みに使う） */
+export function imagesUsedBy(objects) {
+  const names = new Set();
+  for (const object of objects ?? []) {
+    if (isSprite(object)) names.add(object.MODEL);
   }
   return [...names];
 }

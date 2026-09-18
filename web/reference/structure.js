@@ -168,6 +168,10 @@ export const SECTIONS = [
           ["shadow", t("ref.p.shadow"), "true"],
           ["boundary", t("ref.p.boundary"), "-"],
           ["proc", t("ref.p.proc"), "0"],
+          [link("size", "ref.h.sprite"), t("ref.sp.size"), "0"],
+          [link("pattern", "ref.h.pattern"), t("ref.sp.pattern"), "[]"],
+          [link("anim", "ref.h.pattern"), t("ref.sp.anim"), "0"],
+          [link("plane", "ref.h.setPlane"), t("ref.sp.plane"), "0"],
         ],
       },
       { type: "text", k: "ref.api.d.argmap" },
@@ -205,6 +209,10 @@ export const SECTIONS = [
           ["@ALPHA", t("ref.p.alpha"), "1"],
           ["@SHADOW", t("ref.p.shadow"), "true"],
           ["@BOUNDARY", t("ref.p.boundary"), "-"],
+          [link("@SIZE", "ref.h.sprite"), t("ref.sp.size"), "0"],
+          [link("@PATTERN", "ref.h.pattern"), t("ref.sp.pattern"), "[]"],
+          [link("@ANIM", "ref.h.pattern"), t("ref.sp.anim"), "0"],
+          [link("@PLANE", "ref.h.setPlane"), t("ref.sp.plane"), "0"],
           ["@proc", t("ref.p.proc"), "0"],
           ["@animation", t("ref.p.animation"), "null"],
           ["@animationFinished", t("ref.p.animfin"), "false"],
@@ -408,6 +416,7 @@ setDebug false` },
         head: [t("ref.col.method"), t("ref.col.what")],
         rows: [
           [link("setScreenSize", "ref.h.setScreenSize"), t("ref.m.setScreenSize")],
+          [link("setPlane", "ref.h.setPlane"), t("ref.m.setPlane")],
           [link("isKeyDown", "ref.h.isKeyDown"), t("ref.m.isKeyDown")],
           [link("echo", "ref.h.echo"), t("ref.m.echo")],
           [link("logClear", "ref.h.echo"), t("ref.m.logClear")],
@@ -444,6 +453,104 @@ logClear()` },
 GLOBAL.SCORE += 100
 echo "score=%@", GLOBAL.SCORE` },
       { type: "text", k: "ref.m.GLOBAL.d" },
+    ],
+  },
+
+  {
+    id: "sprite",
+    title: "ref.sprite.title",
+    blocks: [
+      { type: "heading", k: "ref.h.sprite" },
+      { type: "text", k: "ref.sprite.intro" },
+      { type: "code", code: `class gameMain extends arcadeermain
+  constructor: (param) ->
+    super(param)
+    setPlane 1, 2
+
+    @cat = @addObject
+      name: "cat"
+      model: "default-cat.png"
+      size: 32
+      pattern: [
+        { cells: [0], interval: 30 }
+        { cells: [1, 2, 3, 2, 1], interval: 6 }
+        { cells: [4, 5], interval: 4 }
+      ]
+      anim: 1
+      x: 320
+      y: 240
+      plane: 0` },
+      {
+        type: "table",
+        head: [t("ref.col.param"), t("ref.col.meaning"), t("ref.col.default")],
+        rows: [
+          ["size / @SIZE", t("ref.sp.size"), "0"],
+          ["pattern / @PATTERN", t("ref.sp.pattern"), "[]"],
+          ["anim / @ANIM", t("ref.sp.anim"), "0"],
+          ["plane / @PLANE", t("ref.sp.plane"), "0"],
+        ],
+      },
+
+      { type: "heading", k: "ref.h.cells" },
+      { type: "text", k: "ref.sprite.cells" },
+      { type: "code", code: ` 0  1  2  3  4  5  6  7
+ 8  9 10 11 12 13 14 15` },
+
+      { type: "heading", k: "ref.h.pattern" },
+      { type: "code", code: `pattern: [
+  { cells: [0], interval: 30 }
+  { cells: [1, 2, 3, 2, 1], interval: 6 }
+]
+
+pattern: [[0], [1, 2, 3, 2, 1], [4, 5]]
+
+behavior: (e) ->
+  super(e)
+  @ANIM = if @XS is 0 then 0 else 1` },
+      { type: "text", k: "ref.sprite.pattern" },
+
+      { type: "heading", k: "ref.h.coords2d" },
+      { type: "text", k: "ref.sprite.coords" },
+      { type: "code", code: `@GRAVITY = 0.3
+@YS = -8
+@SCALEX = -1 if @XS < 0
+@SCALEX = 1 if @XS > 0
+@ROTZ += 2` },
+
+      { type: "heading", k: "ref.h.setPlane" },
+      { type: "code", code: `setPlane 2, 3
+
+@sky = @addObject
+  name: "sky"
+  model: "sky.png"
+  size: 256
+  pattern: [[0]]
+  plane: -2` },
+      { type: "text", k: "ref.sprite.planes" },
+      {
+        type: "table",
+        head: [t("ref.col.call"), t("ref.col.planes")],
+        rows: [
+          [t("ref.sprite.nocall"), "-1, 0"],
+          ["setPlane 0, 0", "-1, 0"],
+          ["setPlane 1, 3", "-1, 0, 1, 2"],
+          ["setPlane 2, 1", "-2, -1, 0"],
+        ],
+      },
+
+      { type: "heading", k: "ref.h.defaultSheet" },
+      { type: "text", k: "ref.sprite.sheet" },
+      {
+        type: "table",
+        head: [t("ref.col.cell"), t("ref.col.meaning")],
+        rows: [
+          ["0 / 8", t("ref.sheet.stand")],
+          ["1, 2, 3 / 9, 10, 11", t("ref.sheet.walk")],
+          ["4, 5 / 12, 13", t("ref.sheet.jump")],
+          ["6, 7 / 14, 15", t("ref.sheet.down")],
+        ],
+      },
+      { type: "text", k: "ref.sprite.hit" },
     ],
   },
 

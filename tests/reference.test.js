@@ -13,8 +13,13 @@ describe("構成", () => {
   test("章立て（目次のタブと同じ並び）", () => {
     expect(SECTIONS.map((s) => s.id)).toEqual([
       "start", "basics", "create", "props", "methods", "hit",
-      "global", "camera", "light", "pad", "ide",
+      "global", "sprite", "camera", "light", "pad", "ide",
     ]);
+  });
+
+  test("2Dの見出しは 2D の章にある", () => {
+    expect(sectionOfHeading("ref.h.setPlane")).toBe("sprite");
+    expect(sectionOfHeading("ref.h.pattern")).toBe("sprite");
   });
 
   test("どの章にも中身がある", () => {

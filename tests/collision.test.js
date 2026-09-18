@@ -431,3 +431,29 @@ describe("@BOUNDARY のキーは大文字", () => {
     expect(boundsOf(at({ MODEL: "torus" })).shape).toBe("box");
   });
 });
+
+describe("2Dスプライトの判定", () => {
+  test("@BOUNDARY を書かなければ、コマの大きさ × SCALE が判定になる", () => {
+    const b = boundsOf({ MODEL: "cat.png", KIND: "2D", SIZE: 32, X: 100, Y: 80, Z: 0, SCALEX: 2, SCALEY: 1 });
+    expect(b.X).toBe(100);
+    expect(b.Y).toBe(80);
+    expect([b.hw, b.hh]).toEqual([32, 16]);
+  });
+
+  test("向きを変えた（SCALEX が負）でも大きさは同じ", () => {
+    const b = boundsOf({ MODEL: "cat.png", KIND: "2D", SIZE: 32, X: 0, Y: 0, Z: 0, SCALEX: -1 });
+    expect(b.hw).toBe(16);
+  });
+
+  test("コマの大きさが無い2Dは判定を持たない", () => {
+    expect(boundsOf({ MODEL: "cat.png", KIND: "2D", X: 0, Y: 0, Z: 0 })).toBeNull();
+  });
+
+  test("2Dどうしは、ピクセルの矩形で当たる", () => {
+    const a = { MODEL: "a.png", KIND: "2D", SIZE: 32, X: 100, Y: 100, Z: 0 };
+    const b = { MODEL: "b.png", KIND: "2D", SIZE: 32, X: 131, Y: 100, Z: 0 };
+    const c = { MODEL: "c.png", KIND: "2D", SIZE: 32, X: 133, Y: 100, Z: 0 };
+    expect(findHit(a, b, "2d")).toBe(b);
+    expect(findHit(a, c, "2d")).toBeNull();
+  });
+});

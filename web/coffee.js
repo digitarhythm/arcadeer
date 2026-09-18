@@ -11,6 +11,8 @@ import {
   createObject,
   setScreenSize,
   resetScreenSize,
+  setPlane,
+  resetPlanes,
   isKeyDown,
 } from "./runtime.js";
 import { echo, logClear } from "./console-log.js";
@@ -94,6 +96,7 @@ function compileClass(compiler, className, source) {
     const factory = new Function(
       "arcadeermain",
       "setScreenSize",
+      "setPlane",
       "isKeyDown",
       "echo",
       "logClear",
@@ -118,6 +121,7 @@ function compileClass(compiler, className, source) {
     const klass = factory(
       ArcadeerMain,
       setScreenSize,
+      setPlane,
       isKeyDown,
       echo,
       logClear,
@@ -166,6 +170,7 @@ export async function buildClasses(files) {
   clearClasses();
   // 前回の実行で指定された内容を持ち越さない
   resetScreenSize();
+  resetPlanes();
   clearCameras();
   clearLights();
   // 前回の実行で入れた値を持ち越さない

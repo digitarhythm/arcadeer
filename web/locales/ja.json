@@ -113,6 +113,8 @@
   "msg.renderInitFailed": "描画の準備に失敗しました\n{detail}",
   "msg.modelLoadFailed": "モデル '{name}' を読み込めませんでした",
   "msg.modelsLoaded": "3Dモデルを {count} 件読み込みました",
+  "msg.imageLoadFailed": "画像 '{name}' を読み込めませんでした",
+  "msg.imagesLoaded": "画像を {count} 件読み込みました",
   "welcome.title": "はじめに、ゲームを保存する場所を選びます",
   "welcome.lead": "ゲーム1本が、1つのフォルダーになります。まず、それらをまとめて置く場所をこのアプリへ知らせてください。選んだ場所の中だけを読み書きします。",
   "welcome.step1.title": "フォルダーアイコンを押す",
@@ -173,5 +175,7 @@
   "modelView.copied": "「{name}」をコピーしました",
   "modelView.copyFailed": "コピーできませんでした",
   "modelView.unavailable": "WebGLが使えないため表示できません",
-  "modelView.unreadable": "このモデルは読み取れませんでした"
+  "modelView.unreadable": "このモデルは読み取れませんでした",
+  "imageView.cellSize": "スプライトサイズ",
+  "imageView.unreadable": "この画像は読み取れませんでした"
 }

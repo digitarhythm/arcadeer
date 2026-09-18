@@ -39,6 +39,68 @@ pub fn parse_model_ref(source: &str) -> Option<String> {
     found
 }
 
+/// 行頭の空白の数（インデントの深さ）
+fn indent_of(line: &str) -> usize {
+    line.len() - line.trim_start().len()
+}
+
+/// `key: 値` の形の行なら、キーの後ろの値部分を返す（`key` はインデントを除いた行頭にあること）
+fn keyed_value<'a>(line: &'a str, key: &str) -> Option<&'a str> {
+    let rest = line.trim_start().strip_prefix(key)?;
+    let rest = rest.trim_start();
+    rest.strip_prefix(':')
+}
+
+/// ある画像を使う `@addObject` の `size:` を読み取る（画像の詳細表示の初期値に使う。4.4節）
+///
+/// `model: "画像名"` の行を見つけ、**同じブロック**（空行、またはその行より浅いインデントで区切る）
+/// の中から `size: 整数` を探す。`size` が `model` より前に書かれていてもよい。
+///
+/// - コメント行（`#` で始まる行）は無視する
+/// - 数値でない指定（`size: @cellSize`）は読み取れないため飛ばす
+/// - 同じ画像を何か所かで使っている場合は**最初に見つけたもの**を採る
+pub fn find_sprite_size(source: &str, file_name: &str) -> Option<u32> {
+    let lines: Vec<&str> = source.lines().collect();
+    let is_comment = |line: &str| line.trim_start().starts_with('#');
+
+    for (index, line) in lines.iter().enumerate() {
+        if is_comment(line) {
+            continue;
+        }
+        let Some(value) = keyed_value(line, "model") else {
+            continue;
+        };
+        if first_string_literal(value).as_deref() != Some(file_name) {
+            continue;
+        }
+
+        // ブロックの範囲を決める（同じかそれより深いインデントで、空行までの続き）
+        let depth = indent_of(line);
+        let in_block = |candidate: &str| !candidate.trim().is_empty() && indent_of(candidate) >= depth;
+        let start = (0..index).rev().take_while(|&i| in_block(lines[i])).last().unwrap_or(index);
+        let end = (index + 1..lines.len())
+            .take_while(|&i| in_block(lines[i]))
+            .last()
+            .unwrap_or(index);
+
+        for candidate in &lines[start..=end] {
+            if is_comment(candidate) || indent_of(candidate) != depth {
+                continue;
+            }
+            let Some(value) = keyed_value(candidate, "size") else {
+                continue;
+            };
+            let number: String = value.trim().chars().take_while(|c| c.is_ascii_digit()).collect();
+            let after = value.trim()[number.len()..].trim_start();
+            let clean = after.is_empty() || after.starts_with('#');
+            if let (Ok(size), true) = (number.parse::<u32>(), clean) {
+                return Some(size);
+            }
+        }
+    }
+    None
+}
+
 /// 行の中で最初に現れる文字列リテラルの中身を取り出す
 fn first_string_literal(text: &str) -> Option<String> {
     let mut chars = text.chars();
@@ -196,6 +258,104 @@ mod tests {
     }
 
     // --- 雛形 ---
+
+    // --- find_sprite_size ---
+
+    #[test]
+    fn sprite_size_is_read_next_to_the_model_argument() {
+        let source = "\
+class gameMain extends arcadeermain
+  constructor: (param) ->
+    super(param)
+    @cat = @addObject
+      name: \"cat\"
+      model: \"default-cat.png\"
+      size: 32
+      pattern: [[0], [1, 2, 3]]
+";
+        assert_eq!(find_sprite_size(source, "default-cat.png"), Some(32));
+    }
+
+    #[test]
+    fn sprite_size_written_before_model_is_also_found() {
+        let source = "\
+    @cat = @addObject
+      name: \"cat\"
+      size: 48
+      x: 100
+      model: 'default-cat.png'
+";
+        assert_eq!(find_sprite_size(source, "default-cat.png"), Some(48));
+    }
+
+    #[test]
+    fn sprite_size_belongs_to_the_same_add_object_block() {
+        // 別の @addObject の size は拾わない
+        let source = "\
+    @a = @addObject
+      name: \"a\"
+      model: \"other.png\"
+      size: 16
+
+    @b = @addObject
+      name: \"b\"
+      model: \"default-cat.png\"
+      x: 0
+";
+        assert_eq!(find_sprite_size(source, "default-cat.png"), None);
+        assert_eq!(find_sprite_size(source, "other.png"), Some(16));
+    }
+
+    #[test]
+    fn sprite_size_ignores_comment_lines() {
+        let source = "\
+    @cat = @addObject
+      model: \"default-cat.png\"
+      # size: 99
+      size: 24
+";
+        assert_eq!(find_sprite_size(source, "default-cat.png"), Some(24));
+    }
+
+    #[test]
+    fn sprite_size_needs_a_whole_number() {
+        let source = "\
+    @cat = @addObject
+      model: \"default-cat.png\"
+      size: @cellSize
+";
+        assert_eq!(find_sprite_size(source, "default-cat.png"), None);
+    }
+
+    #[test]
+    fn sprite_size_matches_the_exact_file_name() {
+        let source = "\
+    @cat = @addObject
+      model: \"default-cat-2.png\"
+      size: 64
+";
+        assert_eq!(find_sprite_size(source, "default-cat.png"), None);
+        assert_eq!(find_sprite_size(source, "default-cat-2.png"), Some(64));
+    }
+
+    #[test]
+    fn sprite_size_takes_the_first_use_when_the_image_is_used_twice() {
+        let source = "\
+    @a = @addObject
+      model: \"default-cat.png\"
+      size: 32
+    @b = @addObject
+      model: \"default-cat.png\"
+      size: 16
+";
+        assert_eq!(find_sprite_size(source, "default-cat.png"), Some(32));
+    }
+
+    #[test]
+    fn sprite_size_is_none_when_the_image_is_not_used() {
+        assert_eq!(find_sprite_size("class a extends arcadeermain\n", "default-cat.png"), None);
+        assert_eq!(find_sprite_size("", "default-cat.png"), None);
+    }
 
     #[test]
     fn class_template_starts_from_waitjob() {

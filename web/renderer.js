@@ -12,13 +12,25 @@ import { multiply, lightViewProjection, transformPoint } from "./matrix.js";
 import { viewMatrix, projectionMatrix } from "./camera.js";
 import { lights, shadowLight, ambient, lightVector, MAX_LIGHTS as LIGHT_LIMIT } from "./light.js";
 import { isRenderable3D, isPrimitive, modelMatrix } from "./scene.js";
+import {
+  normalizePattern,
+  cellRect,
+  createSpriteState,
+  advanceSprite,
+  currentCell,
+  spriteUv,
+  spriteQuad,
+  screenProjection,
+  splitByPlane,
+  DEFAULT_PLANES,
+} from "./sprite.js";
 import { buildPrimitive } from "./primitive.js";
 import { parseColor, objectColor } from "./color.js";
 import { splitByAlpha } from "./draw-order.js";
 import { splitCasters, transmittanceOf } from "./shadow-cast.js";
 import { setModelBoxLookup, boundsOf } from "./collision.js";
 import { debugOption, boundaryLines, DEBUG_COLOR } from "./debug-draw.js";
-import { resolveKind } from "./kind.js";
+import { resolveKind, KIND_2D } from "./kind.js";
 
 /** シェーダーへ渡せるボーンの上限 */
 const MAX_JOINTS = 32;
@@ -232,6 +244,29 @@ void main() {
 }
 `;
 
+// 2Dスプライト。画面のピクセル座標で四角を置き、画像の一部を貼る（6.2.11節）
+const SPRITE_VERTEX = `
+attribute vec2 aPosition;
+attribute vec2 aUv;
+uniform mat4 uProjection;
+varying vec2 vUv;
+void main() {
+  vUv = aUv;
+  gl_Position = uProjection * vec4(aPosition, 0.0, 1.0);
+}`;
+
+const SPRITE_FRAGMENT = `
+precision mediump float;
+uniform sampler2D uTexture;
+uniform vec4 uColor;
+varying vec2 vUv;
+void main() {
+  vec4 color = texture2D(uTexture, vUv) * uColor;
+  // 完全に透明なところは書かない（PNG の透過をそのまま使う）
+  if (color.a <= 0.0) discard;
+  gl_FragColor = color;
+}`;
+
 const BLIT_VERTEX = `
 attribute vec2 aCorner;
 varying vec2 vUv;
@@ -258,6 +293,13 @@ let transmitProgram = null;
 let transmitTarget = null;
 let blitProgram = null;
 let blitBuffer = null;
+
+/** 2Dスプライトの描画プログラムと頂点バッファ */
+let spriteProgram = null;
+let spriteBuffer = null;
+
+/** 読み込み済みの画像（ファイル名 → GPUテクスチャと大きさ） */
+const images = new Map();
 /** 裏フレームバッファ一式 */
 let back = null;
 /** モデル名 → GPUへ載せたデータ */
@@ -383,6 +425,8 @@ export function initRenderer(canvas) {
     transmitTarget = createShadowTarget(shadowTarget.depth);
     blitProgram = createProgram(BLIT_VERTEX, BLIT_FRAGMENT);
     lineProgram = createProgram(LINE_VERTEX, LINE_FRAGMENT);
+    spriteProgram = createProgram(SPRITE_VERTEX, SPRITE_FRAGMENT);
+    spriteBuffer = gl.createBuffer();
 
     blitBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, blitBuffer);
@@ -397,6 +441,50 @@ export function initRenderer(canvas) {
     createBackBuffer(canvas.width, canvas.height);
   }
   return true;
+}
+
+/**
+ * 2Dの絵として使う画像をGPUへ載せる（読み込み済みなら何もしない）
+ *
+ * ドット絵をにじませないよう、拡大縮小は補間しない（NEAREST）。
+ * PNG の透過はそのまま使う。
+ *
+ * @returns {Promise<boolean>} 使える状態になったか
+ */
+export async function loadImage(name, url) {
+  if (!gl) throw new Error("renderer is not ready");
+  if (images.has(name)) return true;
+
+  const image = new Image();
+  image.decoding = "async";
+  await new Promise((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error(`${name}: cannot decode image`));
+    image.src = url;
+  });
+  if (image.naturalWidth === 0 || image.naturalHeight === 0) {
+    throw new Error(`${name}: image has no size`);
+  }
+
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  // 画像の上端を v=0 にそろえる（コマの番号は左上から数えるため）
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
+  images.set(name, { texture, width: image.naturalWidth, height: image.naturalHeight });
+  return true;
+}
+
+/** 読み込み済みの画像の名前 */
+export function loadedImages() {
+  return [...images.keys()];
 }
 
 /**
@@ -543,6 +631,12 @@ export function clearModels() {
     }
   }
   primitives.clear();
+
+  // 画像も一緒に捨てる。次の実行で読み直すため
+  if (gl) {
+    for (const image of images.values()) gl.deleteTexture(image.texture);
+  }
+  images.clear();
 }
 
 /** 属性を割り当てる */
@@ -779,10 +873,15 @@ export function drawScene(objects, camera) {
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, back.framebuffer);
   gl.viewport(0, 0, back.width, back.height);
-  gl.enable(gl.DEPTH_TEST);
   gl.clearColor(0.06, 0.06, 0.1, 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  // 2Dは 下のプレーン → 3D → 上のプレーン の順（6.2.11節）
+  const planes = window.arcadeerPlanes?.() ?? DEFAULT_PLANES;
+  const { below, above } = splitByPlane(objects, planes);
+  drawSprites(below);
+
+  gl.enable(gl.DEPTH_TEST);
   gl.useProgram(sceneProgram);
   const view = viewMatrix(camera);
   gl.uniformMatrix4fv(
@@ -886,8 +985,116 @@ export function drawScene(objects, camera) {
 
   drawBoundaries(objects ?? [], view, camera);
 
+  drawSprites(above);
+
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
+
+/**
+ * 2Dスプライトを、渡された順に重ねて描く（6.2.11節）
+ *
+ * 画面のピクセル座標（左上が原点、Yが下向き）で置く。
+ * 深度は使わず、**あとに描いたものが上**に重なる。
+ * 読み込めていない画像や、無いコマ番号のものは飛ばす。
+ */
+function drawSprites(list) {
+  if (list.length === 0 || !spriteProgram) return;
+
+  gl.disable(gl.DEPTH_TEST);
+  gl.depthMask(false);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  gl.useProgram(spriteProgram);
+  gl.uniformMatrix4fv(
+    gl.getUniformLocation(spriteProgram, "uProjection"),
+    false,
+    screenProjection(back.width, back.height),
+  );
+  gl.activeTexture(gl.TEXTURE0);
+  gl.uniform1i(gl.getUniformLocation(spriteProgram, "uTexture"), 0);
+  const colorLocation = gl.getUniformLocation(spriteProgram, "uColor");
+
+  const positionAttrib = gl.getAttribLocation(spriteProgram, "aPosition");
+  const uvAttrib = gl.getAttribLocation(spriteProgram, "aUv");
+  gl.bindBuffer(gl.ARRAY_BUFFER, spriteBuffer);
+  gl.enableVertexAttribArray(positionAttrib);
+  gl.enableVertexAttribArray(uvAttrib);
+  // 1頂点 = 位置(2) + UV(2)
+  gl.vertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 16, 0);
+  gl.vertexAttribPointer(uvAttrib, 2, gl.FLOAT, false, 16, 8);
+
+  for (const object of list) {
+    const image = images.get(object.MODEL);
+    if (!image) continue;
+    const cell = currentCell(object._sprite ?? createSpriteState(), normalizePattern(object.PATTERN));
+    const rect = cell === null ? null : cellRect(cell, object.SIZE, image.width, image.height);
+    if (!rect) continue;
+
+    const [u0, v0, u1, v1] = spriteUv(rect, image.width, image.height);
+    const q = spriteQuad(object);
+    // 左上・右上・左下・右下（TRIANGLE_STRIP）
+    const vertices = new Float32Array([
+      q[0], q[1], u0, v0,
+      q[2], q[3], u1, v0,
+      q[4], q[5], u0, v1,
+      q[6], q[7], u1, v1,
+    ]);
+
+    gl.bindTexture(gl.TEXTURE_2D, image.texture);
+    gl.uniform4fv(colorLocation, objectColor(object));
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  if (debugOption().debug) drawSpriteBoundaries(list);
+
+  gl.disable(gl.BLEND);
+  gl.depthMask(true);
+  gl.enable(gl.DEPTH_TEST);
+}
+
+/**
+ * 2Dの当たり判定の枠を、赤い線で重ねて描く（5.5節）
+ *
+ * 3Dの枠と同じ色と透明度で、画面のピクセル座標に描く。
+ */
+function drawSpriteBoundaries(list) {
+  if (!lineProgram) return;
+  const lines = [];
+  for (const object of list) {
+    const bounds = boundsOf(object);
+    if (!bounds) continue;
+    // 2Dの @Z は重なりの順にしか使わないので、枠は奥行き0の面に描く
+    const vertices = boundaryLines({ ...bounds, Z: 0 }, KIND_2D);
+    if (vertices.length > 0) lines.push(...vertices);
+  }
+  if (lines.length === 0) return;
+
+  if (!lineBuffer) lineBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.DYNAMIC_DRAW);
+
+  gl.useProgram(lineProgram);
+  gl.uniformMatrix4fv(
+    gl.getUniformLocation(lineProgram, "uProjection"),
+    false,
+    screenProjection(back.width, back.height),
+  );
+  gl.uniformMatrix4fv(gl.getUniformLocation(lineProgram, "uModelView"), false, IDENTITY);
+  const option = debugOption();
+  gl.uniform4f(
+    gl.getUniformLocation(lineProgram, "uColor"),
+    DEBUG_COLOR[0], DEBUG_COLOR[1], DEBUG_COLOR[2], option.opacity,
+  );
+  const attrib = gl.getAttribLocation(lineProgram, "aPosition");
+  gl.enableVertexAttribArray(attrib);
+  gl.vertexAttribPointer(attrib, 3, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.LINES, 0, lines.length / 3);
+}
+
+/** 単位行列（2Dの枠は画面座標そのままなので配置行列が要らない） */
+const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 /**
  * 当たり判定の枠を、赤い線で重ねて描く（5.5節）
@@ -902,7 +1109,10 @@ function drawBoundaries(objects, view, camera) {
 
   const lines = [];
   for (const object of objects) {
-    const vertices = boundaryLines(boundsOf(object), resolveKind(object));
+    const kind = resolveKind(object);
+    // 2Dの枠は画面座標なので、スプライトと一緒に描く
+    if (kind === KIND_2D) continue;
+    const vertices = boundaryLines(boundsOf(object), kind);
     if (vertices.length > 0) lines.push(...vertices);
   }
   if (lines.length === 0) return;
@@ -965,6 +1175,12 @@ export function present() {
  */
 export function advanceAnimations(objects, deltaSec) {
   for (const object of objects ?? []) {
+    // 2Dのコマ送り（1回の呼び出しで1フレームぶん。6.2.11節）
+    if (resolveKind(object) === KIND_2D) {
+      object._sprite = advanceSprite(object._sprite, normalizePattern(object.PATTERN), object.ANIM);
+      continue;
+    }
+
     const anim = object?.animation;
     if (!anim) continue;
     const clip = models.get(object.MODEL)?.clips.get(anim.name);
@@ -987,6 +1203,7 @@ if (typeof window !== "undefined") {
   window.arcadeerInitRenderer = () =>
     initRenderer(document.getElementById("game-canvas"));
   window.arcadeerLoadModel = loadModel;
+  window.arcadeerLoadImage = loadImage;
   window.arcadeerLoadedModels = loadedModels;
   window.arcadeerClearModels = clearModels;
   window.arcadeerDrawScene = (objects) => {

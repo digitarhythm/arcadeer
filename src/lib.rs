@@ -9,7 +9,7 @@ mod ordering;
 mod shortcut;
 
 use class_name::{validate_class_name, MAX_CLASS_NAME_LEN};
-use class_source::{build_class_template, build_entry_template, parse_model_ref};
+use class_source::{build_class_template, build_entry_template, find_sprite_size, parse_model_ref};
 use frame::{
     fit_size, on_visibility_change, FramePacer, RunState, VisibilityAction, DEFAULT_FPS,
 };
@@ -62,6 +62,10 @@ const DEFAULT_MODELS: &[(&str, &str)] = &[
     ("./templates/assets/default-cat.glb", "default-cat.glb"),
     ("./templates/assets/default-cat-white.glb", "default-cat-white.glb"),
 ];
+/// 新規プロジェクトへコピーするデフォルト2Dキャラクター（アニメパターン画像。6.2.11節）
+///
+/// 32px のコマが横8列・縦2段。上の段がオレンジ、下の段が白い猫
+const DEFAULT_IMAGES: &[(&str, &str)] = &[("./templates/assets/default-cat.png", "default-cat.png")];
 /// 直前に開いていたプロジェクト（GUIDディレクトリ名）の保存先
 const LAST_PROJECT_KEY: &str = "arcadeer.lastProject";
 
@@ -436,13 +440,14 @@ async fn create_project(name: String) -> Result<(), JsValue> {
         }
     }
     let mut models_dir = None;
+    let mut images_dir = None;
     for kind in RESOURCE_ORDER {
         match ensure_asset_subdir(&subdir, kind).await {
-            Some(dir) => {
-                if kind == ResourceKind::Model {
-                    models_dir = Some(dir);
-                }
-            }
+            Some(dir) => match kind {
+                ResourceKind::Model => models_dir = Some(dir),
+                ResourceKind::Image => images_dir = Some(dir),
+                ResourceKind::Sound => {}
+            },
             None => log(&t_with("msg.dirCreateFailed", &[("name", kind.dir_name())])),
         }
     }
@@ -467,6 +472,15 @@ async fn create_project(name: String) -> Result<(), JsValue> {
         for (url, file_name) in DEFAULT_MODELS {
             if let Err(err) = copy_url_to_file(url, &dir, file_name).await {
                 // モデルが無くてもプロジェクト自体は使えるため、処理は続行する
+                log_err(&t_with("msg.defaultAssetCopyFailed", &[("name", file_name)]), &err);
+            }
+        }
+    }
+
+    // デフォルトの2Dキャラクター（猫のアニメパターン画像）を assets/images/ へ配置する
+    if let Some(dir) = images_dir {
+        for (url, file_name) in DEFAULT_IMAGES {
+            if let Err(err) = copy_url_to_file(url, &dir, file_name).await {
                 log_err(&t_with("msg.defaultAssetCopyFailed", &[("name", file_name)]), &err);
             }
         }
@@ -1572,6 +1586,7 @@ fn start_game() {
             return;
         }
         preload_models().await;
+        preload_images().await;
         // 隠れたまま実行を始めた場合は visibilitychange が起きないため、ここでも見る
         match on_visibility_change(
             is_window_hidden(),
@@ -2469,11 +2484,47 @@ async fn preload_models() {
     log(&t_with("msg.modelsLoaded", &[("count", &loaded.to_string())]));
 }
 
+/// ゲームが使う画像（2Dのアニメパターン）を、あらかじめGPUへ載せておく（6.2.11節）
+///
+/// 3Dモデルと同じく、実行中に読み込むと絵が出ない時間ができるため、開始時にまとめて用意する。
+async fn preload_images() {
+    let Some(project) = CURRENT_PROJECT.with(|c| c.borrow().clone()) else {
+        return;
+    };
+    let Some(dir) = ensure_asset_subdir(&project, ResourceKind::Image).await else {
+        return;
+    };
+    let Some(files) = list_files(&dir).await else {
+        return;
+    };
+
+    let mut loaded = 0usize;
+    for name in files {
+        if listing::classify_resource(&name) != Some(ResourceKind::Image) {
+            continue;
+        }
+        let Some(url) = load_asset_url(&dir, &name, &name).await else {
+            continue;
+        };
+        if let Err(err) = call_loader("arcadeerLoadImage", &name, &url).await {
+            log_err(&t_with("msg.imageLoadFailed", &[("name", &name)]), &err);
+        } else {
+            loaded += 1;
+        }
+    }
+    log(&t_with("msg.imagesLoaded", &[("count", &loaded.to_string())]));
+}
+
 /// renderer.js の loadModel を呼ぶ
 async fn load_model(name: &str, url: &str) -> Result<(), JsValue> {
+    call_loader("arcadeerLoadModel", name, url).await
+}
+
+/// renderer.js の読み込み関数（`(name, url) -> Promise`）を呼んで完了を待つ
+async fn call_loader(global_name: &str, name: &str, url: &str) -> Result<(), JsValue> {
     let window = window().ok_or_else(|| JsValue::from_str("no window"))?;
     let func: js_sys::Function =
-        js_sys::Reflect::get(&window, &JsValue::from_str("arcadeerLoadModel"))?.dyn_into()?;
+        js_sys::Reflect::get(&window, &JsValue::from_str(global_name))?.dyn_into()?;
     let promise: js_sys::Promise = func
         .call2(
             &JsValue::NULL,
@@ -2917,25 +2968,68 @@ async fn open_asset_map() -> Result<(), JsValue> {
 /// アセット管理画面と同じく、エディタの状態は手放す。
 /// 残したままだと「同じファイルは開き直さない」判定に引っかかるため。
 async fn open_model_view(file_name: String, url: String) {
+    open_detail_view("arcadeerShowModelView", file_name, url, None).await;
+}
+
+/// アセットの詳細表示（3Dモデル / 画像）をメイン部へ出す
+///
+/// 編集中の下書きを確定し、開いているオブジェクトの状態を捨ててから、
+/// JS 側の表示関数（`(fileName, url)`）を呼ぶ。
+async fn open_detail_view(global_name: &str, file_name: String, url: String, extra: Option<u32>) {
     commit_draft().await;
     CURRENT_FILE.with(|f| *f.borrow_mut() = None);
     highlight_open_object("");
+    // 選んだアセットのカードだけに枠を付ける
+    highlight_asset_card(&file_name);
+    // 別の詳細表示へ移る時は、モデルの再生を止めてから
+    call_global("arcadeerStopModelView");
 
     let Some(window) = window() else { return };
-    let Ok(func) = js_sys::Reflect::get(&window, &JsValue::from_str("arcadeerShowModelView")) else {
+    let Ok(func) = js_sys::Reflect::get(&window, &JsValue::from_str(global_name)) else {
         return;
     };
     let Ok(func) = func.dyn_into::<js_sys::Function>() else {
         return;
     };
-    let _ = func.call2(
+    let third = match extra {
+        Some(value) => JsValue::from_f64(f64::from(value)),
+        None => JsValue::UNDEFINED,
+    };
+    let _ = func.call3(
         &JsValue::NULL,
         &JsValue::from_str(&file_name),
         &JsValue::from_str(&url),
+        &third,
     );
 }
 
-/// モデルの詳細表示がメイン部に出ているか
+/// 選んだアセットのカードだけを強調する（空の名前なら全部外す）
+///
+/// オブジェクトのカードは `highlight_open_object` が受け持つ。ここではアセットのカードだけを見る
+fn highlight_asset_card(file_name: &str) {
+    let Some(document) = window().and_then(|w| w.document()) else {
+        return;
+    };
+    let Ok(cards) = document.query_selector_all(".asset-card[data-asset]") else {
+        return;
+    };
+    for i in 0..cards.length() {
+        let Some(node) = cards.item(i) else { continue };
+        let Ok(card) = node.dyn_into::<Element>() else {
+            continue;
+        };
+        let selected = !file_name.is_empty() && card.get_attribute("data-asset").as_deref() == Some(file_name);
+        if selected {
+            let _ = card.class_list().add_1("object-card-active");
+        } else {
+            let _ = card.class_list().remove_1("object-card-active");
+        }
+    }
+}
+
+/// アセットの詳細表示（3Dモデル / 画像）がメイン部に出ているか
+///
+/// 画像の詳細表示もモデルと同じ枠組み（`.modelview-pane`）で出すため、まとめて見る
 fn model_view_open() -> bool {
     window()
         .and_then(|w| w.document())
@@ -3297,7 +3391,51 @@ fn build_asset_card(document: &Document, file_name: &str) -> Result<Element, JsV
     label.set_text_content(Some(file_name));
     card.append_child(&label)?;
 
+    // 押すと、画像をメイン部へ大きく出す（4.4節）
+    let target = file_name.to_string();
+    let on_click = Closure::<dyn FnMut(_)>::new(move |e: web_sys::Event| {
+        // サムネイルの読み込みが済むまでは data-url が無いので、その時は何もしない
+        let url = e
+            .current_target()
+            .and_then(|t| t.dyn_into::<Element>().ok())
+            .and_then(|el| el.get_attribute("data-url"));
+        let Some(url) = url else { return };
+        let name = target.clone();
+        spawn_local(async move {
+            open_image_view(name, url).await;
+        });
+    });
+    card.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref())?;
+    on_click.forget();
+
     Ok(card)
+}
+
+/// 画像の詳細表示を開く（4.4節）
+///
+/// ゲームコードでその画像に指定している `size` を読み、「スプライトサイズ」の初期値として渡す。
+async fn open_image_view(file_name: String, url: String) {
+    let size = sprite_size_in_project(&file_name).await.unwrap_or(0);
+    open_detail_view("arcadeerShowImageView", file_name, url, Some(size)).await;
+}
+
+/// プロジェクトのクラスファイルから、その画像の `size` 指定を探す
+async fn sprite_size_in_project(file_name: &str) -> Option<u32> {
+    let project = CURRENT_PROJECT.with(|c| c.borrow().clone())?;
+    let code_dir = ensure_subdirectory(&project, CODE_DIR).await?;
+    let files = list_files(&code_dir).await?;
+    for class_file in files {
+        if listing::object_name(&class_file).is_none() {
+            continue;
+        }
+        let Ok(source) = read_text_file(&code_dir, &class_file).await else {
+            continue;
+        };
+        if let Some(size) = find_sprite_size(&source, file_name) {
+            return Some(size);
+        }
+    }
+    None
 }
 
 /// 音声1件分の正方形カードを組み立てる（再生ボタン付き）
@@ -3673,6 +3811,8 @@ fn set_asset_thumbnail(file_name: &str, url: &str) {
             thumb.set_inner_html("");
             let _ = thumb.append_child(&img);
         }
+        // 押した時に詳細表示へ渡す
+        let _ = card.set_attribute("data-url", url);
         return;
     }
 }
@@ -3891,7 +4031,13 @@ fn highlight_open_object(name: &str) {
     let Some(document) = window().and_then(|w| w.document()) else {
         return;
     };
-    let Ok(items) = document.query_selector_all(".object-card") else {
+    // オブジェクトを開いたら、アセット側の枠は外す
+    if !name.is_empty() {
+        highlight_asset_card("");
+    }
+    // 「＋」やアセットのカードは data-object を持たないので対象外。
+    // クラス名を丸ごと書き換えず、強調のクラスだけを付け外しする（他のクラスを壊さないため）
+    let Ok(items) = document.query_selector_all(".object-card[data-object]") else {
         return;
     };
     for i in 0..items.length() {
@@ -3900,14 +4046,17 @@ fn highlight_open_object(name: &str) {
             continue;
         };
         let target = el.get_attribute("data-object").unwrap_or_default();
-        let mut classes = String::from("object-card");
+        let classes = el.class_list();
         if is_entry_object(&target) {
-            classes.push_str(" object-card-entry");
+            let _ = classes.add_1("object-card-entry");
+        } else {
+            let _ = classes.remove_1("object-card-entry");
         }
-        if target == name {
-            classes.push_str(" object-card-active");
+        if !name.is_empty() && target == name {
+            let _ = classes.add_1("object-card-active");
+        } else {
+            let _ = classes.remove_1("object-card-active");
         }
-        el.set_class_name(&classes);
     }
 }
 

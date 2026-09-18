@@ -113,6 +113,8 @@
   "msg.renderInitFailed": "Could not prepare rendering\n{detail}",
   "msg.modelLoadFailed": "Could not load the model '{name}'",
   "msg.modelsLoaded": "Loaded {count} 3D model(s)",
+  "msg.imageLoadFailed": "Could not load image '{name}'",
+  "msg.imagesLoaded": "Loaded {count} image(s)",
   "welcome.title": "First, choose where your games will live",
   "welcome.lead": "Each game becomes one folder. Start by telling this app where to keep them all. It only reads and writes inside the place you choose.",
   "welcome.step1.title": "Press the folder icon",
@@ -173,5 +175,7 @@
   "modelView.copied": "Copied '{name}'",
   "modelView.copyFailed": "Could not copy",
   "modelView.unavailable": "Cannot display: WebGL is unavailable",
-  "modelView.unreadable": "This model could not be read"
+  "modelView.unreadable": "This model could not be read",
+  "imageView.cellSize": "Sprite size",
+  "imageView.unreadable": "This image could not be read"
 }

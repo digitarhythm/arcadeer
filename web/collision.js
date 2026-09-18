@@ -79,8 +79,16 @@ function lookBounds(object) {
   const kind = resolveKind(object);
 
   // どの形も原点中心の 1×1×1 に正規化されている（6.2.5節）
-  if (kind === KIND_PRIMITIVE || kind === KIND_2D) {
+  if (kind === KIND_PRIMITIVE) {
     return { center: [0, 0, 0], half: [0.5, 0.5, 0.5] };
+  }
+
+  // 2Dはコマの大きさ（ピクセル）がそのまま矩形になる（6.2.11節）。
+  // コマの大きさが無いものは絵が出ないので、判定も持たない
+  if (kind === KIND_2D) {
+    const size = object.SIZE;
+    if (!(typeof size === "number" && size > 0)) return null;
+    return { center: [0, 0, 0], half: [size / 2, size / 2, 0.5] };
   }
 
   if (kind === KIND_3D) {
@@ -114,8 +122,9 @@ export function boundsOf(object) {
   if (c === undefined) {
     const look = lookBounds(object);
     if (!look) return null;
-    // 描画と同じ倍率を使う（@RADIUS もここで効く。6.2.5節）
-    const [sx, sy, sz] = effectiveScale(object);
+    // 描画と同じ倍率を使う（@RADIUS もここで効く。6.2.5節）。
+    // 負の倍率は向きを変えるだけなので、大きさとしては絶対値を使う
+    const [sx, sy, sz] = effectiveScale(object).map(Math.abs);
     return {
       shape: "box",
       X: toNumber(object.X) + look.center[0] * sx,

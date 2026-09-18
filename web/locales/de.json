@@ -113,6 +113,8 @@
   "msg.renderInitFailed": "Das Rendering konnte nicht vorbereitet werden\n{detail}",
   "msg.modelLoadFailed": "Das Modell „{name}“ konnte nicht geladen werden",
   "msg.modelsLoaded": "{count} 3D-Modell(e) geladen",
+  "msg.imageLoadFailed": "Bild '{name}' konnte nicht geladen werden",
+  "msg.imagesLoaded": "{count} Bild(er) geladen",
   "welcome.title": "Wähle zuerst, wo deine Spiele liegen sollen",
   "welcome.lead": "Jedes Spiel wird ein Ordner. Sag dieser Anwendung zunächst, wo du sie alle aufbewahren möchtest. Gelesen und geschrieben wird nur innerhalb des gewählten Ortes.",
   "welcome.step1.title": "Auf das Ordnersymbol drücken",
@@ -173,5 +175,7 @@
   "modelView.copied": "„{name}“ kopiert",
   "modelView.copyFailed": "Kopieren nicht möglich",
   "modelView.unavailable": "Anzeige nicht möglich: WebGL steht nicht zur Verfügung",
-  "modelView.unreadable": "Dieses Modell konnte nicht gelesen werden"
+  "modelView.unreadable": "Dieses Modell konnte nicht gelesen werden",
+  "imageView.cellSize": "Sprite-Größe",
+  "imageView.unreadable": "Dieses Bild konnte nicht gelesen werden"
 }

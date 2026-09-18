@@ -6,6 +6,8 @@
 
 import { isPrimitiveName } from "./primitive.js";
 import { findHit } from "./collision.js";
+import { KIND_2D, resolveKind } from "./kind.js";
+import { normalizePattern, planeNumbers, DEFAULT_PLANES } from "./sprite.js";
 
 /** 現在時刻（ミリ秒）を返す関数。テストから差し替えられるようにする */
 let clock = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -52,6 +54,30 @@ export function screenSize() {
 /** 既定の解像度へ戻す（ゲーム停止・作り直し時に使う） */
 export function resetScreenSize() {
   screen = { width: DEFAULT_SCREEN_WIDTH, height: DEFAULT_SCREEN_HEIGHT };
+}
+
+/** 2Dのプレーン番号の一覧（6.2.11節） */
+let planeList = [...DEFAULT_PLANES];
+
+/**
+ * 2Dのプレーンの枚数を決める（`setPlane(n1, n2)`）
+ *
+ * 3Dの下に n1 枚（-1, -2, …）、3Dの上に n2 枚（0, 1, …）作る。
+ * 0 や書かなかった時は、下は -1 だけ、上は 0 だけになる。
+ * 呼ぶたびに、その時点から反映される。
+ */
+export function setPlane(below, above) {
+  planeList = planeNumbers(below, above);
+}
+
+/** 現在のプレーン番号の一覧（小さい順） */
+export function planes() {
+  return [...planeList];
+}
+
+/** 既定のプレーンへ戻す（ゲーム停止・作り直し時に使う） */
+export function resetPlanes() {
+  planeList = [...DEFAULT_PLANES];
 }
 
 /** 現在押されているキー（KeyboardEvent.code） */
@@ -307,6 +333,16 @@ export class ArcadeerMain {
     // 影を落とすか。false にすると、このオブジェクトは影を作らない（6.2.6節）
     this.SHADOW = param.shadow ?? true;
 
+    // 2D（@MODEL が画像）のときの、コマの大きさ（正方形の一辺のピクセル数）。
+    // 書かなければ絵として切り出さない（6.2.11節）
+    this.SIZE = typeof param.size === "number" && param.size > 0 ? Math.floor(param.size) : 0;
+    // アニメパターン。`[[0], [1, 2, 3]]` でも `[{ cells: [0], interval: 30 }]` でも書ける
+    this.PATTERN = normalizePattern(param.pattern);
+    // いま見せるパターンの番号
+    this.ANIM = param.anim ?? 0;
+    // 描くプレーンの番号。無い番号は 0 のプレーンに描かれる
+    this.PLANE = param.plane ?? 0;
+
     // 当たり判定に使う範囲（5.5節）。
     // **書かなければ見た目そのもの**が範囲になる（拡大縮小が効く）。
     // 自分で書いた場合は見た目と切り離され、@SCALE や @ROT に影響されない。
@@ -363,8 +399,11 @@ export class ArcadeerMain {
   behavior(e) {
     releaseWait(this);
 
-    // Yは上が正。重力は正の値で「下へ引く力」を表すため、YS からは引く
-    this.YS -= this.GRAVITY;
+    // 重力は正の値で「下へ引く力」を表す。3DはYが上向きなので YS から引き、
+    // 2Dは画面の左上が原点でYが下向きなので YS へ足す（6.2.11節）。
+    // どちらも「正の重力で画面の下へ落ちる」という見た目にそろえるため
+    if (resolveKind(this) === KIND_2D) this.YS += this.GRAVITY;
+    else this.YS -= this.GRAVITY;
     this.X += this.XS;
     this.Y += this.YS;
     this.Z += this.ZS;
@@ -595,6 +634,7 @@ if (typeof window !== "undefined") {
   window.arcadeerRunBehavior = runBehavior;
   // WASM側が canvas の内部解像度を設定するために参照する
   window.arcadeerScreenSize = screenSize;
+  window.arcadeerPlanes = planes;
   window.arcadeerKeyDown = keyDown;
   window.arcadeerKeyUp = keyUp;
   window.arcadeerClearKeys = clearKeys;

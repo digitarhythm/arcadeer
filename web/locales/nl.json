@@ -113,6 +113,8 @@
   "msg.renderInitFailed": "Kan het renderen niet voorbereiden\n{detail}",
   "msg.modelLoadFailed": "Kan het model '{name}' niet laden",
   "msg.modelsLoaded": "{count} 3D-model(len) geladen",
+  "msg.imageLoadFailed": "Afbeelding '{name}' kon niet worden geladen",
+  "msg.imagesLoaded": "{count} afbeelding(en) geladen",
   "welcome.title": "Kies eerst waar je spellen komen te staan",
   "welcome.lead": "Elk spel wordt één map. Vertel deze toepassing eerst waar je ze allemaal wilt bewaren. Er wordt alleen gelezen en geschreven binnen de gekozen plek.",
   "welcome.step1.title": "Druk op het mappictogram",
@@ -173,5 +175,7 @@
   "modelView.copied": "'{name}' gekopieerd",
   "modelView.copyFailed": "Kopiëren mislukt",
   "modelView.unavailable": "Weergeven niet mogelijk: WebGL is niet beschikbaar",
-  "modelView.unreadable": "Dit model kon niet worden gelezen"
+  "modelView.unreadable": "Dit model kon niet worden gelezen",
+  "imageView.cellSize": "Sprite-grootte",
+  "imageView.unreadable": "Deze afbeelding kon niet worden gelezen"
 }

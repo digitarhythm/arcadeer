@@ -113,6 +113,8 @@
   "msg.renderInitFailed": "Impossible de préparer le rendu\n{detail}",
   "msg.modelLoadFailed": "Impossible de charger le modèle « {name} »",
   "msg.modelsLoaded": "{count} modèle(s) 3D chargé(s)",
+  "msg.imageLoadFailed": "Impossible de charger l'image '{name}'",
+  "msg.imagesLoaded": "{count} image(s) chargée(s)",
   "welcome.title": "Commencez par choisir où ranger vos jeux",
   "welcome.lead": "Chaque jeu devient un dossier. Indiquez d'abord à cette application où les regrouper. Elle ne lit et n'écrit qu'à l'intérieur de l'endroit choisi.",
   "welcome.step1.title": "Appuyez sur l'icône de dossier",
@@ -173,5 +175,7 @@
   "modelView.copied": "« {name} » copié",
   "modelView.copyFailed": "Copie impossible",
   "modelView.unavailable": "Affichage impossible : WebGL n'est pas disponible",
-  "modelView.unreadable": "Ce modèle n'a pas pu être lu"
+  "modelView.unreadable": "Ce modèle n'a pas pu être lu",
+  "imageView.cellSize": "Taille du sprite",
+  "imageView.unreadable": "Cette image n'a pas pu être lue"
 }

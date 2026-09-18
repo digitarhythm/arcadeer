@@ -113,6 +113,8 @@
   "msg.renderInitFailed": "繪製準備失敗\n{detail}",
   "msg.modelLoadFailed": "無法載入模型「{name}」",
   "msg.modelsLoaded": "已載入 {count} 個 3D 模型",
+  "msg.imageLoadFailed": "無法載入圖片 '{name}'",
+  "msg.imagesLoaded": "已載入 {count} 張圖片",
   "welcome.title": "首先，選擇儲存遊戲的位置",
   "welcome.lead": "一個遊戲就是一個資料夾。請先告訴本應用程式要把它們統一放在哪裡。只會在所選位置內讀寫。",
   "welcome.step1.title": "點選資料夾圖示",
@@ -173,5 +175,7 @@
   "modelView.copied": "已複製「{name}」",
   "modelView.copyFailed": "無法複製",
   "modelView.unavailable": "無法顯示：WebGL 不可用",
-  "modelView.unreadable": "無法讀取該模型"
+  "modelView.unreadable": "無法讀取該模型",
+  "imageView.cellSize": "精靈尺寸",
+  "imageView.unreadable": "無法讀取此圖片"
 }
