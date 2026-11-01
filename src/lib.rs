@@ -118,7 +118,7 @@ pub fn start() -> Result<(), JsValue> {
     wire_language_change()?;
     wire_new_object_dialog(&document)?;
     wire_editor_save()?;
-    wire_game_buttons(&document)?;
+    wire_game_buttons()?;
     wire_game_api()?;
     wire_asset_map_save()?;
     wire_canvas_resize()?;
@@ -1319,14 +1319,11 @@ fn wire_game_toggle(button: &Element) -> Result<(), JsValue> {
     Ok(())
 }
 
-/// ゲームの実行・停止ボタンを配線する
-fn wire_game_buttons(document: &Document) -> Result<(), JsValue> {
-    let toggle: HtmlButtonElement = document
-        .get_element_by_id("btn-toggle-game")
-        .ok_or_else(|| JsValue::from_str("#btn-toggle-game not found"))?
-        .dyn_into()?;
-    wire_game_toggle(toggle.as_ref())?;
-
+/// ゲームの実行・停止ボタンの文言を保つ
+///
+/// ボタン自体は左ペインの描画時に作る（`build_game_toggle`）。
+/// ここでは、表示言語が変わった時に文言を付け直す聞き手だけを登録する。
+fn wire_game_buttons() -> Result<(), JsValue> {
     // 表示言語が変わったらツールチップを付け直す
     let on_language = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
         update_game_buttons();
@@ -1474,7 +1471,7 @@ fn wire_game_api() -> Result<(), JsValue> {
 
 /// プロジェクトを開いているかどうかを、メイン部のクラスへ反映する
 ///
-/// 横長のウィンドウでゲーム実行画面を出すかどうかの判定に使う（4.4節）。
+/// 「エディタの右に並べる」配置でゲーム実行画面を出すかどうかの判定に使う（4.4節・4.13節）。
 fn update_main_layout() {
     let Some(document) = window().and_then(|w| w.document()) else {
         return;
@@ -1484,7 +1481,7 @@ fn update_main_layout() {
     };
     let has_project = CURRENT_PROJECT.with(|c| c.borrow().is_some());
     let _ = main.class_list().toggle_with_force("has-project", has_project);
-    // 16:9より狭い場合は、実行中だけ中央にゲーム画面を出す
+    // 「エディタの上に重ねる」配置では、実行中だけ中央にゲーム画面を出す
     let running = RUN_STATE.with(|s| s.borrow().is_running());
     let _ = main.class_list().toggle_with_force("game-active", running);
     // 表示領域の大きさが変わるため、canvas を合わせ直す
@@ -2165,15 +2162,16 @@ fn release_game_input() {
     call_global("arcadeerClearKeys");
 }
 
-/// ウィンドウの大きさが変わったら、canvas の表示サイズを合わせ直す
+/// ウィンドウの大きさやゲーム画面の配置（4.13節）が変わったら、canvas の表示サイズを合わせ直す
 fn wire_canvas_resize() -> Result<(), JsValue> {
-    let on_resize = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
-        fit_game_canvas();
-    });
-    window()
-        .ok_or_else(|| JsValue::from_str("no window"))?
-        .add_event_listener_with_callback("resize", on_resize.as_ref().unchecked_ref())?;
-    on_resize.forget();
+    let window = window().ok_or_else(|| JsValue::from_str("no window"))?;
+    for event in ["resize", "arcadeer:gamelayoutchange"] {
+        let on_change = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::Event| {
+            fit_game_canvas();
+        });
+        window.add_event_listener_with_callback(event, on_change.as_ref().unchecked_ref())?;
+        on_change.forget();
+    }
     Ok(())
 }
 
@@ -2698,7 +2696,7 @@ async fn render_project_pane(project: &FileSystemDirectoryHandle) -> Result<(), 
     name.set_text_content(Some(&project_name));
     heading.append_child(&name)?;
 
-    // 16:9より狭い場合は、ここに実行トグルを置く（表示切り替えはCSSが行う）
+    // 実行／停止トグルはここに置く（6.2.1節）
     let pane_toggle = build_game_toggle(&document, "pane-toggle-btn")?;
     heading.append_child(&pane_toggle)?;
 

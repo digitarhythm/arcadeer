@@ -781,6 +781,36 @@ body.footer-expanded {
   color: var(--fg-muted, var(--fg));
 }
 
+/* 設定ダイアログのラジオボタン（ゲーム画面の配置） */
+.dialog-label {
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+
+.dialog-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dialog-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+/* .dialog-form input の余白や枠をラジオには当てない */
+.dialog-form .dialog-radio input {
+  margin: 0;
+  padding: 0;
+  border: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .ide-main {
   grid-area: main;
   background: var(--bg);
@@ -801,23 +831,13 @@ body.footer-expanded {
   overflow: auto;
 }
 
-/* ゲーム実行画面 */
+/* ゲーム実行画面（配置は body.game-layout-* で切り替える。4.13節） */
 .ide-game {
   display: none;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
   min-width: 0;
   min-height: 0;
   border-left: 1px solid var(--border);
-}
-
-/* 最上部のボタンエリア */
-.ide-game-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 5px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
 }
 
 /* canvas は長い方を領域に合わせ、短い方は中央に置く（表示サイズはRust側が算出する） */
@@ -856,44 +876,29 @@ body.footer-expanded {
 }
 
 /*
- * ブラウザウィンドウが 横:縦 = 16:9 より横に広い場合、
- * メイン部を左右half&halfに分割し、右をゲーム実行画面にする。
+ * 「エディタの右に並べる」: メイン部を左右half&halfに分割し、右をゲーム実行画面にする。
  * プロジェクトを開いている時だけ分割する（起動画面で黒い領域を出さないため）。
  */
-@media (min-aspect-ratio: 16 / 9) {
-  .ide-main.has-project {
-    grid-template-columns: 1fr 1fr;
-  }
+body.game-layout-side .ide-main.has-project {
+  grid-template-columns: 1fr 1fr;
+}
 
-  .ide-main.has-project .ide-game {
-    display: grid;
-  }
+body.game-layout-side .ide-main.has-project .ide-game {
+  display: grid;
 }
 
 /*
- * 16:9より狭い場合は分割せず、ゲーム実行中だけ
+ * 「エディタの上に重ねる」（既定）: 分割せず、ゲーム実行中だけ
  * メイン部の中央へゲーム画面を重ねて表示する。
  */
-@media (max-aspect-ratio: 16 / 9) {
-  /* 狭い場合、実行トグルは左ペインのプロジェクト名の右端に置く */
-  .ide-game-header {
-    display: none;
-  }
-
-  .ide-main.game-active .ide-game {
-    grid-template-rows: 1fr;
-  }
-
-  .ide-main.game-active .ide-game {
-    display: grid;
-    place-items: center;
-    position: absolute;
-    inset: 0;
-    z-index: 40;
-    background: rgba(0, 0, 0, 0.75);
-    border-left: none;
-  }
-
+body.game-layout-overlay .ide-main.game-active .ide-game {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.75);
+  border-left: none;
 }
 
 /* コードエディタ（Ace） */
@@ -1053,17 +1058,11 @@ body.footer-expanded .footer-log {
   color: var(--fg);
 }
 
-/* 左ペインのプロジェクト名の右端に置く実行トグル（16:9より狭いときだけ表示） */
+/* 左ペインのプロジェクト名の右端に置く実行トグル（6.2.1節） */
 .pane-toggle-btn {
-  display: none;
+  display: flex;
   margin-left: auto;
   flex-shrink: 0;
-}
-
-@media (max-aspect-ratio: 16 / 9) {
-  .pane-toggle-btn {
-    display: flex;
-  }
 }
 
 /* 左ペイン最上部: 開いているプロジェクト名 */
@@ -1320,8 +1319,8 @@ body.footer-expanded .footer-log {
 
 /* ============================================================
    仕様・リファレンス（4.9節）
-   横長のときはゲーム表示エリアと同じ場所へ、
-   そうでないときは右ペイン全体へ出す。
+   ゲーム画面を右に並べる配置ではゲーム表示エリアと同じ場所へ、
+   上に重ねる配置では右ペイン全体へ出す。
    ============================================================ */
 
 .ide-reference {
@@ -1451,31 +1450,27 @@ body.footer-expanded .footer-log {
   color: var(--accent);
 }
 
-/* 16:9より横長: ゲーム表示エリアと同じ場所を使い、辞書アイコンで入れ替える */
-@media (min-aspect-ratio: 16 / 9) {
-  body.reference-open .ide-main {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  body.reference-open .ide-reference {
-    display: grid;
-  }
-
-  /* 同じ場所なので、リファレンスを開いている間はゲーム側を隠す */
-  body.reference-open .ide-main .ide-game {
-    display: none;
-  }
+/* エディタの右に並べる配置: ゲーム表示エリアと同じ場所を使い、辞書アイコンで入れ替える */
+body.game-layout-side.reference-open .ide-main {
+  grid-template-columns: 1fr 1fr;
 }
 
-/* 16:9より狭い: 右ペイン全体を覆う */
-@media (max-aspect-ratio: 16 / 9) {
-  body.reference-open .ide-reference {
-    display: grid;
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    border-left: none;
-  }
+body.game-layout-side.reference-open .ide-reference {
+  display: grid;
+}
+
+/* 同じ場所なので、リファレンスを開いている間はゲーム側を隠す */
+body.game-layout-side.reference-open .ide-main .ide-game {
+  display: none;
+}
+
+/* エディタの上に重ねる配置: 右ペイン全体を覆う */
+body.game-layout-overlay.reference-open .ide-reference {
+  display: grid;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-left: none;
 }
 
 /* ============================================================

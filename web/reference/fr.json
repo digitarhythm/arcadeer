@@ -142,6 +142,8 @@
   "ref.key.run": "Lancer le jeu (fonctionne aussi pendant l'édition)",
   "ref.key.stop": "Arrêter le jeu (sans effet si l'éditeur a le focus)",
   "ref.ide.d.keys": "Échap est ignoré dans l'éditeur car les raccourcis vim l'utilisent pour quitter le mode insertion.",
+  "ref.ide.h.layout": "Position de l'écran de jeu",
+  "ref.ide.d.layout": "Dans les réglages, « Position de l'écran de jeu » choisit si le jeu en cours s'affiche par-dessus l'éditeur ou à sa droite. Par-dessus l'éditeur (par défaut) ne le montre que pendant l'exécution et le masque à l'arrêt. À droite coupe le volet droit en deux, le jeu restant toujours à droite. Le bouton exécuter/arrêter se trouve dans les deux cas à l'extrémité droite du nom du projet, dans le volet gauche.",
   "ref.ide.h.footer": "Pied de page",
   "ref.ide.d.footer": "Les images par seconde mesurées sont à gauche, le dernier message juste à côté. Un clic déplie dix lignes pour relire le journal, qui conserve jusqu'à 1000 lignes.",
   "ref.api.h.event": "Ce que reçoit behavior",

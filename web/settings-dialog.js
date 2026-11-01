@@ -5,6 +5,7 @@
 import { t, getLanguage, changeLanguage, SUPPORTED_LANGS, LANG_NAMES } from "./i18n.js";
 import { SUPPORTED_KEYBINDINGS, getKeybinding, setKeybinding } from "./keybinding.js";
 import { MIN_FONT_SIZE, MAX_FONT_SIZE, getFontSize, setFontSize } from "./font-size.js";
+import { SUPPORTED_GAME_LAYOUTS, getGameLayout, setGameLayout } from "./game-layout.js";
 
 let dialog = null;
 let titleEl = null;
@@ -15,6 +16,8 @@ let keybindingSelectEl = null;
 let fontSizeLabelEl = null;
 let fontSizeSelectEl = null;
 let fontSizeValueEl = null;
+let gameLayoutLabelEl = null;
+let gameLayoutGroupEl = null;
 let closeBtn = null;
 
 /** ダイアログDOMを一度だけ生成し、以後は使い回す */
@@ -37,6 +40,8 @@ function ensureDialog() {
                min="${MIN_FONT_SIZE}" max="${MAX_FONT_SIZE}" step="1">
         <output class="dialog-range-value" for="settings-fontsize" data-settings-fontsize-value></output>
       </div>
+      <span class="dialog-label" data-settings-gamelayout-label></span>
+      <div class="dialog-radio-group" role="radiogroup" data-settings-gamelayout></div>
       <div class="dialog-buttons">
         <button type="button" class="dialog-btn dialog-btn-primary" data-settings-close></button>
       </div>
@@ -52,6 +57,8 @@ function ensureDialog() {
   fontSizeLabelEl = dialog.querySelector("[data-settings-fontsize-label]");
   fontSizeSelectEl = dialog.querySelector("#settings-fontsize");
   fontSizeValueEl = dialog.querySelector("[data-settings-fontsize-value]");
+  gameLayoutLabelEl = dialog.querySelector("[data-settings-gamelayout-label]");
+  gameLayoutGroupEl = dialog.querySelector("[data-settings-gamelayout]");
   closeBtn = dialog.querySelector("[data-settings-close]");
 
   for (const tag of SUPPORTED_LANGS) {
@@ -65,6 +72,23 @@ function ensureDialog() {
     const option = document.createElement("option");
     option.value = keybinding;
     keybindingSelectEl.appendChild(option);
+  }
+
+  // ゲーム画面の配置はラジオボタンで選ぶ（2択で、見比べて決めるものなので）
+  for (const layout of SUPPORTED_GAME_LAYOUTS) {
+    const label = document.createElement("label");
+    label.className = "dialog-radio";
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "settings-game-layout";
+    radio.value = layout;
+    radio.addEventListener("change", () => {
+      if (radio.checked) setGameLayout(layout);
+    });
+    const text = document.createElement("span");
+    text.dataset.gameLayoutText = layout;
+    label.append(radio, text);
+    gameLayoutGroupEl.appendChild(label);
   }
 
   // 選択した時点で即座に反映する（確定ボタンは設けない）
@@ -102,6 +126,10 @@ function applyTexts() {
   for (const option of keybindingSelectEl.options) {
     option.textContent = t(`keybinding.${option.value}`);
   }
+  gameLayoutLabelEl.textContent = t("settings.gameLayout");
+  for (const text of gameLayoutGroupEl.querySelectorAll("[data-game-layout-text]")) {
+    text.textContent = t(`gameLayout.${text.dataset.gameLayoutText}`);
+  }
   closeBtn.textContent = t("settings.close");
 }
 
@@ -113,6 +141,10 @@ export function showSettings() {
   const size = getFontSize();
   fontSizeSelectEl.value = String(size);
   showFontSize(size);
+  const layout = getGameLayout();
+  for (const radio of gameLayoutGroupEl.querySelectorAll("input[type=radio]")) {
+    radio.checked = radio.value === layout;
+  }
   applyTexts();
   window.arcadeerFadeInDialog(dialog);
 }

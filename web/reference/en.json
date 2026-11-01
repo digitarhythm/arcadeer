@@ -142,6 +142,8 @@
   "ref.key.run": "Run the game (works while editing too)",
   "ref.key.stop": "Stop the game (ignored while the editor has focus)",
   "ref.ide.d.keys": "Esc is ignored in the editor because the vim key bindings use it to leave insert mode.",
+  "ref.ide.h.layout": "Game screen placement",
+  "ref.ide.d.layout": "In the settings, \"Game screen placement\" chooses whether the running game is shown over the editor or beside it on the right. Over the editor (default) shows the game only while it runs and hides it when stopped. Beside the editor splits the right pane in two, with the game always on the right. The run/stop button sits at the right end of the project name in the left pane either way.",
   "ref.ide.h.footer": "Footer",
   "ref.ide.d.footer": "The measured frame rate sits on the left, with the latest message beside it. Click to expand to ten lines and read back through the log, which keeps up to 1,000 lines.",
   "ref.api.h.event": "What behavior receives",

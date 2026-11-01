@@ -46,13 +46,9 @@
   <aside id="ide-sidebar" class="ide-sidebar"></aside>
   <main id="ide-main" class="ide-main">
     <div id="ide-content" class="ide-content"></div>
-    <!-- ゲーム実行画面。横長（2:1 より横が広い）かつプロジェクトを開いている時だけ表示する -->
+    <!-- ゲーム実行画面。配置（エディタの右に並べる／上に重ねる）はシステム設定で選ぶ（4.13節）。
+         実行／停止トグルは左ペインのプロジェクト名の右端にある -->
     <div id="ide-game" class="ide-game">
-      <!-- 最上部のボタンエリア（16:9より横長のときに表示する） -->
-      <div class="ide-game-header">
-        <!-- 実行と停止を兼ねるトグル。アイコンとツールチップは実行状態に応じて切り替える -->
-        <button id="btn-toggle-game" type="button" class="header-icon-btn game-toggle-btn" disabled></button>
-      </div>
       <div id="ide-game-body" class="ide-game-body">
         <!-- クリックするとフォーカスが移り、キー操作がゲームへ送られる -->
         <canvas id="game-canvas" class="game-canvas" tabindex="0"></canvas>
@@ -199,6 +195,7 @@
     import { initI18n, t } from "./i18n.js";
     import { registerServiceWorker } from "./sw-update.js";
     import { showSettings } from "./settings-dialog.js";
+    import { applyGameLayout } from "./game-layout.js";
     import "./editor.js";
     import "./asset-picker.js";
     import "./asset-map-ui.js";
@@ -226,6 +223,8 @@
     import "./coffee.js";
     import init from "./pkg/arcadeer.js";
 
+    // ゲーム画面の配置を先に body へ反映しておく（WASM が canvas の大きさを測る前に）
+    applyGameLayout();
     // 文言を先に確定させてから WASM を起動する
     await initI18n();
     await init();

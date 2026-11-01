@@ -142,6 +142,8 @@
   "ref.key.run": "Executar o jogo (funciona também durante a edição)",
   "ref.key.stop": "Parar o jogo (sem efeito enquanto o editor tiver o foco)",
   "ref.ide.d.keys": "Esc é ignorado no editor porque os atalhos vim o usam para sair do modo de inserção.",
+  "ref.ide.h.layout": "Posição do ecrã do jogo",
+  "ref.ide.d.layout": "Nas definições, «Posição do ecrã do jogo» escolhe se o jogo em execução aparece sobre o editor ou à sua direita. Sobre o editor (predefinição) mostra-o apenas enquanto corre e esconde-o ao parar. À direita divide o painel direito em dois, ficando o jogo sempre à direita. O botão executar/parar está, em ambos os casos, na extremidade direita do nome do projeto, no painel esquerdo.",
   "ref.ide.h.footer": "Rodapé",
   "ref.ide.d.footer": "À esquerda ficam os fotogramas por segundo medidos e, ao lado, a mensagem mais recente. Um clique expande para dez linhas para reler o registo, que guarda até 1000 linhas.",
   "ref.api.h.event": "O que behavior recebe",

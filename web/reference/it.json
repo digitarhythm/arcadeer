@@ -142,6 +142,8 @@
   "ref.key.run": "Avviare il gioco (funziona anche mentre si modifica)",
   "ref.key.stop": "Fermare il gioco (senza effetto se l'editor ha il fuoco)",
   "ref.ide.d.keys": "Esc viene ignorato nell'editor perché le scorciatoie vim lo usano per uscire dalla modalità di inserimento.",
+  "ref.ide.h.layout": "Posizione dello schermo di gioco",
+  "ref.ide.d.layout": "Nelle impostazioni, «Posizione dello schermo di gioco» sceglie se il gioco in esecuzione appare sopra l'editor o alla sua destra. Sopra l'editor (predefinito) lo mostra solo mentre gira e lo nasconde quando si ferma. A destra divide il pannello destro in due e il gioco resta sempre a destra. Il pulsante esegui/ferma è in entrambi i casi all'estremità destra del nome del progetto, nel pannello sinistro.",
   "ref.ide.h.footer": "Piè di pagina",
   "ref.ide.d.footer": "A sinistra ci sono i fotogrammi al secondo misurati e accanto l'ultimo messaggio. Con un clic si espande a dieci righe per rileggere il registro, che conserva fino a 1000 righe.",
   "ref.api.h.event": "Ciò che riceve behavior",
