@@ -901,6 +901,14 @@ body.game-layout-overlay .ide-main.game-active .ide-game {
   border-left: none;
 }
 
+/* 重ねる配置でも canvas を置く領域はペイン全体にする。
+   領域が canvas の大きさに縮むと、大きさ合わせのたびに余白ぶん小さくなっていく */
+body.game-layout-overlay .ide-main.game-active .ide-game-body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
 /* コードエディタ（Ace） */
 .editor-pane {
   display: flex;

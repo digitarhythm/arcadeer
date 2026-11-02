@@ -538,6 +538,49 @@ pub fn fit_size(area_width: f64, area_height: f64, width: u32, height: u32) -> (
     (f64::from(width) * scale, f64::from(height) * scale)
 }
 
+/// ペイン内でゲームフレームの周りに空ける余白（px）
+pub const PANE_MARGIN: f64 = 4.0;
+
+/// ペイン内でのゲームフレームの大きさを求める（縦横比を保つ。4.4節）
+///
+/// 横長のゲームは幅を、縦長（正方形を含む）のゲームは高さを基準にし、
+/// 基準にした側はペインから両側 `PANE_MARGIN` ずつを引いた大きさにする。
+/// もう一方がペインを越えてしまう場合は、基準を逆にする。
+/// ペインや解像度が0以下、余白を引くと残らない場合は 0 を返す。
+pub fn pane_size(area_width: f64, area_height: f64, width: u32, height: u32) -> (f64, f64) {
+    if area_width <= 0.0 || area_height <= 0.0 || width == 0 || height == 0 {
+        return (0.0, 0.0);
+    }
+    let (w, h) = (f64::from(width), f64::from(height));
+    let by_width = || {
+        let fit_w = area_width - PANE_MARGIN * 2.0;
+        (fit_w, fit_w * h / w)
+    };
+    let by_height = || {
+        let fit_h = area_height - PANE_MARGIN * 2.0;
+        (fit_h * w / h, fit_h)
+    };
+    let (fit_w, fit_h) = if width > height {
+        let (fw, fh) = by_width();
+        if fh > area_height {
+            by_height()
+        } else {
+            (fw, fh)
+        }
+    } else {
+        let (fw, fh) = by_height();
+        if fw > area_width {
+            by_width()
+        } else {
+            (fw, fh)
+        }
+    };
+    if fit_w <= 0.0 || fit_h <= 0.0 {
+        return (0.0, 0.0);
+    }
+    (fit_w, fit_h)
+}
+
 #[cfg(test)]
 mod fit_tests {
     use super::*;
@@ -589,6 +632,75 @@ mod fit_tests {
         assert_eq!(fit_size(800.0, 0.0, 640, 480), (0.0, 0.0));
         assert_eq!(fit_size(800.0, 400.0, 0, 480), (0.0, 0.0));
         assert_eq!(fit_size(800.0, 400.0, 640, 0), (0.0, 0.0));
+    }
+
+    // --- ペイン内の表示サイズ（仕様書4.4節）---
+    // 横長のゲームは幅を基準に、縦長のゲームは高さを基準にして、
+    // 基準にした側は領域から上下または左右 4px ずつの余白を引いた大きさにする。
+    // もう一方がペインを越える場合は、基準を逆にする。
+
+    #[test]
+    fn pane_margin_is_4px() {
+        assert_eq!(PANE_MARGIN, 4.0);
+    }
+
+    #[test]
+    fn landscape_game_uses_pane_width_minus_margins() {
+        // 634x816 のペインに 640x480（横長）→ 幅 634-8=626、高さは比率から 469.5
+        close(pane_size(634.0, 816.0, 640, 480), (626.0, 469.5));
+    }
+
+    #[test]
+    fn landscape_game_switches_to_height_when_it_would_overflow() {
+        // 1270x816 のペインに 640x480 → 幅基準だと高さ 946.5 で越えるので、高さ基準に逆転
+        // 高さ 816-8=808、幅は比率から 1077.33
+        close(pane_size(1270.0, 816.0, 640, 480), (1077.33, 808.0));
+    }
+
+    #[test]
+    fn landscape_game_keeps_width_basis_while_height_fits() {
+        // 高さが余白なしでもペインに収まる間は、基準を変えない（1000x746 に 640x480 → 高さ 744）
+        close(pane_size(1000.0, 746.0, 640, 480), (992.0, 744.0));
+    }
+
+    #[test]
+    fn portrait_game_uses_pane_height_minus_margins() {
+        // 634x816 のペインに 480x640（縦長）→ 高さ 816-8=808、幅は比率から 606
+        close(pane_size(634.0, 816.0, 480, 640), (606.0, 808.0));
+    }
+
+    #[test]
+    fn portrait_game_switches_to_width_when_it_would_overflow() {
+        // 400x1016 のペインに 480x640 → 高さ基準だと幅 756 で越えるので、幅基準に逆転
+        // 幅 400-8=392、高さは比率から 522.67
+        close(pane_size(400.0, 1016.0, 480, 640), (392.0, 522.67));
+    }
+
+    #[test]
+    fn square_game_starts_from_height() {
+        // 正方形は「横長」ではないので高さを基準にするが、634x816 では幅が越えるので幅基準へ
+        close(pane_size(634.0, 816.0, 480, 480), (626.0, 626.0));
+        // 縦長のペインならそのまま高さ基準
+        close(pane_size(900.0, 816.0, 480, 480), (808.0, 808.0));
+    }
+
+    #[test]
+    fn pane_size_keeps_aspect_ratio() {
+        let (w, h) = pane_size(1000.0, 333.0, 640, 360);
+        assert!(((w / h) - (640.0 / 360.0)).abs() < 0.001);
+        let (w, h) = pane_size(333.0, 1000.0, 360, 640);
+        assert!(((w / h) - (360.0 / 640.0)).abs() < 0.001);
+    }
+
+    #[test]
+    fn pane_size_returns_zero_for_invalid_size() {
+        assert_eq!(pane_size(0.0, 400.0, 640, 480), (0.0, 0.0));
+        assert_eq!(pane_size(800.0, 0.0, 640, 480), (0.0, 0.0));
+        assert_eq!(pane_size(800.0, 400.0, 0, 480), (0.0, 0.0));
+        assert_eq!(pane_size(800.0, 400.0, 640, 0), (0.0, 0.0));
+        // 余白を引くと残らない領域も 0 にする（負の大きさを返さない）
+        assert_eq!(pane_size(8.0, 400.0, 640, 480), (0.0, 0.0));
+        assert_eq!(pane_size(400.0, 6.0, 480, 640), (0.0, 0.0));
     }
 }
 

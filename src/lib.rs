@@ -11,7 +11,7 @@ mod shortcut;
 use class_name::{validate_class_name, MAX_CLASS_NAME_LEN};
 use class_source::{build_class_template, build_entry_template, find_sprite_size, parse_model_ref};
 use frame::{
-    fit_size, on_visibility_change, FramePacer, RunState, VisibilityAction, DEFAULT_FPS,
+    fit_size, on_visibility_change, pane_size, FramePacer, RunState, VisibilityAction, DEFAULT_FPS,
 };
 use i18n::{t, t_with};
 use objects::ObjectList;
@@ -1807,7 +1807,9 @@ fn fit_game_canvas() {
             .and_then(|v| v.parse::<u32>().ok())
             .unwrap_or(0)
     };
-    let (width, height) = fit_size(
+    // ペインでは周りに余白を空け、画面いっぱいの表示では余白なしで収める
+    let fit = if is_fullscreen() { fit_size } else { pane_size };
+    let (width, height) = fit(
         f64::from(area.client_width()),
         f64::from(area.client_height()),
         read_attr("width"),
