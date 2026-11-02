@@ -34,6 +34,7 @@
   "settings.gameLayout": "ゲーム画面の配置",
   "gameLayout.overlay": "エディタの上に重ねる",
   "gameLayout.side": "エディタの右に並べる",
+  "splash.tap": "画面をタップしてください",
   "settings.close": "閉じる",
   "projectSelect.title": "プロジェクト管理",
   "projectSelect.repick": "ワークスペースを選択する",

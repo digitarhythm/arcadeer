@@ -144,6 +144,8 @@
   "ref.ide.d.keys": "Esc is ignored in the editor because the vim key bindings use it to leave insert mode.",
   "ref.ide.h.layout": "Game screen placement",
   "ref.ide.d.layout": "In the settings, \"Game screen placement\" chooses whether the running game is shown over the editor or beside it on the right. Over the editor (default) shows the game only while it runs and hides it when stopped. Beside the editor splits the right pane in two, with the game always on the right. The run/stop button sits at the right end of the project name in the left pane either way.",
+  "ref.ide.h.splash": "Startup banner",
+  "ref.ide.d.splash": "Every time the game runs, the \"ARCADEER\" banner fades in over 0.5 s, stays for 1 s, fades out over 0.5 s, and then the game starts. In a phone or tablet browser, \"Please tap the screen\" appears after the banner; tapping dismisses the banner and starts the game. Browsers cannot play sound until the player interacts, so this tap also enables audio. Pressing stop while the banner is shown stops right away.",
   "ref.ide.h.footer": "Footer",
   "ref.ide.d.footer": "The measured frame rate sits on the left, with the latest message beside it. Click to expand to ten lines and read back through the log, which keeps up to 1,000 lines.",
   "ref.api.h.event": "What behavior receives",

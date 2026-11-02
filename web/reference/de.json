@@ -144,6 +144,8 @@
   "ref.ide.d.keys": "Esc wird im Editor ignoriert, weil die vim-Tastenbelegung damit den Eingabemodus verlässt.",
   "ref.ide.h.layout": "Position des Spielbilds",
   "ref.ide.d.layout": "In den Einstellungen legt „Position des Spielbilds“ fest, ob das laufende Spiel über dem Editor oder rechts daneben erscheint. Über dem Editor (Standard) zeigt das Spiel nur, solange es läuft, und blendet es beim Stoppen aus. Rechts daneben teilt die rechte Hälfte in zwei Spalten; das Spiel bleibt immer rechts. Die Start/Stopp-Taste sitzt in beiden Fällen rechts neben dem Projektnamen im linken Bereich.",
+  "ref.ide.h.splash": "Startbanner",
+  "ref.ide.d.splash": "Bei jedem Start blendet sich das „ARCADEER“-Banner in 0,5 s ein, bleibt 1 s stehen, blendet sich in 0,5 s aus, und dann beginnt das Spiel. Im Browser eines Smartphones oder Tablets erscheint nach dem Banner „Bitte tippe auf den Bildschirm“; ein Tipp blendet das Banner aus und startet das Spiel. Browser können erst nach einer Eingabe Ton ausgeben, daher schaltet dieser Tipp auch den Ton frei. Wird während des Banners auf Stopp gedrückt, hält das Spiel sofort an.",
   "ref.ide.h.footer": "Fußzeile",
   "ref.ide.d.footer": "Links stehen die gemessenen Bilder pro Sekunde, daneben die neueste Meldung. Ein Klick klappt zehn Zeilen auf, um das Protokoll durchzusehen; es bewahrt bis zu 1000 Zeilen.",
   "ref.api.h.event": "Was behavior erhält",

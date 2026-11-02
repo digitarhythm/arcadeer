@@ -1560,6 +1560,10 @@ fn start_game() {
     update_game_buttons();
     update_main_layout();
 
+    // 起動時のバナー（4.14節）はコンパイルや事前読み込みと並行して出し、
+    // 両方が終わってから最初のフレームを回す（読み込みの時間がバナーに隠れる）
+    let splash = start_splash();
+
     // クラスのコンパイルはファイル読み込みを伴うため非同期に行い、
     // 完了してから起点オブジェクトを生成してループを回し始める
     spawn_local(async move {
@@ -1584,6 +1588,10 @@ fn start_game() {
         }
         preload_models().await;
         preload_images().await;
+        // バナーが消える（モバイルではタップされる）まで待つ。途中で止められたら始めない
+        if !await_splash(splash).await || !RUN_STATE.with(|s| s.borrow().is_running()) {
+            return;
+        }
         // 隠れたまま実行を始めた場合は visibilitychange が起きないため、ここでも見る
         match on_visibility_change(
             is_window_hidden(),
@@ -1608,6 +1616,8 @@ fn stop_game() {
     });
     PAUSED_BY_HIDE.with(|f| *f.borrow_mut() = false);
     GAME_OBJECTS.with(|o| o.borrow_mut().clear());
+    // バナーの表示中（タップ待ち中）に止めたら、すぐに片付ける
+    call_global("arcadeerCancelSplash");
     call_global("arcadeerClearObjectRegistrar");
     call_global("arcadeerClearModels");
     call_global("arcadeerClearScreen");
@@ -3576,6 +3586,34 @@ fn call_global(name: &str) {
     };
     if let Ok(func) = func.dyn_into::<js_sys::Function>() {
         let _ = func.call0(&JsValue::NULL);
+    }
+}
+
+/// 起動時のバナー表示を始め、その終わりを待つための Promise を返す（4.14節）
+///
+/// splash.js が未ロードなら None（バナー無しで始める）。
+fn start_splash() -> Option<js_sys::Promise> {
+    let window = window()?;
+    let func = js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("arcadeerRunSplash")).ok()?;
+    let func = func.dyn_into::<js_sys::Function>().ok()?;
+    func.call0(&JsValue::NULL)
+        .ok()?
+        .dyn_into::<js_sys::Promise>()
+        .ok()
+}
+
+/// バナー表示の終わりを待つ
+///
+/// 最後まで表示できたら true。途中で止められた（`done: false`）場合は false。
+/// バナーが無い・結果が読めない場合は、ゲームを始められるよう true とする。
+async fn await_splash(promise: Option<js_sys::Promise>) -> bool {
+    let Some(promise) = promise else { return true };
+    match JsFuture::from(promise).await {
+        Ok(result) => js_sys::Reflect::get(&result, &JsValue::from_str("done"))
+            .ok()
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
+        Err(_) => true,
     }
 }
 

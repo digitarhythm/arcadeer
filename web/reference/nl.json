@@ -144,6 +144,8 @@
   "ref.ide.d.keys": "Esc wordt in de editor genegeerd omdat de vim-toetsen ermee de invoegmodus verlaten.",
   "ref.ide.h.layout": "Plaats van het spelscherm",
   "ref.ide.d.layout": "Bij de instellingen kiest „Plaats van het spelscherm” of het lopende spel over de editor heen of rechts ernaast verschijnt. Over de editor heen (standaard) toont het spel alleen zolang het loopt en verbergt het bij stoppen. Rechts ernaast deelt het rechterdeel in tweeën, met het spel altijd rechts. De start/stop-knop staat in beide gevallen rechts naast de projectnaam in het linkerdeel.",
+  "ref.ide.h.splash": "Startbanner",
+  "ref.ide.d.splash": "Telkens als het spel start, verschijnt de banner \"ARCADEER\" in 0,5 s, blijft 1 s staan, verdwijnt in 0,5 s en daarna begint het spel. In de browser van een telefoon of tablet verschijnt na de banner \"Tik op het scherm\"; na een tik verdwijnt de banner en begint het spel. Browsers kunnen pas geluid afspelen nadat de speler iets heeft gedaan, dus deze tik schakelt ook het geluid in. Druk je op stop terwijl de banner te zien is, dan stopt het spel meteen.",
   "ref.ide.h.footer": "Voettekst",
   "ref.ide.d.footer": "Links staat het gemeten aantal beelden per seconde, ernaast het laatste bericht. Een klik vouwt tien regels uit om het logboek terug te lezen; dat bewaart tot 1000 regels.",
   "ref.api.h.event": "Wat behavior ontvangt",

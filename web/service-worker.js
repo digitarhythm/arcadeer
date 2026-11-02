@@ -1,9 +1,11 @@
-const CACHE_NAME = "arcadeer-v213";
+const CACHE_NAME = "arcadeer-v218";
 const PRECACHE = [
   "./",
   "./index.html",
   "./style.css",
   "./fade.js",
+  "./audio.js",
+  "./splash.js",
   "./console-log.js",
   "./footer-log.js",
   "./message-dialog.js",
@@ -62,7 +64,7 @@ const PRECACHE = [
   "./renderer.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
-  "./icons/logo.svg",
+  "./icons/banner.png",
   "./locales/ja.json",
   "./locales/en.json",
   "./locales/zh-Hans.json",

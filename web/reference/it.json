@@ -144,6 +144,8 @@
   "ref.ide.d.keys": "Esc viene ignorato nell'editor perché le scorciatoie vim lo usano per uscire dalla modalità di inserimento.",
   "ref.ide.h.layout": "Posizione dello schermo di gioco",
   "ref.ide.d.layout": "Nelle impostazioni, «Posizione dello schermo di gioco» sceglie se il gioco in esecuzione appare sopra l'editor o alla sua destra. Sopra l'editor (predefinito) lo mostra solo mentre gira e lo nasconde quando si ferma. A destra divide il pannello destro in due e il gioco resta sempre a destra. Il pulsante esegui/ferma è in entrambi i casi all'estremità destra del nome del progetto, nel pannello sinistro.",
+  "ref.ide.h.splash": "Banner di avvio",
+  "ref.ide.d.splash": "Ogni volta che il gioco parte, il banner «ARCADEER» compare in 0,5 s, resta 1 s, scompare in 0,5 s e poi il gioco inizia. Nel browser di un telefono o tablet, dopo il banner appare «Tocca lo schermo»; toccando, il banner scompare e il gioco inizia. I browser non possono riprodurre suoni finché il giocatore non interagisce, quindi questo tocco abilita anche l'audio. Premendo stop mentre il banner è visibile, il gioco si ferma subito.",
   "ref.ide.h.footer": "Piè di pagina",
   "ref.ide.d.footer": "A sinistra ci sono i fotogrammi al secondo misurati e accanto l'ultimo messaggio. Con un clic si espande a dieci righe per rileggere il registro, che conserva fino a 1000 righe.",
   "ref.api.h.event": "Ciò che riceve behavior",

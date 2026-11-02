@@ -34,6 +34,7 @@
   "settings.gameLayout": "Posizione dello schermo di gioco",
   "gameLayout.overlay": "Sopra l'editor",
   "gameLayout.side": "A destra dell'editor",
+  "splash.tap": "Tocca lo schermo",
   "settings.close": "Chiudi",
   "projectSelect.title": "Gestione progetti",
   "projectSelect.repick": "Scegli uno spazio di lavoro",

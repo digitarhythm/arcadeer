@@ -34,6 +34,7 @@
   "settings.gameLayout": "게임 화면 배치",
   "gameLayout.overlay": "에디터 위에 겹치기",
   "gameLayout.side": "에디터 오른쪽에 나란히",
+  "splash.tap": "화면을 탭하세요",
   "settings.close": "닫기",
   "projectSelect.title": "프로젝트 관리",
   "projectSelect.repick": "작업 공간 선택",

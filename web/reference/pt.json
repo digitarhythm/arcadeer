@@ -144,6 +144,8 @@
   "ref.ide.d.keys": "Esc é ignorado no editor porque os atalhos vim o usam para sair do modo de inserção.",
   "ref.ide.h.layout": "Posição do ecrã do jogo",
   "ref.ide.d.layout": "Nas definições, «Posição do ecrã do jogo» escolhe se o jogo em execução aparece sobre o editor ou à sua direita. Sobre o editor (predefinição) mostra-o apenas enquanto corre e esconde-o ao parar. À direita divide o painel direito em dois, ficando o jogo sempre à direita. O botão executar/parar está, em ambos os casos, na extremidade direita do nome do projeto, no painel esquerdo.",
+  "ref.ide.h.splash": "Banner de início",
+  "ref.ide.d.splash": "Sempre que o jogo é executado, o banner \"ARCADEER\" surge em 0,5 s, permanece 1 s, desaparece em 0,5 s e então o jogo começa. No navegador de um telefone ou tablet, após o banner aparece \"Toque na tela\"; ao tocar, o banner desaparece e o jogo começa. Os navegadores não conseguem tocar som até que o jogador interaja, então esse toque também libera o áudio. Pressionar parar enquanto o banner é exibido interrompe imediatamente.",
   "ref.ide.h.footer": "Rodapé",
   "ref.ide.d.footer": "À esquerda ficam os fotogramas por segundo medidos e, ao lado, a mensagem mais recente. Um clique expande para dez linhas para reler o registo, que guarda até 1000 linhas.",
   "ref.api.h.event": "O que behavior recebe",

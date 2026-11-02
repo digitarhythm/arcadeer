@@ -34,6 +34,7 @@
   "settings.gameLayout": "Game screen placement",
   "gameLayout.overlay": "Over the editor",
   "gameLayout.side": "Beside the editor (right)",
+  "splash.tap": "Please tap the screen",
   "settings.close": "Close",
   "projectSelect.title": "Project manager",
   "projectSelect.repick": "Choose a workspace",

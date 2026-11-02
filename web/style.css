@@ -217,24 +217,11 @@ body.footer-expanded {
   cursor: pointer;
 }
 
-.header-logo-mark {
-  width: 32px;
+/* 起動バナー（banner.png、1176×196）を縮めて出す。幅は縦横比から決まる（約 192px） */
+.header-logo-banner {
   height: 32px;
+  width: auto;
   display: block;
-}
-
-.header-logo-text {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--fg);
-}
-
-.header-logo-text-accent {
-  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 
 /* ヘッダー右側のアイコンボタン群 */
@@ -842,11 +829,58 @@ body.footer-expanded {
 
 /* canvas は長い方を領域に合わせ、短い方は中央に置く（表示サイズはRust側が算出する） */
 .ide-game-body {
+  position: relative;
   display: grid;
   place-items: center;
   min-width: 0;
   min-height: 0;
   background: var(--bg);
+}
+
+/* 起動時のバナー（4.14節）。canvas の上に重ね、タップ待ちの間だけ操作を受ける */
+.game-splash {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.game-splash.splash-waiting {
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.game-splash-banner,
+.game-splash-tap {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.game-splash-banner.splash-visible,
+.game-splash-tap.splash-visible {
+  opacity: 1;
+}
+
+.game-splash-banner {
+  width: min(70%, 560px);
+  height: auto;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6));
+}
+
+.game-splash-tap {
+  margin: 0;
+  color: #e6e6f0;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* 停止中はグレー地にして、動いていないことが分かるようにする */

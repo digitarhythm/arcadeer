@@ -17,8 +17,8 @@
 <body>
   <header id="ide-header" class="ide-header">
     <div id="header-logo" class="header-logo" data-i18n-title="header.logoTooltip" role="button" tabindex="0">
-      <img class="header-logo-mark" src="./icons/logo.svg" alt="Arcadeer" data-i18n-alt="header.logoAlt" width="32" height="32" />
-      <span class="header-logo-text">Arca<span class="header-logo-text-accent">deer</span></span>
+      <!-- 起動バナー（4.14節）と同じ画像を高さ 32px で表示する -->
+      <img class="header-logo-banner" src="./icons/banner.png" alt="Arcadeer" data-i18n-alt="header.logoAlt" height="32" draggable="false" />
     </div>
     <div class="header-actions">
       <button id="btn-open-project" type="button" class="header-icon-btn"
@@ -186,6 +186,8 @@
 
   <script type="module">
     import "./fade.js";
+    import "./audio.js";
+    import "./splash.js";
     import "./console-log.js";
     import { initFooterLog } from "./footer-log.js";
     import { initReference } from "./reference.js";

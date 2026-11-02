@@ -34,6 +34,7 @@
   "settings.gameLayout": "遊戲畫面位置",
   "gameLayout.overlay": "覆蓋在編輯器上",
   "gameLayout.side": "並排在編輯器右側",
+  "splash.tap": "請點擊螢幕",
   "settings.close": "關閉",
   "projectSelect.title": "專案管理",
   "projectSelect.repick": "選擇工作區",
