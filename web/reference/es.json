@@ -100,7 +100,7 @@
   "ref.api.h.camera": "Cámaras",
   "ref.m.addCamera": "Añadir una cámara (sustituye la del mismo nombre)",
   "ref.m.setCamera": "Cambiar ajustes; solo las claves que escribas. Sin nombre, actúa sobre la cámara visible",
-  "ref.m.getCamera": "Leer los ajustes",
+  "ref.m.getCamera": "Leer los ajustes. Sin nombre, devuelve la cámara visible",
   "ref.m.setActiveCamera": "Cambiar qué cámara se muestra",
   "ref.m.removeCamera": "Eliminar una cámara",
   "ref.api.d.camera": "Mover solo la posición únicamente gira la cámara. Para seguir a algo, mueve la posición y el punto de mira a la vez.",

@@ -154,10 +154,16 @@ export function setCamera(param) {
   return camera;
 }
 
-/** 名前からカメラを取り出す（無ければ null） */
+/**
+ * 名前からカメラを取り出す（無ければ null）
+ *
+ * `name` を省略すると、`setCamera` と同じく画面へ出しているカメラを返す。
+ * `setCamera` に合わせて `{ name: "sub" }` の形でも指定できる。
+ */
 export function getCamera(name) {
   ensureDefault();
-  return cameras.get(name) ?? null;
+  const key = name && typeof name === "object" ? name.name : name;
+  return cameras.get(key ?? active) ?? null;
 }
 
 /** 登録されているカメラ名の一覧 */

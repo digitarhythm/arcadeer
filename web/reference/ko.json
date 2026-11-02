@@ -100,7 +100,7 @@
   "ref.api.h.camera": "카메라",
   "ref.m.addCamera": "카메라를 추가한다(같은 이름이면 교체)",
   "ref.m.setCamera": "설정을 바꾼다. 쓴 항목만. 이름을 생략하면 표시 중인 카메라",
-  "ref.m.getCamera": "설정을 읽는다",
+  "ref.m.getCamera": "설정을 읽는다. 이름을 생략하면 표시 중인 카메라",
   "ref.m.setActiveCamera": "화면에 내보낼 카메라를 전환한다",
   "ref.m.removeCamera": "카메라를 삭제한다",
   "ref.api.d.camera": "위치만 움직이면 방향만 바뀝니다. 따라가게 하려면 위치와 주시점을 함께 움직입니다.",

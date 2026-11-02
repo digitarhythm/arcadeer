@@ -100,7 +100,7 @@
   "ref.api.h.camera": "Telecamere",
   "ref.m.addCamera": "Aggiungere una telecamera (sostituisce quella con lo stesso nome)",
   "ref.m.setCamera": "Cambiare le impostazioni, solo le chiavi indicate. Senza nome vale per la telecamera visibile",
-  "ref.m.getCamera": "Leggere le impostazioni",
+  "ref.m.getCamera": "Leggere le impostazioni. Senza nome restituisce la telecamera visibile",
   "ref.m.setActiveCamera": "Cambiare quale telecamera si vede",
   "ref.m.removeCamera": "Rimuovere una telecamera",
   "ref.api.d.camera": "Spostare solo la posizione si limita a ruotare la telecamera. Per seguire qualcosa, sposta insieme posizione e punto di mira.",

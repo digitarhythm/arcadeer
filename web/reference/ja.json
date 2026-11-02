@@ -100,7 +100,7 @@
   "ref.api.h.camera": "カメラ",
   "ref.m.addCamera": "カメラを追加する（同じ名前なら置き換え）",
   "ref.m.setCamera": "設定を変える（書いた項目だけ。名前を省略すると表示中のカメラ）",
-  "ref.m.getCamera": "設定を取り出す",
+  "ref.m.getCamera": "設定を取り出す（名前を省略すると表示中のカメラ）",
   "ref.m.setActiveCamera": "画面に出すカメラを切り替える",
   "ref.m.removeCamera": "カメラを削除する",
   "ref.api.d.camera": "位置だけを動かすと向きが変わるだけです。追いかけたい場合は位置と注視点の両方を動かします。",

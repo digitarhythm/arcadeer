@@ -91,6 +91,21 @@ describe("カメラの追加と取り出し", () => {
     expect(getCamera("unknown")).toBeNull();
   });
 
+  test("名前を省略すると、表示中のカメラを返す（setCamera と同じ決まり）", () => {
+    // リファレンスの例 `view = getCamera()` がそのまま動くように
+    expect(getCamera()).toBe(getCamera(DEFAULT_CAMERA_NAME));
+    addCamera({ name: "sub", X: 5 });
+    setActiveCamera("sub");
+    expect(getCamera().name).toBe("sub");
+  });
+
+  test("setCamera のように { name: ... } でも指定できる", () => {
+    addCamera({ name: "sub", X: 5 });
+    expect(getCamera({ name: "sub" }).X).toBe(5);
+    // name の無いオブジェクトは「省略」と同じ
+    expect(getCamera({})).toBe(getCamera(DEFAULT_CAMERA_NAME));
+  });
+
   test("カメラを消せる", () => {
     addCamera({ name: "sub" });
     removeCamera("sub");

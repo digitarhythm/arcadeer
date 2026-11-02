@@ -100,7 +100,7 @@
   "ref.api.h.camera": "Camera's",
   "ref.m.addCamera": "Een camera toevoegen (vervangt die met dezelfde naam)",
   "ref.m.setCamera": "Instellingen wijzigen, alleen de genoemde sleutels. Zonder naam geldt het voor de zichtbare camera",
-  "ref.m.getCamera": "De instellingen lezen",
+  "ref.m.getCamera": "De instellingen lezen. Zonder naam de zichtbare camera",
   "ref.m.setActiveCamera": "Wisselen welke camera te zien is",
   "ref.m.removeCamera": "Een camera verwijderen",
   "ref.api.d.camera": "Alleen de positie verschuiven draait de camera slechts. Om iets te volgen verplaats je positie en kijkpunt samen.",

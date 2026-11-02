@@ -33,7 +33,11 @@ import {
 const WAIT_RELEASE = true;
 
 let dialog = null;
+/** 組み立て中の Promise（二重に作らないために持つ） */
+let building = null;
 let running = null;
+/** 開く途中（絵の読み込み待ち）かどうか */
+let opening = false;
 
 /** いま繋がっている最初のパッドを返す */
 function firstPad() {
@@ -41,7 +45,7 @@ function firstPad() {
   return list.find(Boolean) ?? null;
 }
 
-/** 画面を組み立てる（一度だけ） */
+/** 画面を組み立てる */
 async function build() {
   const el = document.createElement("dialog");
   el.id = "gamepad-config-dialog";
@@ -66,12 +70,46 @@ async function build() {
     </div>
   `;
   document.body.appendChild(el);
-  dialog = el;
 
   el.querySelector("#padconf-skip").addEventListener("click", () => running?.skip());
   el.querySelector("#padconf-restart").addEventListener("click", () => running?.restart());
   el.querySelector("#padconf-cancel").addEventListener("click", () => running?.cancel());
   return el;
+}
+
+/**
+ * 画面を用意する（一度だけ作り、以後は使い回す）
+ *
+ * 絵の読み込みを待っている間にもう一度呼ばれても、**同じ組み立てを待つ**。
+ * 別々に作ると同じ id の要素が2組でき、文言は先に作った方へ、
+ * 表示は後に作った方へ行き、**文言も目印も無い画面**が出てしまう。
+ */
+export async function ensureDialog() {
+  if (dialog) return dialog;
+  if (!building) {
+    building = build().then((el) => {
+      dialog = el;
+      return el;
+    }).finally(() => {
+      building = null;
+    });
+  }
+  return building;
+}
+
+/** 画面の中の要素を取り出す（他の画面と id が重ならないよう、画面の中だけを探す） */
+function part(id) {
+  return dialog?.querySelector(`#${id}`) ?? null;
+}
+
+/**
+ * 矢印のパスを作る（右向き。回転は置く側が行う）
+ *
+ * 目印の外側（半径+2）から 10 伸ばし、先端に 4 の返しを付ける。
+ */
+export function arrowPath(radius) {
+  const start = radius + 2;
+  return `M ${start} 0 L ${start + 10} 0 M ${start + 6} -4 L ${start + 10} 0 L ${start + 6} 4`;
 }
 
 /** 向きごとの回転角（右を 0 度とする） */
@@ -104,8 +142,7 @@ function showArrow(svg, marker, dir) {
   const inner = document.createElementNS(NS, "g");
   inner.setAttribute("class", "padconf-arrow-inner");
   const path = document.createElementNS(NS, "path");
-  const start = radius + 2;
-  path.setAttribute("d", `M ${始点} 0 L ${始点 + 10} 0 M ${始点 + 6} -4 L ${始点 + 10} 0 L ${始点 + 6} 4`);
+  path.setAttribute("d", arrowPath(radius));
   inner.appendChild(path);
   g.appendChild(inner);
   svg.appendChild(g);
@@ -113,7 +150,7 @@ function showArrow(svg, marker, dir) {
 
 /** 押してほしい箇所を光らせる */
 function highlight(marker, dir) {
-  const figure = document.getElementById("padconf-figure");
+  const figure = part("padconf-figure");
   const svg = figure?.querySelector("svg");
   if (!svg) return;
   for (const el of svg.querySelectorAll(".padconf-target")) {
@@ -126,7 +163,7 @@ function highlight(marker, dir) {
 /** 自動で決まったことを知らせる（数秒で消す） */
 let noticeTimer = null;
 function notify(key) {
-  const el = document.getElementById("padconf-notice");
+  const el = part("padconf-notice");
   if (!el) return;
   el.textContent = t(key);
   el.hidden = false;
@@ -137,27 +174,29 @@ function notify(key) {
 /** 表示を今の手順に合わせる */
 function showStep(steps, index, device) {
   const step = steps[index];
-  document.getElementById("padconf-title").textContent = t("padconf.title");
-  document.getElementById("padconf-device").textContent = device;
-  document.getElementById("padconf-ask").textContent = t(step.labelKey);
-  document.getElementById("padconf-hint").textContent = t("padconf.hint");
-  document.getElementById("padconf-step").textContent =
+  part("padconf-title").textContent = t("padconf.title");
+  part("padconf-device").textContent = device;
+  part("padconf-ask").textContent = t(step.labelKey);
+  part("padconf-hint").textContent = t("padconf.hint");
+  part("padconf-step").textContent =
     t("padconf.progress", { done: String(index + 1), total: String(steps.length) });
-  document.getElementById("padconf-bar").style.width =
-    `${Math.round((index / steps.length) * 100)}%`;
-  document.getElementById("padconf-skip").textContent = t("padconf.skip");
-  document.getElementById("padconf-restart").textContent = t("padconf.restart");
-  document.getElementById("padconf-cancel").textContent = t("padconf.cancel");
+  part("padconf-bar").style.width = `${Math.round((index / steps.length) * 100)}%`;
+  part("padconf-skip").textContent = t("padconf.skip");
+  part("padconf-restart").textContent = t("padconf.restart");
+  part("padconf-cancel").textContent = t("padconf.cancel");
   highlight(step.marker, step.dir);
 }
 
 /**
  * キーコンフィグを開く
  *
- * @returns 作られた設定。中止した場合は null
+ * 進行中（絵の読み込み待ちを含む）にもう一度呼ばれた場合は、何もせず null を返す。
+ * ボタンを押している間に毎フレーム呼ばれても、画面が増えないようにするため。
+ *
+ * @returns 作られた設定。中止した場合・すでに開いている場合は null
  */
 export async function openGamePadConfig() {
-  if (running) return null;
+  if (running || opening) return null;
   const raw = firstPad();
   if (!raw) {
     window.arcadeerShowMessage?.(t("padconf.noPad"), "warning");
@@ -171,7 +210,15 @@ export async function openGamePadConfig() {
     return null;
   }
 
-  if (!dialog) await build();
+  opening = true;
+  try {
+    await ensureDialog();
+  } finally {
+    opening = false;
+  }
+  // 絵を待っている間に、別の呼び出しが先に始まっていることはない（opening で弾く）
+  // が、念のため確かめる
+  if (running) return null;
 
   const { vendor, product } = parseGamepadId(raw.id);
   const key = vendor && product ? `${vendor}:${product}` : raw.id;

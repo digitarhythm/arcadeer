@@ -100,7 +100,7 @@
   "ref.api.h.camera": "相机",
   "ref.m.addCamera": "添加相机（同名则替换）",
   "ref.m.setCamera": "更改设定，只改写你写出的项。省略名称时作用于显示中的相机",
-  "ref.m.getCamera": "读取设定",
+  "ref.m.getCamera": "读取设定。省略名称时返回显示中的相机",
   "ref.m.setActiveCamera": "切换显示的相机",
   "ref.m.removeCamera": "删除相机",
   "ref.api.d.camera": "只移动位置只会改变朝向。若要跟随，请同时移动位置与注视点。",
